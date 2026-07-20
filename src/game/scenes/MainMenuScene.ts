@@ -120,7 +120,8 @@ export class MainMenuScene extends Phaser.Scene {
       ...secOpts,
       fill: 0x3d5a4a,
     });
-    makeButton(this, COL[1]!, row, t('menu_codex'), () => transitionTo(this, 'Codex'), secOpts);
+    makeButton(this, COL[1]!, row, t('lexicon_title'), () =>
+      transitionTo(this, 'Lexicon', { from: 'MainMenu' }), secOpts);
     makeButton(
       this,
       COL[2]!,

@@ -100,7 +100,7 @@ export class JournalScene extends Phaser.Scene {
       this,
       575,
       108,
-      `${t('title_label')}: ${t(`title_${s.title ?? 'citizen'}`)} · ${t('office')}: ${t(`office_${s.office ?? 'none'}`)}\n${t('rep_local')}: ${rs.local} (${t(rs.localKey)}) · ${t('prestige')}: ${s.prestige ?? 0}\n${t('rep_folk')}: ${rs.folk} · ${t('rep_elite')}: ${rs.elite} · ${t('rep_fame')}: ${rs.fame}\n${t('honour')}: ${Math.round(honour(s))} — ${t(honourRankKey(s))}\n${t('guild')}: ${s.guildFavor} · ${t('church')}: ${s.churchHeat} · Council: ${s.councilFavor}`,
+      `${t('title_label')}: ${t(`title_${s.title ?? 'citizen'}`)} · ${t('office')}: ${t(`office_${s.office ?? 'none'}`)}\n${t('rep_local')}: ${rs.local} (${t(rs.localKey)}) · ${t('prestige')}: ${s.prestige ?? 0}\n${t('rep_folk')}: ${rs.folk} · ${t('rep_elite')}: ${rs.elite} · ${t('rep_fame')}: ${rs.fame}\n${t('honour')}: ${Math.round(honour(s))} — ${t(honourRankKey(s))}\n${t('guild')}: ${s.guildFavor} · ${t('church')}: ${s.churchHeat} · ${t('council')}: ${s.councilFavor}`,
       { fontSize: '13px', wordWrap: { width: 580 } },
     );
 
@@ -167,7 +167,7 @@ export class StaffScene extends Phaser.Scene {
           this,
           60,
           y,
-          `${m.name} · ${t(`role_${m.role}`)} · ${t('loyalty')}: ${m.loyalty} · ${t('skill')}: ${m.skill} · ${m.wage}c/d`,
+          `${m.name} · ${t(`role_${m.role}`)} · ${t('loyalty')}: ${m.loyalty} · ${t('skill')}: ${m.skill} · ${t('wage_per_day', { n: m.wage })}`,
           { fontSize: '13px', wordWrap: { width: 420 } },
         );
         makeButton(
@@ -306,7 +306,7 @@ export class FamilyScene extends Phaser.Scene {
           this,
           300,
           220 + i * 48,
-          `${t(su.nameKey)} (${su.cost}c)`,
+          `${t(su.nameKey)} — ${t('coin_amount', { n: su.cost })}`,
           () => {
             mutate((st) => startCourtship(st, su.id));
             saveGame();
@@ -342,7 +342,7 @@ export class PoliticsScene extends Phaser.Scene {
       this,
       40,
       70,
-      `${t('coin')}: ${s.coin} · Council ${s.councilFavor} · ${t('guild')}: ${s.guildFavor} · ${t('prestige')}: ${s.prestige ?? 0}`,
+      `${t('coin')}: ${s.coin} · ${t('council')}: ${s.councilFavor} · ${t('guild')}: ${s.guildFavor} · ${t('prestige')}: ${s.prestige ?? 0}`,
     );
     hudText(
       this,
@@ -364,7 +364,7 @@ export class PoliticsScene extends Phaser.Scene {
         this,
         300,
         240 + i * 55,
-        `${t(`office_${off}`)} (${c.coin}c · ${t('rep_elite')}≥${needE})`,
+        `${t(`office_${off}`)} — ${t('coin_amount', { n: c.coin })} · ${t('rep_elite')} ab ${needE}`,
         () => {
           let ok = false;
           mutate((st) => {
@@ -397,7 +397,7 @@ export class PoliticsScene extends Phaser.Scene {
         this,
         940,
         240 + i * 55,
-        `${t(`title_${title}`)} (${c.coin}c · ${t('rep_fame')}≥${needF})`,
+        `${t(`title_${title}`)} — ${t('coin_amount', { n: c.coin })} · ${t('rep_fame')} ab ${needF}`,
         () => {
           let ok = false;
           mutate((st) => {

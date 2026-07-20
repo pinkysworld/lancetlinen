@@ -47,7 +47,7 @@ export class PropertyScene extends Phaser.Scene {
           this,
           50,
           150 + i * 28,
-          `${locName(p.cityId)}: ${t(`prop_${p.kind}`)} Lv${p.level}${mgr}`,
+          `${locName(p.cityId)}: ${t(`prop_${p.kind}`)} ${t('level_n', { n: p.level })}${mgr}`,
           { fontSize: '14px' },
         );
       });

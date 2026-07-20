@@ -157,7 +157,7 @@ export class StudyScene extends Phaser.Scene {
       const canAfford = s.coin >= price;
       const hasHand = s.stats.hand >= tech.minHand;
 
-      bodyText(this, 60, y, `${techName(tech.id)} — ${price}c · ${techDesc(tech.id)}`, {
+      bodyText(this, 60, y, `${techName(tech.id)} — ${t('coin_amount', { n: price })} · ${techDesc(tech.id)}`, {
         fontSize: '14px',
         wordWrap: { width: 700 },
       });
@@ -217,7 +217,7 @@ export class UpgradesScene extends Phaser.Scene {
       this,
       50,
       100,
-      `${t('coin')}: ${s.coin} · ${local ? `${t(`prop_${local.kind}`)} Lv${local.level}` : t('stall_mode')}`,
+      `${t('coin')}: ${s.coin} · ${local ? `${t(`prop_${local.kind}`)} ${t('level_n', { n: local.level })}` : t('stall_mode')}`,
     );
 
     if (!local) {

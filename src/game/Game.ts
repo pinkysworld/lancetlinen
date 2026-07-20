@@ -4,6 +4,7 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { CharacterScene } from './scenes/CharacterScene';
+import { LexiconScene } from './scenes/LexiconScene';
 import { HubScene, BathhouseScene } from './scenes/HubScene';
 import { TreatmentScene } from './scenes/TreatmentScene';
 import { TravelMapScene, TravelResultScene } from './scenes/TravelScene';
@@ -91,6 +92,7 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
       ScenarioScene,
       EndingScene,
       CodexScene,
+      LexiconScene,
     ],
   };
 
