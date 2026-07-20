@@ -37,9 +37,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      # `--omit=optional` skips steamworks.js: it is a native module, it is
-      # irrelevant to the web build, and building it on CI only adds risk.
-      - run: npm ci --omit=optional
+      # Plain `npm ci`. Do NOT add `--omit=optional` here: rolldown, which
+      # Vite 8 bundles with, ships its platform binary as an *optional*
+      # dependency, so omitting them breaks the build with
+      # "Cannot find module '../rolldown-binding.linux-x64-gnu.node'".
+      # steamworks.js is also optional and may fail to build on CI — that is
+      # fine and does not fail the install, which is the point of optional.
+      - run: npm ci
 
       # Fail the deploy rather than publishing a broken build.
       - name: Typecheck
