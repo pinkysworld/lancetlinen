@@ -1,0 +1,19 @@
+{
+  "name": "Lancet & Linen",
+  "short_name": "LancetLinen",
+  "description": "Medieval Bader life & business simulation — Holy Roman Empire",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a120c",
+  "theme_color": "#1a120c",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

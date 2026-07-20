@@ -1,0 +1,283 @@
+import Phaser from 'phaser';
+import { GAME_HEIGHT, GAME_WIDTH } from '../types';
+import { getState } from '../state';
+import { sceneBackground, type BackgroundOpts } from './fx';
+import type { PatientClass } from '../types';
+
+/** Location → painted background key */
+export function bgKeyForLocation(locationId: string): string {
+  switch (locationId) {
+    case 'nurnberg':
+      return 'bg_nurnberg';
+    case 'monastery_ebrach':
+      return 'bg_monastery';
+    case 'war_camp':
+      return 'bg_warcamp';
+    case 'rothenburg':
+      return 'bg_rothenburg';
+    case 'bamberg':
+      return 'bg_bamberg';
+    case 'wurzburg':
+      return 'bg_wurzburg';
+    case 'augsburg':
+      return 'bg_augsburg';
+    case 'small_village':
+      return 'bg_market';
+    case 'road_camp':
+      return 'bg_road';
+    default:
+      return 'art_bath';
+  }
+}
+
+/** Portrait pools per class — first entry is the original single face */
+const CLASS_PORTRAIT_POOLS: Record<PatientClass, string[]> = {
+  peasant: ['port_peasant', 'port_peasant2', 'port_peasant3', 'port_peasant4', 'port_woman'],
+  artisan: ['port_artisan', 'port_artisan2', 'port_artisan3'],
+  merchant: ['port_merchant', 'port_merchant2'],
+  soldier: ['port_soldier', 'port_soldier2', 'port_soldier3'],
+  clergy: ['port_clergy', 'port_clergy2', 'port_adelheid'],
+  noble: ['port_noble', 'port_noble2'],
+  beggar: ['port_beggar1', 'port_beggar2', 'port_peasant', 'port_sick'],
+};
+
+/** Stable pick so the same patient keeps the same face if re-rendered */
+export function pickPortraitKey(patientClass: PatientClass, seed: string): string {
+  const pool = CLASS_PORTRAIT_POOLS[patientClass] ?? ['port_peasant'];
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return pool[h % pool.length]!;
+}
+
+/**
+ * Paint the current location's background.
+ *
+ * Previously this drew the art at alpha 0.5 under a full-screen black rectangle,
+ * which crushed the paintings. Now the art renders near full strength and we
+ * darken only where text actually sits (see `sceneBackground`).
+ */
+export function addLocationBackground(scene: Phaser.Scene, opts: BackgroundOpts = {}): void {
+  const s = getState();
+  const key = bgKeyForLocation(s.locationId);
+  sceneBackground(scene, key, {
+    fallbacks: ['art_bath', 'bath_bg'],
+    brightness: 0.82,
+    topScrim: 120,
+    bottomScrim: 90,
+    depth: -12,
+    ...opts,
+  });
+}
+
+/**
+ * Management-screen backdrop: painted art at low brightness under panels.
+ * Falls back silently if the texture has not streamed in yet.
+ */
+/**
+ * Backdrop for the management screens (Journal, Staff, Politics…).
+ *
+ * Darker than a gameplay background because panels and dense text sit on top,
+ * but routed through `sceneBackground` so it still cover-fits and keeps its
+ * contrast. Stacking `alpha 0.38` under a `0.42` black rectangle — as this did
+ * — leaves roughly 22% of the painting visible, which is indistinguishable
+ * from no background at all.
+ */
+export function addManagementBackground(scene: Phaser.Scene, key: string): void {
+  sceneBackground(scene, key, {
+    brightness: 0.46,
+    depth: -12,
+    topScrim: 70,
+  });
+}
+
+export function portraitKeyForNpc(speakerKey: string): string {
+  const k = speakerKey.replace('npc.', 'npc_');
+  if (k.includes('berthold')) return 'port_berthold';
+  if (k.includes('adelheid')) return 'port_adelheid';
+  if (k.includes('krafft')) return 'port_krafft';
+  if (k.includes('ortlieb') || k.includes('guard') || k.includes('captain')) return 'port_merchant';
+  if (k.includes('gregor') || k.includes('monk')) return 'port_adelheid';
+  return 'port_berthold';
+}
+
+export function portraitKeyForPatientClass(c: PatientClass): string {
+  return CLASS_PORTRAIT_POOLS[c]?.[0] ?? 'port_peasant';
+}
+
+/** Prefer template-specific portrait, then complaint specialty, then class variant pool */
+export function portraitKeyForPatient(patient: {
+  class: PatientClass;
+  portraitKey?: string;
+  complaintKey?: string;
+  templateId?: string;
+  uid?: string;
+}): string {
+  if (patient.portraitKey) return patient.portraitKey;
+  const c = patient.complaintKey ?? '';
+  if (
+    c.includes('tooth') ||
+    c.includes('gum') ||
+    c.includes('molar') ||
+    c.includes('thrush') ||
+    c.includes('canker') ||
+    c.includes('quinsy') ||
+    c.includes('tartar') ||
+    c.includes('mouth')
+  ) {
+    return 'port_dental';
+  }
+  if (c.includes('fever') || c.includes('plague') || c.includes('jaundice') || c.includes('flux')) {
+    return 'port_sick';
+  }
+  const seed = patient.uid ?? patient.templateId ?? patient.class;
+  return pickPortraitKey(patient.class, seed);
+}
+
+/**
+ * Face crop box, as a fraction of the source image.
+ *
+ * The painted portraits are 1024x1024 with the head in the upper-middle. Drawing
+ * the whole canvas into a 100px square produced an unreadable torso thumbnail,
+ * so we zoom to the head and clip the rest away.
+ */
+const FACE_CROP = { cx: 0.5, cy: 0.34, w: 0.56 };
+
+export interface PortraitOpts {
+  size?: number;
+  /** Draw the gold ring + shadow. Off for dense list rows. */
+  frame?: boolean;
+  /** Skip the face crop for art that is already a headshot. */
+  crop?: boolean;
+  depth?: number;
+  /**
+   * Stable per-subject string (a patient uid) used to choose between portrait
+   * variants. Same seed always yields the same face, so a patient does not
+   * change appearance when the scene re-renders.
+   */
+  seed?: string;
+}
+
+/** Cheap deterministic string hash — only needs to be stable, not uniform. */
+function hashString(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+/**
+ * Resolve a base portrait key to one of its numbered variants.
+ *
+ * `port_peasant` will use `port_peasant2`, `port_peasant3`… when those files
+ * are present. With 54 patient templates sharing 8 faces, variants are the
+ * cheapest way to cut the repetition — and this needs no code change when the
+ * art arrives, only the files (see ART_TODO_2.md).
+ */
+export function resolvePortraitVariant(
+  scene: Phaser.Scene,
+  baseKey: string,
+  seed?: string,
+): string {
+  const variants = [baseKey];
+  for (let n = 2; n <= 6; n++) {
+    const k = `${baseKey}${n}`;
+    if (!scene.textures.exists(k)) break;
+    variants.push(k);
+  }
+  if (variants.length === 1 || !seed) return baseKey;
+  return variants[hashString(seed) % variants.length]!;
+}
+
+/**
+ * Portrait, cropped to the face, circle-masked and framed.
+ *
+ * Returns the image so callers can tween or tint it.
+ */
+export function addPortrait(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  key: string,
+  opts: PortraitOpts | number = {},
+): Phaser.GameObjects.Image | null {
+  // Back-compat: older call sites passed a bare pixel size.
+  const o: PortraitOpts = typeof opts === 'number' ? { size: opts } : opts;
+  const size = o.size ?? 150;
+  const doCrop = o.crop !== false;
+  const doFrame = o.frame !== false;
+  const depth = o.depth ?? 0;
+
+  const wanted = resolvePortraitVariant(scene, key, o.seed);
+  const tryKeys = [wanted, key, 'port_peasant', 'art_portrait', 'portrait_patient'];
+  const use = tryKeys.find((k) => scene.textures.exists(k));
+
+  if (!use) {
+    // Most portraits stream in after the menu (see ART_DEFERRED). Without this
+    // a patient reached in the first seconds would show no face at all, for
+    // good — same failure `sceneBackground` had.
+    const onArrive = () => {
+      if (!scene.scene.isActive()) return;
+      addPortrait(scene, x, y, key, o);
+    };
+    scene.textures.once(`addtexture-${key}`, onArrive);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      scene.textures.off(`addtexture-${key}`, onArrive),
+    );
+    return null;
+  }
+
+  const img = scene.add.image(x, y, use).setDepth(depth + 1);
+  img.disableInteractive();
+
+  if (doCrop) {
+    // `setCrop` rather than a geometry mask: Phaser 4 geometry masks did not
+    // clip these images reliably, and cropping needs no extra display object.
+    const src = scene.textures.get(use).getSourceImage();
+    const sw = (src as { width: number }).width || 1;
+    const sh = (src as { height: number }).height || 1;
+
+    const side = Math.min(FACE_CROP.w * sw, sh);
+    const cropX = Math.max(0, FACE_CROP.cx * sw - side / 2);
+    const cropY = Math.max(0, Math.min(sh - side, FACE_CROP.cy * sh - side / 2));
+
+    // Scale the whole frame so that the crop window alone measures `size`,
+    // then offset the image so the crop centre lands on (x, y).
+    const scale = size / side;
+    img.setDisplaySize(sw * scale, sh * scale);
+    img.setCrop(cropX, cropY, side, side);
+    img.x = x + (sw / 2 - (cropX + side / 2)) * scale;
+    img.y = y + (sh / 2 - (cropY + side / 2)) * scale;
+  } else {
+    img.setDisplaySize(size, size);
+  }
+
+  if (doFrame) {
+    const half = size / 2;
+    // Shadow below, frame above, so the border reads as a frame rather than
+    // being overpainted by the portrait.
+    const shadow = scene.add.graphics().setDepth(depth);
+    shadow.fillStyle(0x0a0705, 0.45);
+    shadow.fillRoundedRect(x - half + 4, y - half + 5, size, size, 6);
+
+    if (scene.textures.exists('ui_frame_portrait')) {
+      // Carved wooden frame with transparent centre (ART_TODO)
+      const framePad = size * 0.22;
+      const frameSize = size + framePad * 2;
+      const frameImg = scene.add
+        .image(x, y, 'ui_frame_portrait')
+        .setDisplaySize(frameSize, frameSize)
+        .setDepth(depth + 2);
+      frameImg.disableInteractive();
+    } else {
+      const frame = scene.add.graphics().setDepth(depth + 2);
+      frame.lineStyle(3, 0xc9a227, 0.9);
+      frame.strokeRoundedRect(x - half, y - half, size, size, 6);
+      frame.lineStyle(1, 0x1f140c, 0.5);
+      frame.strokeRoundedRect(x - half - 3, y - half - 3, size + 6, size + 6, 8);
+    }
+  }
+
+  return img;
+}

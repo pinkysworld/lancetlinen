@@ -1,0 +1,68 @@
+{
+  "name": "der-bader",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Der Bader \u2014 Medieval barber-surgeon business simulation",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "art": "node tools/generate-art.mjs",
+    "art:list": "node tools/generate-art.mjs --list",
+    "art:check": "node tools/generate-art.mjs --check",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "electron:dev": "VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "electron:build": "npm run build:desktop && electron-builder",
+    "build:desktop": "tsc && VITE_DESKTOP=true vite build"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "i18next": "^26.3.6",
+    "phaser": "^4.2.1"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.michelpicker.lancetandlinen",
+    "productName": "Lancet & Linen",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "mac": {
+      "category": "public.app-category.simulation-games",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Game"
+    }
+  },
+  "optionalDependencies": {
+    "steamworks.js": "^0.4.0"
+  }
+}
