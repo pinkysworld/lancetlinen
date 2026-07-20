@@ -246,7 +246,7 @@ export function makeButton(
 ): Phaser.GameObjects.Container {
   const touch = isTouchDevice();
   const w = buttonWidth(opts.width ?? 220);
-  const h = buttonHeight(opts.height ?? 44);
+  let h = buttonHeight(opts.height ?? 44);
   const disabled = opts.disabled ?? false;
   const fill = disabled ? COLORS.muted : (opts.fill ?? COLORS.panelLight);
   const fontSize = scaleFont(opts.fontSize ?? (touch ? '17px' : '18px'));
@@ -288,10 +288,18 @@ export function makeButton(
   if (label) {
     const startPx = parseFloat(fontSize) || 18;
     // 11px is the floor: below that the serif face stops being readable at
-    // 1080p, and a label that still does not fit is too long to be a button.
+    // 1080p.
     for (let px = startPx; text.height > h - 8 && px > 11; px -= 1) {
       text.setFontSize(px);
       text.setWordWrapWidth(w - 16);
+    }
+    // Shrinking alone is not enough for a genuinely long label in a small
+    // button — "Mehr Hand-Geschick nötig" wraps to three lines in a 120x28
+    // button and still overflowed at the 11px floor, spilling over the rows
+    // above and below. Grow the face to match rather than let text escape it.
+    if (text.height > h - 8) {
+      h = Math.ceil(text.height) + 10;
+      paint(false);
     }
   }
 

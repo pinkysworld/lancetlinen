@@ -49,27 +49,63 @@
         max-height: 100%;
         touch-action: none;
       }
-      /* Portrait phones: soft hint; game still runs in FIT mode */
+      /*
+       * Portrait phones.
+       *
+       * The game draws 16:9. On a 9:19.5 phone held upright, Scale.FIT does the
+       * only thing it can and the canvas ends up filling ~26% of the screen
+       * height — a letterboxed strip that reads as "the game is broken", which
+       * is exactly how it was reported. It is not broken; it is the wrong shape
+       * of screen.
+       *
+       * The old hint was a thin bar at the bottom while the tiny game kept
+       * running behind it, which did not communicate that. Cover the screen
+       * instead, so the state is unambiguous and the fix is obvious.
+       */
       #rotate-hint {
         display: none;
         position: fixed;
         z-index: 50;
-        left: 0; right: 0; bottom: 0;
-        padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-        background: rgba(26, 18, 12, 0.88);
+        inset: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        padding: 24px;
+        background: #1a120c;
         color: #e8d5a8;
-        font-size: 13px;
         text-align: center;
-        pointer-events: none;
+        font-size: 17px;
+        line-height: 1.5;
+      }
+      #rotate-hint .glyph {
+        font-size: 56px;
+        color: #c9a227;
+        animation: tilt 2.4s ease-in-out infinite;
+      }
+      #rotate-hint .sub { font-size: 13px; color: #9a8878; }
+      @keyframes tilt {
+        0%, 45%, 100% { transform: rotate(0deg); }
+        60%, 85% { transform: rotate(-90deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #rotate-hint .glyph { animation: none; }
       }
       @media (orientation: portrait) and (max-width: 900px) {
-        #rotate-hint { display: block; }
+        #rotate-hint { display: flex; }
       }
     </style>
   </head>
   <body>
     <div id="game-container"></div>
-    <div id="rotate-hint">Tip: landscape feels best on phones — the game works in portrait too.</div>
+    <div id="rotate-hint">
+      <div class="glyph">▭</div>
+      <div>Bitte das Gerät quer halten<br />Please turn your device sideways</div>
+      <div class="sub">
+        Lancet &amp; Linen wird im Querformat 16:9 gezeichnet.<br />
+        Lancet &amp; Linen is drawn in 16:9 landscape.
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

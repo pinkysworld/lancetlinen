@@ -142,6 +142,39 @@ export function endDay(state: GameState): void {
   if (state.tutorialStep === 3 && (state.properties?.length ?? 0) > 0) state.tutorialStep = 4;
 }
 
+/**
+ * What a merchant will pay for stock you already own.
+ *
+ * Half the asking price, rounded down, never less than one coin. The spread is
+ * the point: selling is a way out of trouble, not a way to farm coin by
+ * cycling stock through the market.
+ */
+export function sellPrice(unitPrice: number): number {
+  return Math.max(1, Math.floor(unitPrice * 0.5));
+}
+
+/**
+ * Sell supplies back.
+ *
+ * This did not exist. `cannot_afford_day` told the player "sell supplies or
+ * travel" and the market screen only ever offered *buying* — so the advice the
+ * game gave when you ran out of money pointed at a feature that was never
+ * built, and travelling costs coin too. Reported from play as "I have plenty
+ * of supplies but cannot open".
+ */
+export function sellSupplies(
+  state: GameState,
+  item: keyof GameState['inventory'],
+  amount: number,
+  unitPrice: number,
+): boolean {
+  const have = state.inventory[item];
+  if (have < amount) return false;
+  state.inventory[item] -= amount;
+  state.coin += amount * sellPrice(unitPrice);
+  return true;
+}
+
 export function buySupplies(
   state: GameState,
   item: keyof GameState['inventory'],

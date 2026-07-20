@@ -1,7 +1,15 @@
 import Phaser from 'phaser';
 import { t, techName, techDesc, locName } from '../i18n';
 import { getState, mutate, saveGame } from '../state';
-import { buySupplies, craftSalve, marketPrices, unlockTechnique, upgradeBath } from '../systems/economy';
+import {
+  buySupplies,
+  sellSupplies,
+  sellPrice,
+  craftSalve,
+  marketPrices,
+  unlockTechnique,
+  upgradeBath,
+} from '../systems/economy';
 import { repairCart, restHorse } from '../systems/travel';
 import { buyProperty, getLocalBath } from '../systems/property';
 import { TECHNIQUES } from '../data/techniques';
@@ -40,12 +48,12 @@ export class MarketScene extends Phaser.Scene {
         this,
         130,
         y,
-        `${t(`inv_${item}`)}: ${inv}  —  ${prices[item]} ${t('coin')}`,
-        { fontSize: '16px' },
+        `${t(`inv_${item}`)}: ${inv}  —  ${t('buy')} ${prices[item]} · ${t('sell')} ${sellPrice(prices[item]!)}`,
+        { fontSize: '15px' },
       );
       makeButton(
         this,
-        900,
+        806,
         y + 10,
         `${t('buy')} +1`,
         () => {
@@ -55,11 +63,11 @@ export class MarketScene extends Phaser.Scene {
           saveGame();
           this.scene.restart();
         },
-        { width: 120, height: 32, fontSize: '14px' },
+        { width: 132, height: 32, fontSize: '14px', noHotkey: true },
       );
       makeButton(
         this,
-        1040,
+        946,
         y + 10,
         `${t('buy')} +5`,
         () => {
@@ -69,7 +77,24 @@ export class MarketScene extends Phaser.Scene {
           saveGame();
           this.scene.restart();
         },
-        { width: 120, height: 32, fontSize: '14px' },
+        { width: 132, height: 32, fontSize: '14px', noHotkey: true },
+      );
+      // Selling was never implemented, yet `cannot_afford_day` told the player
+      // to do exactly this when they ran out of coin. Disabled rather than
+      // hidden when the shelf is empty, so the option is visibly there.
+      makeButton(
+        this,
+        1086,
+        y + 10,
+        `${t('sell')} +1`,
+        () => {
+          mutate((st) => {
+            sellSupplies(st, item as keyof typeof st.inventory, 1, prices[item]!);
+          });
+          saveGame();
+          this.scene.restart();
+        },
+        { width: 132, height: 32, fontSize: '14px', disabled: inv < 1, fill: 0x5a4a2f, noHotkey: true },
       );
     });
 
@@ -147,7 +172,9 @@ export class StudyScene extends Phaser.Scene {
         this,
         1140,
         y + 8,
-        hasHand ? t('unlock') : t('need_skill'),
+        // Short form: the full sentence wraps to three lines in a 120px
+        // button and pushed into the rows above and below.
+        hasHand ? t('unlock') : t('need_skill_short'),
         () => {
           mutate((st) => unlockTechnique(st, tech.id, price));
           audio.sfx('page');
