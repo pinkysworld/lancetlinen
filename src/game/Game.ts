@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, RENDER_HEIGHT, RENDER_SCALE, RENDER_WIDTH } from './types';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
-import { MainMenuScene, NameEntryScene } from './scenes/MainMenuScene';
+import { MainMenuScene } from './scenes/MainMenuScene';
+import { CharacterScene } from './scenes/CharacterScene';
 import { HubScene, BathhouseScene } from './scenes/HubScene';
 import { TreatmentScene } from './scenes/TreatmentScene';
 import { TravelMapScene, TravelResultScene } from './scenes/TravelScene';
@@ -64,7 +65,7 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
       BootScene,
       PreloadScene,
       MainMenuScene,
-      NameEntryScene,
+      CharacterScene,
       DialogueScene,
       HubScene,
       BathhouseScene,

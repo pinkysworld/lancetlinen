@@ -17,6 +17,7 @@ import { ensurePolitics } from './systems/politics';
 import { ensureJournal } from './systems/journal';
 import { ensureReputation } from './systems/reputation';
 import { getLocale, t } from './i18n';
+import { ORIGINS, originById, applyOriginStats } from './data/origins';
 
 export function defaultStats(): Stats {
   return { hand: 3, eye: 3, tongue: 2, back: 3, soul: 3 };
@@ -34,26 +35,35 @@ export function defaultInventory(): Inventory {
   };
 }
 
-export function createNewGame(playerName: string, locale: Locale = 'en'): GameState {
+export function createNewGame(
+  playerName: string,
+  locale: Locale = 'en',
+  originId = ORIGINS[0]!.id,
+): GameState {
+  // Where the Bader came from sets the opening hand: stats, purse, standing and
+  // a technique or two. Previously every run started identical.
+  const origin = originById(originId);
   return {
     version: 2,
     playerName: playerName || 'Bader',
+    originId: origin.id,
     locale,
     day: 1,
     weekday: 0,
     season: 0,
     year: 1382,
     locationId: 'road_camp',
-    coin: 35,
+    coin: Math.max(5, 35 + origin.coin),
     debt: 0,
     ethics: 50,
     guildRank: 'apprentice',
     guildFavor: 0,
     churchHeat: 0,
     councilFavor: 0,
-    stats: defaultStats(),
+    stats: applyOriginStats(defaultStats(), origin),
     techniqueXp: {},
-    unlockedTechniques: [...STARTER_TECHNIQUES],
+    // Deduped: an origin may grant something already in the starter set.
+    unlockedTechniques: [...new Set([...STARTER_TECHNIQUES, ...origin.techniques])],
     inventory: defaultInventory(),
     bathhouse: {
       owned: false,
@@ -118,7 +128,8 @@ export function createNewGame(playerName: string, locale: Locale = 'en'): GameSt
     repFolk: 40,
     repElite: 15,
     repFame: 5,
-    honour: 30,
+    // The spine: a skilled origin generally starts disreputable.
+    honour: Math.max(4, Math.min(60, 30 + origin.honour)),
   };
 }
 

@@ -560,6 +560,8 @@ export class CityEventScene extends Phaser.Scene {
     void audio.setContext('city_event');
     audio.sfx('crowd');
     drawBackground(this, 'dark');
+    // A city event happens in the streets; it was showing bare gradient.
+    addManagementBackground(this, 'bg_market');
     panel(this, GAME_WIDTH / 2 - 320, 160, 640, 340);
     titleText(this, GAME_WIDTH / 2, 200, t('city_event'), '28px');
     bodyText(this, GAME_WIDTH / 2, 300, t(data.textKey.replace(/\./g, '_')), {

@@ -216,6 +216,8 @@ export interface GameSettings {
 export interface GameState {
   version: number;
   playerName: string;
+  /** Which `data/origins.ts` entry the run was created with. */
+  originId?: string;
   locale: Locale;
   day: number;
   weekday: number;

@@ -10,6 +10,7 @@ import { ads, ADS_ENABLED } from '../ads/AdService';
 import { isTouchDevice } from '../mobile';
 import { transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
+import { addManagementBackground } from '../ui/art';
 
 export class TravelMapScene extends Phaser.Scene {
   constructor() {
@@ -130,6 +131,8 @@ export class TravelResultScene extends Phaser.Scene {
   create(data: { messageKey: string; days: number; encounter: string; toId: string }): void {
     void audio.setContext('travel_result');
     drawBackground(this, 'dark');
+    // Arrival after a journey — the road, not a black screen.
+    addManagementBackground(this, 'bg_road');
     panel(this, GAME_WIDTH / 2 - 300, 180, 600, 320);
     titleText(this, GAME_WIDTH / 2, 220, t('encounter'), '28px');
     bodyText(this, GAME_WIDTH / 2, 280, t('arrive', { days: data.days }), {

@@ -11,6 +11,7 @@ import { drawBackground, makeButton, bodyText, panel, titleText, hudText, addHud
 import { audio } from '../audio/AudioManager';
 import { sceneBackground, transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
+import { addManagementBackground } from '../ui/art';
 // audio contexts: market / study / property
 
 export class MarketScene extends Phaser.Scene {
@@ -85,6 +86,8 @@ export class StudyScene extends Phaser.Scene {
   create(): void {
     void audio.setContext('study');
     drawBackground(this, 'room');
+    // Study is reading and practice — the monastery library reads right.
+    addManagementBackground(this, 'bg_monastery');
     titleText(this, GAME_WIDTH / 2, 40, t('study'), '32px');
     const s = getState();
     hudText(this, 50, 80, `${t('coin')}: ${s.coin}`);
@@ -178,6 +181,8 @@ export class UpgradesScene extends Phaser.Scene {
   create(): void {
     void audio.setContext('property');
     drawBackground(this, 'room');
+    // Upgrades are work on the bathhouse itself.
+    addManagementBackground(this, 'art_bath');
     titleText(this, GAME_WIDTH / 2, 50, t('upgrades'), '32px');
     const s = getState();
     const local = getLocalBath(s);
