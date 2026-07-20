@@ -3,6 +3,17 @@
  * Themes change with scene/scenario; ambience layers match location mood.
  */
 
+import { THEMES, type MusicId } from './themes';
+export type { MusicId } from './themes';
+import {
+  MODES,
+  droneFreqs,
+  noteToSemitone,
+  semitoneToFreq,
+  varyPhrase,
+  type ModeName,
+} from './theory';
+
 export type SfxId =
   | 'click'
   | 'coin'
@@ -35,22 +46,6 @@ export type SfxId =
   | 'wound'
   | 'pulse';
 
-export type MusicId =
-  | 'menu'
-  | 'bath'
-  | 'road'
-  | 'tense'
-  | 'market'
-  | 'monastery'
-  | 'war'
-  | 'politics'
-  | 'family'
-  | 'dialogue'
-  | 'travel_result'
-  | 'ending'
-  | 'night'
-  | 'none';
-
 export type AmbienceId = 'steam' | 'crowd' | 'wind' | 'fire' | 'camp' | 'none';
 
 /** Scene / situation → music + ambience */
@@ -81,234 +76,6 @@ export type AudioContextId =
   | 'codex'
   | 'ending'
   | 'city_event';
-
-interface ThemeSpec {
-  // Drone fundamentals (Hz)
-  drones: number[];
-  droneTypes: OscillatorType[];
-  droneVol: number[];
-  // Melody pool (Hz)
-  notes: number[];
-  noteInterval: [number, number]; // min/max ms between plucks
-  noteVol: number;
-  noteType: OscillatorType;
-  noteDur: number;
-  // LFO on master
-  lfoRate: number;
-  lfoDepth: number;
-  // Optional soft fifth/pad
-  padFifth: boolean;
-  // Percussive tick (war/road)
-  pulseRate?: number;
-  pulseFreq?: number;
-  pulseVol?: number;
-  // Filter for darkness
-  lowpass?: number;
-}
-
-const THEMES: Record<Exclude<MusicId, 'none'>, ThemeSpec> = {
-  // Modal-ish lute drone, calm title
-  menu: {
-    drones: [98, 147],
-    droneTypes: ['sine', 'triangle'],
-    droneVol: [0.22, 0.1],
-    notes: [196, 220, 247, 294, 330, 294, 247, 220],
-    noteInterval: [900, 1600],
-    noteVol: 0.11,
-    noteType: 'triangle',
-    noteDur: 0.45,
-    lfoRate: 0.08,
-    lfoDepth: 0.03,
-    padFifth: true,
-    lowpass: 2200,
-  },
-  // Warm bathhouse — steam + soft major-ish
-  bath: {
-    drones: [87, 130.8],
-    droneTypes: ['sine', 'sine'],
-    droneVol: [0.2, 0.08],
-    notes: [174, 196, 220, 261, 294, 261, 220],
-    noteInterval: [1100, 2000],
-    noteVol: 0.09,
-    noteType: 'sine',
-    noteDur: 0.55,
-    lfoRate: 0.12,
-    lfoDepth: 0.045,
-    padFifth: true,
-    lowpass: 1800,
-  },
-  // Road cart — walking bass feel
-  road: {
-    drones: [73, 110],
-    droneTypes: ['triangle', 'sine'],
-    droneVol: [0.18, 0.07],
-    notes: [146, 164, 174, 196, 174, 164],
-    noteInterval: [700, 1100],
-    noteVol: 0.1,
-    noteType: 'triangle',
-    noteDur: 0.28,
-    lfoRate: 0.2,
-    lfoDepth: 0.03,
-    padFifth: false,
-    pulseRate: 1.6,
-    pulseFreq: 70,
-    pulseVol: 0.06,
-    lowpass: 1600,
-  },
-  // Epidemic / danger
-  tense: {
-    drones: [55, 58, 82],
-    droneTypes: ['sawtooth', 'sine', 'triangle'],
-    droneVol: [0.06, 0.14, 0.08],
-    notes: [110, 116, 123, 104],
-    noteInterval: [500, 900],
-    noteVol: 0.08,
-    noteType: 'sawtooth',
-    noteDur: 0.35,
-    lfoRate: 2.8,
-    lfoDepth: 0.07,
-    padFifth: false,
-    lowpass: 900,
-  },
-  // Market bustle
-  market: {
-    drones: [110, 165],
-    droneTypes: ['triangle', 'sine'],
-    droneVol: [0.14, 0.08],
-    notes: [220, 247, 277, 330, 370, 330, 277],
-    noteInterval: [450, 800],
-    noteVol: 0.1,
-    noteType: 'triangle',
-    noteDur: 0.22,
-    lfoRate: 0.25,
-    lfoDepth: 0.04,
-    padFifth: true,
-    pulseRate: 2.2,
-    pulseFreq: 90,
-    pulseVol: 0.04,
-    lowpass: 2800,
-  },
-  // Monastery sparse / open fifths
-  monastery: {
-    drones: [87, 130.8, 174],
-    droneTypes: ['sine', 'sine', 'sine'],
-    droneVol: [0.18, 0.12, 0.05],
-    notes: [174, 196, 220, 261, 220],
-    noteInterval: [1800, 3200],
-    noteVol: 0.07,
-    noteType: 'sine',
-    noteDur: 1.1,
-    lfoRate: 0.05,
-    lfoDepth: 0.025,
-    padFifth: true,
-    lowpass: 1400,
-  },
-  // War camp drums + low drone
-  war: {
-    drones: [65, 98],
-    droneTypes: ['sawtooth', 'triangle'],
-    droneVol: [0.08, 0.12],
-    notes: [130, 146, 123, 110],
-    noteInterval: [900, 1400],
-    noteVol: 0.07,
-    noteType: 'triangle',
-    noteDur: 0.3,
-    lfoRate: 0.4,
-    lfoDepth: 0.03,
-    padFifth: false,
-    pulseRate: 2.0,
-    pulseFreq: 55,
-    pulseVol: 0.12,
-    lowpass: 1200,
-  },
-  // Formal council / guild
-  politics: {
-    drones: [98, 123, 147],
-    droneTypes: ['sine', 'triangle', 'sine'],
-    droneVol: [0.16, 0.08, 0.05],
-    notes: [196, 233, 262, 294, 262, 233],
-    noteInterval: [1000, 1800],
-    noteVol: 0.09,
-    noteType: 'triangle',
-    noteDur: 0.5,
-    lfoRate: 0.1,
-    lfoDepth: 0.03,
-    padFifth: true,
-    lowpass: 2000,
-  },
-  // Gentle household
-  family: {
-    drones: [116, 174],
-    droneTypes: ['sine', 'sine'],
-    droneVol: [0.16, 0.09],
-    notes: [233, 262, 294, 349, 392, 349, 294],
-    noteInterval: [1000, 1700],
-    noteVol: 0.1,
-    noteType: 'sine',
-    noteDur: 0.5,
-    lfoRate: 0.09,
-    lfoDepth: 0.035,
-    padFifth: true,
-    lowpass: 2400,
-  },
-  // Soft under dialogue
-  dialogue: {
-    drones: [92, 138],
-    droneTypes: ['sine', 'triangle'],
-    droneVol: [0.14, 0.06],
-    notes: [185, 208, 233, 277],
-    noteInterval: [1600, 2800],
-    noteVol: 0.055,
-    noteType: 'sine',
-    noteDur: 0.7,
-    lfoRate: 0.07,
-    lfoDepth: 0.03,
-    padFifth: false,
-    lowpass: 1500,
-  },
-  travel_result: {
-    drones: [82, 123],
-    droneTypes: ['triangle', 'sine'],
-    droneVol: [0.15, 0.07],
-    notes: [164, 185, 196, 220],
-    noteInterval: [800, 1300],
-    noteVol: 0.08,
-    noteType: 'triangle',
-    noteDur: 0.4,
-    lfoRate: 0.15,
-    lfoDepth: 0.03,
-    padFifth: false,
-    lowpass: 1700,
-  },
-  ending: {
-    drones: [98, 147, 196],
-    droneTypes: ['sine', 'sine', 'triangle'],
-    droneVol: [0.2, 0.12, 0.06],
-    notes: [196, 220, 247, 294, 330, 392, 330, 294],
-    noteInterval: [700, 1200],
-    noteVol: 0.12,
-    noteType: 'triangle',
-    noteDur: 0.6,
-    lfoRate: 0.1,
-    lfoDepth: 0.04,
-    padFifth: true,
-    lowpass: 2600,
-  },
-  night: {
-    drones: [73, 110],
-    droneTypes: ['sine', 'sine'],
-    droneVol: [0.16, 0.07],
-    notes: [147, 165, 185, 196],
-    noteInterval: [2000, 3500],
-    noteVol: 0.05,
-    noteType: 'sine',
-    noteDur: 0.9,
-    lfoRate: 0.06,
-    lfoDepth: 0.04,
-    padFifth: false,
-    lowpass: 1000,
-  },
-};
 
 const CONTEXT_MAP: Record<AudioContextId, { music: MusicId; ambience: AmbienceId }> = {
   main_menu: { music: 'menu', ambience: 'none' },
@@ -357,6 +124,10 @@ class AudioManager {
   private currentMusic: MusicId = 'none';
   private currentAmb: AmbienceId = 'none';
   private currentContext: AudioContextId | null = null;
+  /** Impulse responses are expensive to build; keyed by room size. */
+  private irCache = new Map<number, AudioBuffer>();
+  /** Incremented per music() call; stale calls abort. See the guard there. */
+  private musicGeneration = 0;
   private _visBound = false;
 
   get isMuted(): boolean {
@@ -750,12 +521,33 @@ class AudioManager {
     }
   }
 
+  /**
+   * Start a theme.
+   *
+   * The previous implementation drove the melody from `setTimeout` with a
+   * randomised gap of 900-1600 ms and walked a note list at random. That
+   * produces no pulse and no phrasing — the ear hears scattered tones rather
+   * than music, which was the main reason the score sounded poor.
+   *
+   * This schedules against `ctx.currentTime` on a lookahead window, so notes
+   * land on a real beat grid regardless of main-thread jitter, and draws its
+   * material from the theme's phrases rather than from a random walk.
+   */
   async music(id: MusicId): Promise<void> {
     if (id === this.currentMusic && this.musicNodes) return;
+
+    // Generation guard. `await this.unlock()` below opens a window in which a
+    // second call can arrive: both run `stopMusic()` while `musicNodes` is
+    // still null, then both assign — and the first graph is overwritten while
+    // its oscillators are still running, with nothing left holding a reference
+    // to stop them. Two quick scene changes were enough to strand a drone
+    // forever, and they accumulate in unrelated keys until the score is mud.
+    const gen = ++this.musicGeneration;
     this.currentMusic = id;
     this.stopMusic();
     if (id === 'none') return;
     await this.unlock();
+    if (gen !== this.musicGeneration) return;
     if (!this.ctx || this.muted) return;
 
     const vol = this.gMusic();
@@ -763,124 +555,260 @@ class AudioManager {
 
     const spec = THEMES[id];
     const ctx = this.ctx;
-    const master = ctx.createGain();
-    master.gain.value = 0;
-    // Fade in
-    master.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.6);
 
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = spec.lowpass ?? 2000;
-    filter.Q.value = 0.5;
-    master.connect(filter);
-    filter.connect(ctx.destination);
+    // ── Signal chain ──────────────────────────────────────────────────
+    // Everything in the theme runs through `bus`. The old code connected the
+    // drones here but sent the melody straight to `ctx.destination`, so the
+    // theme's lowpass, its LFO and — worst — its fade-out never applied to the
+    // notes. Scene changes left plucks ringing over the next screen.
+    const bus = ctx.createGain();
+    bus.gain.value = 0;
+    bus.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.8);
+
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.frequency.value = spec.lowpass;
+    tone.Q.value = 0.4;
+    bus.connect(tone);
+
+    // Reverb, so the score is not bone dry. A nave gets far more than a road.
+    const dry = ctx.createGain();
+    dry.gain.value = 1 - spec.reverb * 0.5;
+    tone.connect(dry);
+    dry.connect(ctx.destination);
+
+    const convolver = ctx.createConvolver();
+    convolver.buffer = this.impulseResponse(spec.reverb);
+    const wet = ctx.createGain();
+    wet.gain.value = spec.reverb;
+    tone.connect(convolver);
+    convolver.connect(wet);
+    wet.connect(ctx.destination);
 
     const oscillators: OscillatorNode[] = [];
-    const gains: GainNode[] = [];
 
-    spec.drones.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = spec.droneTypes[i] ?? 'sine';
-      osc.frequency.value = freq;
-      // Slight detune for richness
-      osc.detune.value = (i - 1) * 4;
-      g.gain.value = (spec.droneVol[i] ?? 0.1) * 0.9;
-      osc.connect(g);
-      g.connect(master);
-      osc.start();
-      oscillators.push(osc);
-      gains.push(g);
+    // ── Drone ─────────────────────────────────────────────────────────
+    const drones = droneFreqs(spec.root, spec.droneOctave);
+    drones.forEach((freq, i) => {
+      // Two oscillators per drone voice, slightly apart, so it beats gently
+      // instead of sitting dead still.
+      for (const cents of [-4, 4]) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = i === 0 ? 'sawtooth' : 'triangle';
+        osc.frequency.value = freq;
+        osc.detune.value = cents;
+        g.gain.value = (spec.droneVol / drones.length) * (i === 0 ? 1 : 0.55);
+        osc.connect(g);
+        g.connect(bus);
+        osc.start();
+        oscillators.push(osc);
+      }
     });
 
-    if (spec.padFifth && spec.drones[0]) {
-      const pad = ctx.createOscillator();
-      const pg = ctx.createGain();
-      pad.type = 'sine';
-      pad.frequency.value = spec.drones[0] * 1.5;
-      pg.gain.value = 0.04;
-      pad.connect(pg);
-      pg.connect(master);
-      pad.start();
-      oscillators.push(pad);
-      gains.push(pg);
-    }
-
-    // Master LFO
+    // Slow breath on the whole bed.
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
-    lfo.frequency.value = spec.lfoRate;
-    lfoGain.gain.value = spec.lfoDepth * vol;
+    lfo.frequency.value = 0.07;
+    lfoGain.gain.value = vol * 0.05;
     lfo.connect(lfoGain);
-    lfoGain.connect(master.gain);
+    lfoGain.connect(bus.gain);
     lfo.start();
     oscillators.push(lfo);
 
-    // Percussive pulse (road / war)
-    let pulseTimer: number | null = null;
-    if (spec.pulseRate && spec.pulseFreq) {
-      const beat = () => {
-        if (this.muted || this.currentMusic !== id) return;
-        this.beep(spec.pulseFreq!, 0.06, this.gMusic() * (spec.pulseVol ?? 0.05), 'triangle');
-        this.noise(0.04, this.gMusic() * (spec.pulseVol ?? 0.05) * 0.5, 200);
-        pulseTimer = window.setTimeout(beat, 1000 / (spec.pulseRate ?? 1));
-      };
-      pulseTimer = window.setTimeout(beat, 400);
-    }
+    // ── Lookahead scheduler ───────────────────────────────────────────
+    const secPerBeat = 60 / spec.bpm;
+    const rootSemi = noteToSemitone(spec.root) + spec.melodyOctave * 12;
+    let nextTime = ctx.currentTime + 0.9; // let the drone establish first
+    let phraseIdx = 0;
+    let beatCount = 0;
 
-    // Melodic plucks — sequential through motif with variation
-    let noteIdx = 0;
-    let pluckTimer: number | null = null;
-    const pluck = () => {
+    const scheduleAhead = () => {
       if (this.muted || this.currentMusic !== id) return;
-      const notes = spec.notes;
-      // Mostly walk the motif, occasional jump
-      if (Math.random() < 0.75) noteIdx = (noteIdx + 1) % notes.length;
-      else noteIdx = Math.floor(Math.random() * notes.length);
-      const n = notes[noteIdx]!;
-      // Soft attack pluck
-      this.beep(n, spec.noteDur, this.gMusic() * spec.noteVol, spec.noteType);
-      // Quiet octave double sometimes
-      if (Math.random() < 0.25) {
-        this.beep(n * 2, spec.noteDur * 0.6, this.gMusic() * spec.noteVol * 0.35, 'sine', 0.02);
-      }
-      const wait =
-        spec.noteInterval[0] + Math.random() * (spec.noteInterval[1] - spec.noteInterval[0]);
-      pluckTimer = window.setTimeout(pluck, wait);
-    };
-    pluckTimer = window.setTimeout(pluck, 500 + Math.random() * 400);
+      // Fill the next second of music. Anything already scheduled in the audio
+      // clock keeps its timing even if this callback runs late.
+      while (nextTime < ctx.currentTime + 1.0) {
+        const phrase = varyPhrase(
+          spec.phrases[phraseIdx % spec.phrases.length]!,
+          Math.random,
+        );
+        phraseIdx++;
 
-    this.musicNodes = {
+        let t = nextTime;
+        phrase.degrees.forEach((deg, i) => {
+          const beats = phrase.beats[i]!;
+          const freq = this.degreeToFreq(rootSemi, spec.mode, deg);
+          this.pluck(freq, beats * secPerBeat, this.gMusic() * spec.melodyVol, bus, t);
+          // A quiet octave above on longer notes, like a citole's course.
+          if (beats >= 2 && Math.random() < 0.3) {
+            this.pluck(freq * 2, beats * secPerBeat * 0.5,
+              this.gMusic() * spec.melodyVol * 0.25, bus, t + 0.03);
+          }
+          t += beats * secPerBeat;
+        });
+
+        // Rest, rounded to whole bars so the pulse survives the silence.
+        const restBars =
+          spec.restBars[0] +
+          Math.floor(Math.random() * (spec.restBars[1] - spec.restBars[0] + 1));
+        nextTime = t + restBars * spec.beatsPerBar * secPerBeat;
+      }
+
+      // Drum, on its own grid.
+      if (spec.drum) {
+        const d = spec.drum;
+        while (beatCount * secPerBeat < nextTime - ctx.currentTime + 1.0) {
+          const at = ctx.currentTime + beatCount * secPerBeat;
+          if (at > ctx.currentTime && beatCount % d.everyBeats === 0) {
+            this.drumHit(d.freq, this.gMusic() * d.vol, bus, at);
+          }
+          beatCount++;
+        }
+      }
+    };
+
+    scheduleAhead();
+    const timer = window.setInterval(scheduleAhead, 250);
+
+    const nodes = {
       stop: () => {
-        // Fade out
+        window.clearInterval(timer);
         try {
-          master.gain.cancelScheduledValues(ctx.currentTime);
-          master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
-          master.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+          bus.gain.cancelScheduledValues(ctx.currentTime);
+          bus.gain.setValueAtTime(bus.gain.value, ctx.currentTime);
+          bus.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.5);
         } catch {
           /* ignore */
         }
-        const stopAt = ctx.currentTime + 0.4;
+        const stopAt = ctx.currentTime + 0.55;
         for (const osc of oscillators) {
           try {
             osc.stop(stopAt);
           } catch {
-            /* already */
+            /* already stopped */
           }
         }
-        if (pluckTimer) clearTimeout(pluckTimer);
-        if (pulseTimer) clearTimeout(pulseTimer);
         window.setTimeout(() => {
-          try {
-            master.disconnect();
-            filter.disconnect();
-          } catch {
-            /* ignore */
+          for (const n of [bus, tone, dry, convolver, wet]) {
+            try {
+              n.disconnect();
+            } catch {
+              /* ignore */
+            }
           }
-        }, 450);
+        }, 700);
       },
     };
+
+    // Building the graph is synchronous, but `unlock()` above was not — check
+    // once more before publishing, and tear down immediately if this call has
+    // already been superseded. Without this the drone would outlive its owner.
+    if (gen !== this.musicGeneration) {
+      nodes.stop();
+      return;
+    }
+    this.musicNodes = nodes;
   }
+
+  /** Frequency of a scale degree above a root, in a mode. */
+  private degreeToFreq(rootSemi: number, mode: ModeName, degree: number): number {
+    const steps = MODES[mode];
+    const octave = Math.floor(degree / steps.length);
+    const idx = ((degree % steps.length) + steps.length) % steps.length;
+    return semitoneToFreq(rootSemi + steps[idx]! + octave * 12);
+  }
+
+  /**
+   * A plucked string, rather than the flat `beep` every note used to be.
+   *
+   * Three things make it read as an instrument: two detuned oscillators, a
+   * fast attack with a long decay, and a filter that closes as the note dies —
+   * which is what a real plucked string does as its higher partials fade.
+   */
+  private pluck(
+    freq: number,
+    dur: number,
+    vol: number,
+    dest: AudioNode,
+    at: number,
+  ): void {
+    if (!this.ctx || vol <= 0) return;
+    const ctx = this.ctx;
+    const g = ctx.createGain();
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(Math.min(7000, freq * 7), at);
+    f.frequency.exponentialRampToValueAtTime(Math.max(200, freq * 1.6), at + dur * 0.8);
+    f.Q.value = 1.1;
+
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+
+    for (const [type, cents, mix] of [
+      ['triangle', -5, 1],
+      ['sawtooth', 5, 0.28],
+    ] as const) {
+      const osc = ctx.createOscillator();
+      const og = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      osc.detune.value = cents;
+      og.gain.value = mix;
+      osc.connect(og);
+      og.connect(f);
+      osc.start(at);
+      osc.stop(at + dur + 0.05);
+    }
+    f.connect(g);
+    g.connect(dest);
+  }
+
+  /** Soft tabor / cart thud. Pitch drops as it decays, like a struck skin. */
+  private drumHit(freq: number, vol: number, dest: AudioNode, at: number): void {
+    if (!this.ctx || vol <= 0) return;
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, at);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.6, at + 0.12);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+    osc.connect(g);
+    g.connect(dest);
+    osc.start(at);
+    osc.stop(at + 0.3);
+  }
+
+  /**
+   * Synthetic impulse response — exponentially decaying noise.
+   *
+   * Cached per room size, because building one allocates a couple of seconds
+   * of stereo audio and themes change often.
+   */
+  private impulseResponse(amount: number): AudioBuffer | null {
+    if (!this.ctx) return null;
+    const key = Math.round(amount * 10);
+    const cached = this.irCache.get(key);
+    if (cached) return cached;
+
+    const ctx = this.ctx;
+    const seconds = 0.8 + amount * 2.4;
+    const len = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) {
+        // Steeper decay for small rooms; the tail is what sells a big space.
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2 + (1 - amount) * 2);
+      }
+    }
+    this.irCache.set(key, buf);
+    return buf;
+  }
+
 
   // ─── Ambience loops ──────────────────────────────────────
 
