@@ -1,8 +1,15 @@
 # Art round 5 — origin portraits, and the wordmark
 
-**Read `ART_TODO_4.md` first.** It is still unstarted and its Priority 1 (the
-logo) outranks everything here. This file adds what the character-creation
-rewrite needs, plus the two backgrounds a full audit found genuinely missing.
+**Status (2026-07-20):** Done. Six `port_origin_*.webp` (1024²), `bg_study` and
+`bg_upgrades` (1920×1080 WebP) are in `public/assets/`, registered in
+`PreloadScene` (origin portraits in ART_CORE so character creation never falls
+back), and used by `CharacterScene` / `StudyScene` / `UpgradesScene`. Bath widow
+portrait re-edited without the off-brief model-house prop. Logo work lives in
+`ART_TODO_4.md` (P1 complete).
+
+**Read `ART_TODO_4.md` first** for the wordmark history. This file adds what the
+character-creation rewrite needs, plus the two backgrounds a full audit found
+genuinely missing.
 
 House style, capsule sizes and the standing "no text, no watermark" suffix are
 in `ART_WORK.md`. Not repeated here.

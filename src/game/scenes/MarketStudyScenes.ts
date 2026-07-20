@@ -87,7 +87,7 @@ export class StudyScene extends Phaser.Scene {
     void audio.setContext('study');
     drawBackground(this, 'room');
     // Study is reading and practice — the monastery library reads right.
-    addManagementBackground(this, 'bg_monastery');
+    addManagementBackground(this, 'bg_study');
     titleText(this, GAME_WIDTH / 2, 40, t('study'), '32px');
     const s = getState();
     hudText(this, 50, 80, `${t('coin')}: ${s.coin}`);
@@ -182,7 +182,7 @@ export class UpgradesScene extends Phaser.Scene {
     void audio.setContext('property');
     drawBackground(this, 'room');
     // Upgrades are work on the bathhouse itself.
-    addManagementBackground(this, 'art_bath');
+    addManagementBackground(this, 'bg_upgrades');
     titleText(this, GAME_WIDTH / 2, 50, t('upgrades'), '32px');
     const s = getState();
     const local = getLocalBath(s);

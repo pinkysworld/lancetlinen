@@ -37,6 +37,13 @@ const ART_CORE: [string, string][] = [
   ['bg_market', 'assets/bg_market.webp'],
   ['port_berthold', 'assets/port_berthold.webp'],
   ['port_peasant', 'assets/port_peasant.webp'],
+  // Origin portraits — needed on the first New Game screen (character creation)
+  ['port_origin_bader_son', 'assets/port_origin_bader_son.webp'],
+  ['port_origin_field_surgeon', 'assets/port_origin_field_surgeon.webp'],
+  ['port_origin_monastery_scholar', 'assets/port_origin_monastery_scholar.webp'],
+  ['port_origin_journeyman', 'assets/port_origin_journeyman.webp'],
+  ['port_origin_bath_widow', 'assets/port_origin_bath_widow.webp'],
+  ['port_origin_executioner_kin', 'assets/port_origin_executioner_kin.webp'],
 ];
 
 /**
@@ -89,6 +96,8 @@ const ART_DEFERRED: [string, string][] = [
   ['bg_politics', 'assets/bg_politics.webp'],
   ['bg_mentors', 'assets/bg_mentors.webp'],
   ['bg_settings', 'assets/bg_settings.webp'],
+  ['bg_study', 'assets/bg_study.webp'],
+  ['bg_upgrades', 'assets/bg_upgrades.webp'],
   ['bg_noble_house', 'assets/bg_noble_house.webp'],
   ['bg_plague', 'assets/bg_plague.webp'],
   ['bg_festival', 'assets/bg_festival.webp'],

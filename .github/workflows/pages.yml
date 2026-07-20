@@ -1,0 +1,70 @@
+# Build the web version and publish it to GitHub Pages.
+#
+# The repository is public so the game can be played from a browser during
+# development. Note what that means: the published page is the full game, and
+# anyone with the URL can play it. That is a deliberate choice for now — see
+# the distribution section in EARLY_ACCESS.md before a commercial release.
+#
+# `vite.config.ts` already sets `base: './'`, so the build works unchanged
+# under a project subpath (`/lancetlinen/`) as well as locally and in Electron.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master, main]
+  # Lets you redeploy by hand from the Actions tab without a new commit.
+  workflow_dispatch:
+
+# Required for the deploy-pages action to publish.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; don't cancel a running one, let it finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `--omit=optional` skips steamworks.js: it is a native module, it is
+      # irrelevant to the web build, and building it on CI only adds risk.
+      - run: npm ci --omit=optional
+
+      # Fail the deploy rather than publishing a broken build.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      # The web build, not build:desktop — the ad hooks are already compiled
+      # out by ADS_ENABLED unless VITE_ADS is set, which it is not here.
+      - name: Build
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

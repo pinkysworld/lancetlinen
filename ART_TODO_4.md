@@ -1,5 +1,10 @@
 # Art round 4 — the wordmark, and the Steam store set
 
+**Status (2026-07-20):** Priority 1 done — `logo_title.png` has real blackletter
+"L"s (reads *Lancet & Linen*), true RGBA transparency, no magenta fringe, and
+remains readable when scaled to 231×87. Priority 2 (Steam capsules) still waits
+for submission day.
+
 Two jobs. The first is a real defect found in play-testing and should be done
 first; the second is needed on submission day, not before.
 
