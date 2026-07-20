@@ -31,19 +31,48 @@ export function bgKeyForLocation(locationId: string): string {
 }
 
 /** Portrait pools per class — first entry is the original single face */
-const CLASS_PORTRAIT_POOLS: Record<PatientClass, string[]> = {
-  peasant: ['port_peasant', 'port_peasant2', 'port_peasant3', 'port_peasant4', 'port_woman'],
-  artisan: ['port_artisan', 'port_artisan2', 'port_artisan3'],
-  merchant: ['port_merchant', 'port_merchant2'],
-  soldier: ['port_soldier', 'port_soldier2', 'port_soldier3'],
-  clergy: ['port_clergy', 'port_clergy2', 'port_adelheid'],
-  noble: ['port_noble', 'port_noble2'],
-  beggar: ['port_beggar1', 'port_beggar2', 'port_peasant', 'port_sick'],
+/**
+ * Portrait pools, split by sex.
+ *
+ * They used to be one list per class, so a patient named from the male list
+ * could be handed a female face — "Claus Gerber" drawing `port_artisan2`, who
+ * is plainly a woman. Ten of the 25 portraits are female, so it was common.
+ *
+ * `soldier` has no female pool: town militia and campaign soldiery were men,
+ * and inventing a woman-at-arms to fill the table would be worse than falling
+ * back to the peasant faces, which is what `poolFor` does.
+ */
+const CLASS_PORTRAIT_POOLS: Record<PatientClass, { m: string[]; f: string[] }> = {
+  peasant: {
+    m: ['port_peasant', 'port_peasant3'],
+    f: ['port_peasant2', 'port_peasant4', 'port_woman'],
+  },
+  artisan: { m: ['port_artisan', 'port_artisan3'], f: ['port_artisan2'] },
+  merchant: { m: ['port_merchant'], f: ['port_merchant2'] },
+  soldier: { m: ['port_soldier', 'port_soldier2', 'port_soldier3'], f: [] },
+  clergy: { m: ['port_clergy'], f: ['port_clergy2', 'port_adelheid'] },
+  noble: { m: ['port_merchant'], f: ['port_noble', 'port_noble2'] },
+  beggar: { m: ['port_beggar1', 'port_sick'], f: ['port_beggar2'] },
 };
 
+/** Falls back to the other sex, then to peasants, rather than returning []. */
+function poolFor(cls: PatientClass, female: boolean): string[] {
+  const p = CLASS_PORTRAIT_POOLS[cls] ?? CLASS_PORTRAIT_POOLS.peasant;
+  const want = female ? p.f : p.m;
+  if (want.length) return want;
+  const other = female ? p.m : p.f;
+  if (other.length) return other;
+  const peas = CLASS_PORTRAIT_POOLS.peasant;
+  return female ? peas.f : peas.m;
+}
+
 /** Stable pick so the same patient keeps the same face if re-rendered */
-export function pickPortraitKey(patientClass: PatientClass, seed: string): string {
-  const pool = CLASS_PORTRAIT_POOLS[patientClass] ?? ['port_peasant'];
+export function pickPortraitKey(
+  patientClass: PatientClass,
+  seed: string,
+  female = false,
+): string {
+  const pool = poolFor(patientClass, female);
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return pool[h % pool.length]!;
@@ -100,8 +129,8 @@ export function portraitKeyForNpc(speakerKey: string): string {
   return 'port_berthold';
 }
 
-export function portraitKeyForPatientClass(c: PatientClass): string {
-  return CLASS_PORTRAIT_POOLS[c]?.[0] ?? 'port_peasant';
+export function portraitKeyForPatientClass(c: PatientClass, female = false): string {
+  return poolFor(c, female)[0] ?? 'port_peasant';
 }
 
 /** Prefer template-specific portrait, then complaint specialty, then class variant pool */
@@ -111,6 +140,7 @@ export function portraitKeyForPatient(patient: {
   complaintKey?: string;
   templateId?: string;
   uid?: string;
+  female?: boolean;
 }): string {
   if (patient.portraitKey) return patient.portraitKey;
   const c = patient.complaintKey ?? '';
@@ -130,7 +160,7 @@ export function portraitKeyForPatient(patient: {
     return 'port_sick';
   }
   const seed = patient.uid ?? patient.templateId ?? patient.class;
-  return pickPortraitKey(patient.class, seed);
+  return pickPortraitKey(patient.class, seed, patient.female ?? false);
 }
 
 /**

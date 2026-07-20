@@ -81,6 +81,14 @@ export interface PatientInstance {
   pulseRead: boolean;
   storyFlag?: string;
   portraitKey?: string;
+  /**
+   * Set when the name was drawn from the female list.
+   *
+   * Without it the portrait pools were picked by class alone, so "Claus
+   * Gerber" could be handed `port_artisan2` — a woman. Ten of the 25 patient
+   * portraits are female, so this happened often.
+   */
+  female?: boolean;
 }
 
 export type TreatmentResultKind = 'success' | 'partial' | 'fail' | 'death';

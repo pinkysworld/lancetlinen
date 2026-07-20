@@ -47,8 +47,10 @@ import {
 /**
  * Top of the technique list and the space it may occupy.
  *
- * Starts below the astrology warning, which is drawn at y≈98 and used to be
- * clipped by the first row.
+ * `TECH_LIST_TOP` is the *minimum* top. The header above it (help hint plus an
+ * optional astrology warning) wraps to different heights per language, so the
+ * real top is computed at render time and the list flows below it — in German
+ * the hint wrapped to two lines and the warning was drawn straight over it.
  */
 const TECH_LIST_TOP = 142;
 const TECH_LIST_BOTTOM = 600;
@@ -64,8 +66,8 @@ function techRowPitch(): number {
   return buttonRow(30, 6);
 }
 
-function techsPerPage(): number {
-  const usable = TECH_LIST_BOTTOM - TECH_LIST_TOP;
+function techsPerPage(top: number = TECH_LIST_TOP): number {
+  const usable = TECH_LIST_BOTTOM - top;
   return Math.max(4, Math.min(12, Math.floor(usable / techRowPitch())));
 }
 
@@ -295,18 +297,25 @@ export class TreatmentScene extends Phaser.Scene {
     // Techniques list
     panel(this, 580, 42, 660, 620);
     bodyText(this, 600, 52, t('technique_pick'), { fontSize: '18px', color: '#e8c547' });
-    bodyText(this, 600, 78, t('technique_green_hint'), {
+    // Flowing, not fixed: `technique_green_hint` wraps to two lines in German
+    // and the warning below it was pinned 20px down, so the two overlapped.
+    const hint = bodyText(this, 600, 78, t('technique_green_hint'), {
       fontSize: '12px',
       color: '#8a7a68',
       wordWrap: { width: 620 },
     });
+    let headY = hint.y + hint.height + 4;
     if (astro.mult < 1) {
-      bodyText(this, 600, 98, t('astro_blood_warn'), {
+      const warn = bodyText(this, 600, headY, t('astro_blood_warn'), {
         fontSize: '12px',
         color: '#c9a227',
         wordWrap: { width: 620 },
       });
+      headY = warn.y + warn.height + 4;
     }
+    // Never let the list start higher than its designed top, so short English
+    // strings do not pull the rows up into the panel heading.
+    const listTop = Math.max(TECH_LIST_TOP, headY + 6);
 
     const orderIdx = (id: string) => {
       const i = TECH_DISPLAY_ORDER.indexOf(id);
@@ -318,7 +327,7 @@ export class TreatmentScene extends Phaser.Scene {
     // Stable craft order. Sorting the *correct* techniques onto page one was
     // another way of handing the player the answer.
     const ordered = unlocked;
-    const perPage = techsPerPage();
+    const perPage = techsPerPage(listTop);
     const pitch = techRowPitch();
     const pages = Math.max(1, Math.ceil(ordered.length / perPage));
     if (this.techPage >= pages) this.techPage = 0;
@@ -329,7 +338,7 @@ export class TreatmentScene extends Phaser.Scene {
 
     slice.forEach((tech, i) => {
       const check = canUseTechnique(s, tech.id);
-      const y = TECH_LIST_TOP + i * pitch;
+      const y = listTop + i * pitch;
       // Marks a technique that *targets a humor the player believes is at
       // work* — not the correct answer. Several techniques share a humor, and
       // a wrong diagnosis marks the wrong ones.
@@ -370,7 +379,7 @@ export class TreatmentScene extends Phaser.Scene {
 
     if (pages > 1) {
       // Sits just under the last row, whatever the page size worked out to be.
-      const pagerY = TECH_LIST_TOP + slice.length * pitch + 14;
+      const pagerY = listTop + slice.length * pitch + 14;
       bodyText(this, 910, pagerY, t('tech_page', { n: this.techPage + 1, m: pages }), {
         fontSize: '13px',
         color: '#a88',

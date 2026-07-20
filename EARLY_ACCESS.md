@@ -102,9 +102,10 @@ Ordered by what the audit says is most missing, not by what is easiest.
 | `steamworks.js` bridge | done — optional dependency, degrades to no-op |
 | **Real Steam App ID** | **TODO** — `electron/steam.cjs` defaults to 480 (Valve's Spacewar test appid). Must be replaced, and achievements re-created in the Steamworks partner site with matching API names. |
 | Steam Cloud | **TODO** — use **Auto-Cloud** pointed at `saves.json` in `userData`; no code needed. Do not hand-roll the Cloud API for a file this small. |
-| Store capsule art (all sizes) | **TODO** — briefing in `ART_TODO_4.md`, sizes in `ART_WORK.md` |
+| Store capsule art (all sizes) | **Done** — `public/assets/steam/` at verified Steamworks sizes; see `ART_TODO_4.md` |
 | Trailer | **TODO** |
-| Legible wordmark | **TODO** — `logo_title.png` reads as "ancet & inen"; both "L"s are objects, not letters. See `ART_TODO_4.md` |
+| Legible wordmark | **Done** — `logo_title.png` reads *Lancet & Linen*; see `ART_TODO_4.md` |
+| Gameplay screenshots (5+) | **TODO** — capture real 1920×1080 from the build; do not generate |
 | Age rating questionnaire | **TODO** — the game depicts bloodletting and surgical failure; gore level is adjustable but the default is not the low setting |
 
 ### Achievement API names

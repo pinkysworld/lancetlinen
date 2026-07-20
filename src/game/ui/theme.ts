@@ -267,6 +267,14 @@ export function makeButton(
   };
   paint(false);
 
+  // Long labels used to overflow the face: `wordWrap` broke them onto a second
+  // line but nothing adjusted the button, so "Wagen reparieren (15 Münzen,
+  // 1 Eisenwerkzeug)" spilled out of the top and bottom edges.
+  //
+  // Shrink the type until it fits rather than growing the button, because most
+  // buttons sit in grids and rows where a changing height would break the
+  // layout around them. German is the binding case — it runs roughly 30%
+  // longer than English for the same string.
   const text = scene.add
     .text(x, y, label, {
       fontFamily: 'Palatino Linotype, Book Antiqua, Palatino, Georgia, serif',
@@ -276,6 +284,16 @@ export function makeButton(
       wordWrap: { width: w - 16 },
     })
     .setOrigin(0.5);
+
+  if (label) {
+    const startPx = parseFloat(fontSize) || 18;
+    // 11px is the floor: below that the serif face stops being readable at
+    // 1080p, and a label that still does not fit is too long to be a button.
+    for (let px = startPx; text.height > h - 8 && px > 11; px -= 1) {
+      text.setFontSize(px);
+      text.setWordWrapWidth(w - 16);
+    }
+  }
 
   // Hit area matches the painted face exactly.
   //

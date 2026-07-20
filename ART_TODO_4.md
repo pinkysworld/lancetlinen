@@ -1,9 +1,14 @@
 # Art round 4 — the wordmark, and the Steam store set
 
-**Status (2026-07-20):** Priority 1 done — `logo_title.png` has real blackletter
-"L"s (reads *Lancet & Linen*), true RGBA transparency, no magenta fringe, and
-remains readable when scaled to 231×87. Priority 2 (Steam capsules) still waits
-for submission day.
+**Status (2026-07-20):** **Both priorities done.**
+
+- **P1 wordmark** — `public/assets/logo_title.png` reads *Lancet & Linen* with
+  real blackletter L’s, true RGBA transparency, no magenta fringe; also copied
+  as `steam/library_logo.png` and `steam_library_logo.png`.
+- **P2 Steam set** — `public/assets/steam/` at **current Steamworks sizes**
+  (verified 2026-07 against partner docs; older 460×215 / 231×87 / 616×353
+  numbers in early drafts were wrong). Screenshots intentionally **not**
+  generated (Valve requires real gameplay captures).
 
 Two jobs. The first is a real defect found in play-testing and should be done
 first; the second is needed on submission day, not before.
@@ -70,28 +75,28 @@ asset, so getting it right here does double duty.
 
 ---
 
-## Priority 2 — Steam store capsules
+## Priority 2 — Steam store capsules ✅
 
-Not needed until submission. See `ART_WORK.md` for the full size table, the
-suggested composition and the house-style suffix; the notes below are only the
-things that are easy to get wrong.
+Delivered under `public/assets/steam/` (PNG + JPG). Manifest: `steam/README.md`.
+Masters: `_asset_backup_jpg/steam_masters/`.
 
-- **Verify every dimension against current Steamworks documentation before
-  generating.** The sizes in `ART_WORK.md` are from memory and Valve changes
-  them. Wrong dimensions are a rejected submission.
-- **Small capsule (231×87)** — no pictorial detail survives at this size. It is
-  the wordmark and almost nothing else. Do not crop the header down to it.
-- **Library capsule (600×900)** is portrait. It needs its own composition, not
-  a rotated or cropped header.
-- **Library hero (3840×1240)** is extremely wide and the store overlays the
-  centre. Put the subject well off to one side.
-- **Page background (1438×810)** sits under heavy UI. Atmospheric and nearly
-  empty is correct; anything busy will fight the page.
-- **Do not generate the screenshots.** Valve requires genuine gameplay
-  captures, and generated ones are grounds for rejection.
+| Asset | Size (verified 2026-07) | File |
+|---|---|---|
+| Header capsule | **920×430** | `header_capsule.*` |
+| Small capsule | **462×174** | `small_capsule.*` (wordmark fills) |
+| Main capsule | **1232×706** | `main_capsule.*` |
+| Vertical capsule | **748×896** | `vertical_capsule.*` |
+| Page background | **1438×810** | `page_background.*` |
+| Library capsule | **600×900** | `library_capsule.*` (own portrait plate) |
+| Library hero | **3840×1240** | `library_hero.*` (**no text**) |
+| Library logo | **1280×720** | `library_logo.png` (transparent) |
+| Library header | **920×430** | `library_header_capsule.*` |
 
-Keep the upper third of the header and main capsules clear — that is where the
-title sits.
+Wordmark is **composited** from `logo_title.png` (never re-generated as text).
+Hero keeps subject left with empty center/right for client chrome.
+
+**Still required for submission (not art):** 5+ real gameplay screenshots at
+≥1920×1080. Do not invent them.
 
 ---
 

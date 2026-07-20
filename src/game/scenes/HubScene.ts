@@ -8,8 +8,8 @@ import {
   exportSave,
   hasSave,
 } from '../state';
-import { applyMorningCosts, endDay } from '../systems/economy';
-import { pendingStoryDialogue, activeQuests, tutorialTipKey, questTitleKey } from '../systems/story';
+import { applyMorningCosts, endDay, isDestitute, takeLoan } from '../systems/economy';
+import { pendingStoryDialogue, activeQuests, tutorialTipKey, questTitleKey, questGuideKey } from '../systems/story';
 import { getLocalBath } from '../systems/property';
 import { drawBackground, makeButton, bodyText, titleText, panel, woodPanel, hudText, COLORS, addDecorImage, addHudIcon } from '../ui/theme';
 import { showToast, showConfirm, downloadText } from '../ui/dialogs';
@@ -146,27 +146,42 @@ export class HubScene extends Phaser.Scene {
       : t('stall_mode');
     titleText(this, GAME_WIDTH / 2, 150, mode, '36px');
 
+    // Today's notices, stacked.
+    //
+    // These were three fixed y values — market day at 185, festival at 178,
+    // sabotage at 210 — so any two at once drew on top of each other. A market
+    // day that is also a feast day is common, and it printed as one illegible
+    // smear. Collect them and lay them out in order instead.
     const node = MAP_NODE_MAP[s.locationId];
-    if (node && node.marketDay === s.weekday) {
-      bodyText(this, GAME_WIDTH / 2, 185, t('market_today'), {
-        fontSize: '18px',
-        color: '#e8c547',
-      }).setOrigin(0.5);
-    }
-
-    if (s.storyFlags['sabotage_today']) {
-      bodyText(this, GAME_WIDTH / 2, 210, t('sabotage'), {
-        fontSize: '16px',
-        color: '#b33a3a',
-      }).setOrigin(0.5);
-    }
-
     const fest = activeFestival(s);
+    const notices: Array<{ text: string; color: string }> = [];
     if (fest) {
-      bodyText(this, GAME_WIDTH / 2, 178, t('festival_today', { name: t(fest.textKey.replace(/\./g, '_')) }), {
-        fontSize: '14px',
+      notices.push({
+        text: t('festival_today', { name: t(fest.textKey.replace(/\./g, '_')) }),
         color: '#e8c547',
-      }).setOrigin(0.5);
+      });
+    }
+    if (node && node.marketDay === s.weekday) {
+      notices.push({ text: t('market_today'), color: '#e8c547' });
+    }
+    if (s.storyFlags['sabotage_today']) {
+      notices.push({ text: t('sabotage'), color: '#b33a3a' });
+    }
+    // One line, not a stack. There are only ~40px between the premises title at
+    // y=150 and the advisor card at y=200, so stacking three notices ran them
+    // straight through both. Joined with a separator they always fit, and the
+    // colour of the most urgent one carries.
+    if (notices.length) {
+      const urgent = notices.find((n) => n.color === '#b33a3a');
+      // y=191, not 182: the title ends at 171 and the cards start at 210. At
+      // 182 the gap measured 3px, which the title's drop shadow closed
+      // entirely — it read as an overlap even though the boxes did not touch.
+      bodyText(this, GAME_WIDTH / 2, 191, notices.map((n) => n.text).join('  ·  '), {
+        fontSize: notices.length > 1 ? '13px' : '15px',
+        color: urgent ? urgent.color : '#e8c547',
+        align: 'center',
+        wordWrap: { width: 900 },
+      }).setOrigin(0.5, 0.5);
     }
 
     // ★ Next step advisor — primary usability aid
@@ -180,16 +195,25 @@ export class HubScene extends Phaser.Scene {
     if (!quests.length) {
       bodyText(this, 495, 240, t('quests_none'), { fontSize: '13px', color: '#8a7a68', wordWrap: { width: 330 } });
     } else {
-      bodyText(
-        this,
-        495,
-        232,
-        quests
-          .slice(0, 3)
-          .map((q) => `• ${t(questTitleKey(q.id))}`)
-          .join('\n'),
-        { fontSize: '13px', wordWrap: { width: 330 } },
-      );
+      // Each quest is its own hit target. The strip used to be one static text
+      // block, so the obvious thing to do — click the task to find out what it
+      // wants — did nothing at all. `questGuideKey` already had the guidance
+      // text; nothing was showing it.
+      quests.slice(0, 3).forEach((q, i) => {
+        const rowY = 232 + i * 20;
+        const label = bodyText(this, 495, rowY, `• ${t(questTitleKey(q.id))}`, {
+          fontSize: '13px',
+          color: '#e8d5a8',
+          wordWrap: { width: 320 },
+        });
+        const hit = this.add
+          .rectangle(495 + 160, rowY + 7, 330, 19, 0xffffff, 0.001)
+          .setOrigin(0.5)
+          .setInteractive({ useHandCursor: true });
+        hit.on('pointerover', () => label.setColor('#fff8e0'));
+        hit.on('pointerout', () => label.setColor('#e8d5a8'));
+        hit.on('pointerup', () => this.showQuest(q.id));
+      });
     }
 
     // Stats + legend
@@ -218,12 +242,25 @@ export class HubScene extends Phaser.Scene {
     // Given its own band above the cards so the advisor's recommendation
     // reads as the obvious thing to do.
     sectionLabel(this, cx, 322, 'section_work');
+    const broke = isDestitute(s);
     makeButton(this, cx, 358, t('open_bath'), () => this.openBusiness(), {
-      width: 320,
+      width: broke ? 200 : 320,
       height: 52,
       fill: primaryFill(step.action === 'open'),
       primary: true,
     });
+
+    // Only shown when the player genuinely cannot open. Opening needs the day's
+    // costs in coin, and travelling costs too — without this a player with an
+    // empty purse and nothing to sell had no move left at all.
+    if (broke) {
+      makeButton(this, cx + 190, 358, t('take_loan'), () => this.borrow(), {
+        width: 220,
+        height: 52,
+        fill: 0x6b4a2f,
+        fontSize: '15px',
+      });
+    }
 
     // ── Three grouped cards ───────────────────────────────────────────
     const cardY = 396;
@@ -359,6 +396,38 @@ export class HubScene extends Phaser.Scene {
     }
     const ok = downloadText(`lancet-linen-save-day${getState().day}.json`, json);
     showToast(this, ok ? t('export_ok') : t('export_fail'), ok ? '#5a9a6e' : '#b33a3a');
+  }
+
+  /**
+   * Borrow from the Lombard.
+   *
+   * Deliberately a poor deal — see `takeLoan`. It exists so the player always
+   * has a move, not because it is a good one.
+   */
+  private borrow(): void {
+    const res = { coin: 0, debt: 0 };
+    mutate((s) => Object.assign(res, takeLoan(s)));
+    audio.sfx('coin');
+    showToast(this, t('loan_taken', { coin: res.coin, debt: res.debt }), '#c9a06a', 2600);
+    this.scene.restart();
+  }
+
+  /**
+   * What a task actually asks of the player.
+   *
+   * `questGuideKey` has carried this text all along; the hub only ever printed
+   * the title, and the strip was not clickable.
+   */
+  private showQuest(questId: string): void {
+    audio.sfx('page');
+    showConfirm(this, {
+      title: t(questTitleKey(questId)),
+      body: t(questGuideKey(questId)),
+      yes: t('close'),
+      no: t('nav_journal'),
+      onYes: () => {},
+      onNo: () => transitionTo(this, 'Journal'),
+    });
   }
 
   private openBusiness(): void {

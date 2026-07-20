@@ -7,6 +7,27 @@ import type { PatientClass, PatientTemplate, Humor } from '../types';
  * `Ruprecht`. `Sebolt` is added — Nürnberg's own patron saint, a conspicuous
  * omission in a Nürnberg-centred game.
  */
+/**
+ * Portraits that depict a woman.
+ *
+ * Kept beside the name lists because the two have to agree: a template that
+ * pins `portraitKey: 'port_noble'` must not then be handed a man's name. Lives
+ * here rather than in `ui/art.ts` so `treatment.ts` can read it without
+ * pulling in Phaser.
+ */
+export const FEMALE_PORTRAITS = new Set([
+  'port_peasant2',
+  'port_peasant4',
+  'port_woman',
+  'port_artisan2',
+  'port_merchant2',
+  'port_clergy2',
+  'port_adelheid',
+  'port_noble',
+  'port_noble2',
+  'port_beggar2',
+]);
+
 export const FIRST_NAMES_M = [
   'Hans', 'Peter', 'Claus', 'Otto', 'Dietrich', 'Ulrich', 'Fritz', 'Conrad',
   'Georg', 'Martin', 'Jakob', 'Thomas', 'Simon', 'Niklas',

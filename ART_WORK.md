@@ -12,20 +12,22 @@ submission day.
 
 ## Required before Steam submission
 
-Valve rejects submissions with wrong dimensions, so **verify each size against
-the current Steamworks documentation** before generating — these are from
-memory and Valve does change them.
+**Capsule art is done** — see `public/assets/steam/` and `ART_TODO_4.md`.
+Sizes below were verified against Steamworks docs on 2026-07-20 (older memory
+values 460×215 / 231×87 / 616×353 / 374×448 were wrong and must not be used).
 
-| Asset | Size (verify) | Notes |
+| Asset | Size | File under `public/assets/steam/` |
 |---|---|---|
-| Header capsule | 460×215 | The one everyone sees. Title must read as a thumbnail |
-| Small capsule | 231×87 | Search results — logo only; art detail is invisible at this size |
-| Main capsule | 616×353 | Front-page features |
-| Vertical capsule | 374×448 | Seasonal sales |
-| Page background | 1438×810 | Heavily overlaid — keep it atmospheric and near-empty |
-| Library capsule | 600×900 | Portrait format; needs its own composition, not a crop of the header |
-| Library hero | 3840×1240 | Very wide — the subject must sit off-centre |
-| Library logo | 1280×720 | Transparent PNG, logo only |
+| Header capsule | 920×430 | `header_capsule` |
+| Small capsule | 462×174 | `small_capsule` (wordmark fills) |
+| Main capsule | 1232×706 | `main_capsule` |
+| Vertical capsule | 748×896 | `vertical_capsule` |
+| Page background | 1438×810 | `page_background` |
+| Library capsule | 600×900 | `library_capsule` |
+| Library hero | 3840×1240 | `library_hero` (no text) |
+| Library logo | 1280×720 | `library_logo.png` |
+
+**Still missing for Steam:** real gameplay screenshots only (5+, ≥1920×1080).
 
 **Suggested capsule composition** — one image, reused across the set with
 different crops:

@@ -10,7 +10,7 @@ import {
 } from './property';
 import { payStaffWages, staffSabotageResist } from './staff';
 import { applyChurchPressure, applyDebtCollection } from './pressure';
-import { tickHonour, honourFromWorkingHolyDay } from './honour';
+import { tickHonour, honourFromWorkingHolyDay, addHonour } from './honour';
 import { checkAchievements } from './achievements';
 import { incomeMult, pressureMult } from './settings';
 import { spouseDaily } from './family';
@@ -203,4 +203,46 @@ export function marketPrices(state: GameState): Record<string, number> {
     salve: 8,
     ironTools: 12,
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * The moneylender
+ * ------------------------------------------------------------------ */
+
+/** Loan size. Enough for several days' costs, not enough to coast on. */
+export const LOAN_PRINCIPAL = 40;
+/** Debt added per loan. The gap is the interest, taken up front. */
+export const LOAN_DEBT = 55;
+
+/**
+ * Can the player still act at all?
+ *
+ * Opening the bathhouse requires the day's operating cost in coin. With no
+ * coin the player cannot open, cannot earn, and — because travelling also
+ * costs — could be stuck for good. Selling stock is the intended way out, but
+ * a player with an empty store and an empty purse had none, which is a
+ * softlock in a game with no fail state.
+ */
+export function isDestitute(state: GameState): boolean {
+  return state.coin < dailyOperatingCost(state);
+}
+
+/**
+ * Borrow from the Lombard.
+ *
+ * Italian moneylenders — Lombards and Cahorsins — operated across the Empire
+ * in this period and lent at rates the Church condemned and the towns
+ * tolerated. This is deliberately a bad deal: the debt exceeds the principal
+ * immediately, `applyDebtCollection` in `pressure.ts` will come for it once it
+ * passes `DEBT_CALL_IN`, and taking it costs a little standing, because
+ * everyone knows who borrows from the Lombard.
+ *
+ * It exists to guarantee the player always has *a* move, not to be a good one.
+ */
+export function takeLoan(state: GameState): { coin: number; debt: number } {
+  state.coin += LOAN_PRINCIPAL;
+  state.debt = (state.debt ?? 0) + LOAN_DEBT;
+  addHonour(state, -1.5, 'journal_loan_taken');
+  addJournal(state, 'journal_loan', 'business', { n: LOAN_PRINCIPAL });
+  return { coin: LOAN_PRINCIPAL, debt: LOAN_DEBT };
 }

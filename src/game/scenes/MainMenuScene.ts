@@ -158,9 +158,13 @@ export class MainMenuScene extends Phaser.Scene {
       wordWrap: { width: 860 },
       align: 'center',
     }).setOrigin(0.5);
-    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 20, t('menu_quit_hint'), {
+    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 24, t('menu_quit_hint'), {
       fontSize: '12px',
       color: '#7a6a58',
+    }).setOrigin(0.5);
+    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 8, '© Michél Nguyen · minh.systems', {
+      fontSize: '11px',
+      color: '#6b5d4d',
     }).setOrigin(0.5);
 
     // No Esc target on the root menu; number keys and arrows still apply.

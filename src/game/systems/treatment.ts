@@ -12,6 +12,7 @@ import {
   DENTAL_TEMPLATE_IDS,
   FIRST_NAMES_F,
   FIRST_NAMES_M,
+  FEMALE_PORTRAITS,
   PATIENT_TEMPLATES,
   SURNAMES,
   PATRICIAN_SURNAMES,
@@ -58,10 +59,10 @@ function surnameFor(cls: PatientClass): string {
   return patrician ? pick(PATRICIAN_SURNAMES) : pick(SURNAMES);
 }
 
-function randName(cls: PatientClass): string {
+function randName(cls: PatientClass): { name: string; female: boolean } {
   const female = Math.random() < 0.45;
   const first = female ? pick(FIRST_NAMES_F) : pick(FIRST_NAMES_M);
-  return `${first} ${surnameFor(cls)}`;
+  return { name: `${first} ${surnameFor(cls)}`, female };
 }
 
 export function generatePatient(state: GameState): PatientInstance {
@@ -137,18 +138,31 @@ export function generatePatient(state: GameState): PatientInstance {
   );
   uidCounter += 1;
 
-  // Prefer female names for woman-coded templates
+  // Name and portrait must agree, so the sex is decided once here and carried
+  // on the patient rather than re-rolled independently in the UI.
   const femaleIds = new Set(['groom_woman', 'midwife_assist', 'chilblains', 'child_fever']);
-  const name = femaleIds.has(template.id) || (template.portraitKey === 'port_woman' && Math.random() < 0.7)
-    ? `${pick(FIRST_NAMES_F)} ${surnameFor(template.class)}`
-    : template.portraitKey === 'port_youth'
-      ? `${pick(FIRST_NAMES_M.slice(0, 8))} ${surnameFor(template.class)}`
-      : randName(template.class);
+  let name: string;
+  let female: boolean;
+  // A template that pins its own portrait decides the sex — otherwise a fixed
+  // `port_noble` (a woman) could still draw a man's name.
+  const pinned = template.portraitKey;
+  if (pinned) {
+    female = FEMALE_PORTRAITS.has(pinned);
+    name = `${pick(female ? FIRST_NAMES_F : FIRST_NAMES_M)} ${surnameFor(template.class)}`;
+  } else if (femaleIds.has(template.id)) {
+    name = `${pick(FIRST_NAMES_F)} ${surnameFor(template.class)}`;
+    female = true;
+  } else {
+    const r = randName(template.class);
+    name = r.name;
+    female = r.female;
+  }
 
   return {
     uid: `p-${uidCounter}-${Date.now()}`,
     templateId: template.id,
     name,
+    female,
     class: template.class,
     complaintKey: template.complaintKey,
     dominantHumor: template.dominantHumor,
