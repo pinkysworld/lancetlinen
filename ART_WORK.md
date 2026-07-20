@@ -111,16 +111,19 @@ despite the art existing:
 
 ---
 
-## Also still worth doing
+## Done — WebP conversion (2026-07-20)
 
-Convert `public/assets` to WebP — it is 24 MB and every file is now 1080p:
+`public/assets` converted at `cwebp -q 82`, extensions swapped in `ART_CORE` /
+`ART_DEFERRED` in `src/game/scenes/PreloadScene.ts` (60 paths).
 
-```bash
-cd public/assets
-for f in *.jpg; do cwebp -q 82 "$f" -o "${f%.jpg}.webp"; done
-```
+| | Before | After |
+|---|---|---|
+| `public/assets` | 23 MB JPG | 9 MB WebP (+1.3 MB PNG) |
+| `dist` | 26 MB | 12 MB |
 
-Then swap the extensions in `ART_CORE` / `ART_DEFERRED` in
-`src/game/scenes/PreloadScene.ts`. Keep the `.jpg` files until you have
-confirmed the WebP versions look right. This matters much more for the web
-build than for Steam, where the assets ship locally.
+Verified: all 100 textures load, none zero-dimension, every screen still
+carries its painting, and a side-by-side of `port_adelheid` showed no visible
+loss in skin tones. The JPG originals were **moved** to `_asset_backup_jpg/`
+(gitignored) rather than deleted.
+
+PNGs kept as PNG — they carry transparency (icons, logo, portrait frame).

@@ -102,8 +102,9 @@ Ordered by what the audit says is most missing, not by what is easiest.
 | `steamworks.js` bridge | done — optional dependency, degrades to no-op |
 | **Real Steam App ID** | **TODO** — `electron/steam.cjs` defaults to 480 (Valve's Spacewar test appid). Must be replaced, and achievements re-created in the Steamworks partner site with matching API names. |
 | Steam Cloud | **TODO** — use **Auto-Cloud** pointed at `saves.json` in `userData`; no code needed. Do not hand-roll the Cloud API for a file this small. |
-| Store capsule art (all sizes) | **TODO** — see `ART_WORK.md` |
+| Store capsule art (all sizes) | **TODO** — briefing in `ART_TODO_4.md`, sizes in `ART_WORK.md` |
 | Trailer | **TODO** |
+| Legible wordmark | **TODO** — `logo_title.png` reads as "ancet & inen"; both "L"s are objects, not letters. See `ART_TODO_4.md` |
 | Age rating questionnaire | **TODO** — the game depicts bloodletting and surgical failure; gore level is adjustable but the default is not the low setting |
 
 ### Achievement API names
@@ -117,6 +118,29 @@ in `src/game/systems/achievements.ts` as frozen after first publish.
 `PLAGUE_YEAR`, `THE_LINE_CONTINUES`.
 
 Four are hidden, because they name story outcomes.
+
+---
+
+## Distribution and source control
+
+**Decision (2026-07-20): private repository, demo later.**
+
+The project had no version control at all until this point. It is now a git
+repo; the first commit is 11 MB across 170 files.
+
+- **Source lives in a private GitHub repo.** Nothing public. The game is a paid
+  Early Access release — a public GitHub Pages deployment would hand out the
+  finished game for free before it is on sale.
+- **A playable demo (Act 1) belongs on itch.io**, not GitHub Pages. That is
+  where players look for demos, and itch.io can distribute Steam keys later.
+- GitHub Pages is fine for a *marketing* page — screenshots, the pitch, a
+  mailing-list link — as long as the game itself is not served from it.
+
+**Open risk:** the working copy sits in iCloud Drive
+(`~/Library/Mobile Documents/com~apple~CloudDocs/…`). Git repositories in
+iCloud are prone to sync conflicts inside `.git`, and iCloud evicts files to
+save space. Moving the project to a local path (e.g. `~/Developer/`) before
+doing serious branching work is recommended.
 
 ---
 
