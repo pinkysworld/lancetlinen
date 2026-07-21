@@ -832,24 +832,34 @@ export class TreatmentScene extends Phaser.Scene {
       { fontSize: '16px', color: '#e8d5a8' },
     ).setOrigin(0.5);
 
-    // Whether the fee posture held — "they paid the higher fee", "they haggled
-    // you down", "treated as alms". Without this line the Tongue check is a
-    // hidden roll and demanding never becomes a readable gamble.
-    if (r.veinNoteKey) {
-      bodyText(this, GAME_WIDTH / 2, 430, t(r.veinNoteKey), {
-        fontSize: '13px',
-        color: '#a8c0c4',
-        wordWrap: { width: 560 },
-        align: 'center',
-      }).setOrigin(0.5);
-    }
+    /*
+     * The two aftermath lines, flowed rather than pinned.
+     *
+     * They were at fixed y=408 and y=430 — and drawn in the wrong order, the
+     * vein note above the fee note it was meant to follow. With the Continue
+     * button at 460 the three crowded into 52px and read as one smear.
+     *
+     * `noteY` advances by what each line actually measured, so one line sits
+     * where one line belongs and two never touch.
+     */
+    let noteY = 404;
+    const aftermath: Array<{ key: string; size: string; color: string }> = [];
+    // Fee first: it is the consequence of a decision the player made.
     if (r.stanceNoteKey) {
-      bodyText(this, GAME_WIDTH / 2, 408, t(r.stanceNoteKey), {
-        fontSize: '14px',
-        color: '#c9b48a',
+      aftermath.push({ key: r.stanceNoteKey, size: '14px', color: '#c9b48a' });
+    }
+    // Then what the bloodletting tables made of the vein.
+    if (r.veinNoteKey) {
+      aftermath.push({ key: r.veinNoteKey, size: '13px', color: '#a8c0c4' });
+    }
+    for (const line of aftermath) {
+      const txt = bodyText(this, GAME_WIDTH / 2, noteY, t(line.key), {
+        fontSize: line.size,
+        color: line.color,
         wordWrap: { width: 560 },
         align: 'center',
-      }).setOrigin(0.5);
+      }).setOrigin(0.5, 0);
+      noteY += txt.height + 6;
     }
 
     // Drift the deltas so the numbers register rather than just appearing.
@@ -867,7 +877,8 @@ export class TreatmentScene extends Phaser.Scene {
       );
     }
 
-    makeButton(this, GAME_WIDTH / 2, 460, t('continue'), () => {
+    // Below whatever the aftermath lines took, never above its designed place.
+    makeButton(this, GAME_WIDTH / 2, Math.max(462, noteY + 26), t('continue'), () => {
       transitionTo(this, 'Bathhouse');
     }, { primary: true });
 

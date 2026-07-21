@@ -42,10 +42,30 @@ export function explain(req: Requirement): string {
   return t(req.reasonKey);
 }
 
-/** The compressed form that fits on a button face. */
+/**
+ * Widest button face that can carry a written reason.
+ *
+ * Below this there is no room for words. The exam buttons in the treatment
+ * screen are 124px, and appending "Die Harnschau hat Euch niemand gelehrt."
+ * to one of those grew it into a grey slab that covered its neighbours —
+ * `makeButton` grows a button rather than let a label escape it, which is
+ * right for a long *label* and wrong for an appended reason.
+ */
+const REASON_MIN_WIDTH = 230;
+
+/** The marker a narrow button carries instead. Its meaning is "locked". */
+export const LOCK_GLYPH = '✗';
+
+/**
+ * The compressed form that fits on a button face.
+ *
+ * A requirement with numbers compresses well — "Reichsruhm 30" says the whole
+ * thing in two words. One without numbers is a sentence, and a sentence does
+ * not belong on a button; `explain` puts it in the toast instead.
+ */
 export function shortReason(req: Requirement): string {
   if (req.ok) return '';
-  return req.need !== undefined ? `${t(req.reasonKey)} ${req.need}` : t(req.reasonKey);
+  return req.need !== undefined ? `${t(req.reasonKey)} ${req.need}` : LOCK_GLYPH;
 }
 
 /**
@@ -65,21 +85,28 @@ export function gatedButton(
   onClick: () => void,
   opts: ButtonOpts = {},
 ): void {
-  const full = req.ok ? label : `${label} — ${shortReason(req)}`;
+  // A narrow face gets the marker only; the words would not fit and the
+  // button would grow to make them, over whatever sits next to it.
+  const wide = (opts.width ?? 220) >= REASON_MIN_WIDTH;
+  const suffix = req.ok ? '' : ` — ${wide ? shortReason(req) : LOCK_GLYPH}`;
   makeButton(
     scene,
     x,
     y,
-    full,
+    `${label}${suffix}`,
     () => {
       if (!req.ok) {
         // Reachable via the keyboard even when greyed, and worth answering:
-        // the short form on the face omits the player's own figure.
+        // the face never carries the whole sentence, and on a narrow button it
+        // carries nothing but a mark.
         showToast(scene, explain(req), '#b33a3a', 2800);
         return;
       }
       onClick();
     },
-    { ...opts, disabled: !req.ok },
+    // `keepHeight`: a gated button must never grow. Its size is fixed by the
+    // layout around it, and the reason is an addition to the label rather than
+    // the label itself — if it does not fit, it belongs in the toast.
+    { ...opts, disabled: !req.ok, keepHeight: true },
   );
 }

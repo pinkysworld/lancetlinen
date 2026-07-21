@@ -45,6 +45,35 @@ export function localRankKey(rep: number): string {
   return `rep_rank_${localRank(rep)}`;
 }
 
+/**
+ * Diminishing returns on a good name.
+ *
+ * Folk trust starts at 40 and rose a flat +1 or +2 per common patient treated
+ * well. Against a campaign that ends at 35 treated it therefore hit its
+ * ceiling of 100 around two-thirds of the way through and stopped meaning
+ * anything — reported from play as "it grows very fast and 100 seems to be
+ * the top". Imperial fame, at +0.3 to +0.8, had the opposite problem and
+ * barely moved.
+ *
+ * A gain is now scaled by how much room is left above it. Going from unknown
+ * to well-liked is quick; going from well-liked to beloved is the work of a
+ * career. Losses are never scaled — a death costs what it costs, and being
+ * cushioned from disgrace by a good name is exactly the wrong lesson for a
+ * trade this precarious.
+ *
+ * The 0.15 floor keeps the ceiling reachable rather than asymptotic, so a
+ * long, careful game can still arrive at 100.
+ */
+function gainFactor(current: number): number {
+  return Math.max(0.15, 1 - current / 100);
+}
+
+/** Apply a facet change: gains taper near the ceiling, losses do not. */
+function addFacet(current: number, delta: number, lo = 0, hi = 100): number {
+  const scaled = delta > 0 ? delta * gainFactor(current) : delta;
+  return clamp(current + scaled, lo, hi);
+}
+
 export function addFacetRep(
   state: GameState,
   delta: { folk?: number; elite?: number; fame?: number; local?: number },
@@ -52,9 +81,9 @@ export function addFacetRep(
 ): void {
   ensureReputation(state);
   const beforeLocal = state.reputation[cityId ?? state.locationId] ?? 0;
-  if (delta.folk) state.repFolk = clamp(state.repFolk + delta.folk, 0, 100);
-  if (delta.elite) state.repElite = clamp(state.repElite + delta.elite, 0, 100);
-  if (delta.fame) state.repFame = clamp(state.repFame + delta.fame, 0, 100);
+  if (delta.folk) state.repFolk = addFacet(state.repFolk, delta.folk);
+  if (delta.elite) state.repElite = addFacet(state.repElite, delta.elite);
+  if (delta.fame) state.repFame = addFacet(state.repFame, delta.fame);
   if (delta.local) {
     const id = cityId ?? state.locationId;
     state.reputation[id] = clamp((state.reputation[id] ?? 0) + delta.local, -50, 100);

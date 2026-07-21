@@ -380,13 +380,22 @@ export class PoliticsScene extends Phaser.Scene {
         color: s.debt > DEBT_CALL_IN * 0.7 ? '#b33a3a' : '#a88',
         wordWrap: { width: 560 },
       });
-      const chunk = Math.min(s.coin, Math.ceil(s.debt));
+      /*
+       * The offer and the gate must be the same number.
+       *
+       * `chunk` is what the button offers to pay; `canRepayDebt` decides
+       * whether the button works. Computing them separately let them
+       * disagree — a purse of 0 offered "Repay (0)" and refused, which reads
+       * as a button that is broken rather than one that has nothing to do.
+       * One value, used for both, and the label carries it.
+       */
+      const chunk = Math.max(0, Math.min(s.coin, Math.ceil(s.debt)));
       gatedButton(
         this,
         1100,
         545,
         t('repay_debt_some', { n: chunk }),
-        canRepayDebt(s),
+        chunk > 0 ? canRepayDebt(s) : { ok: false, reasonKey: 'req_coin', need: 1, have: s.coin },
         () => {
           let paid = 0;
           mutate((st) => {

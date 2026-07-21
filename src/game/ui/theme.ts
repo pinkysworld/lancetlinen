@@ -154,6 +154,16 @@ export interface ButtonOpts {
   primary?: boolean;
   /** Exclude from number-key assignment (dense lists, pagination arrows). */
   noHotkey?: boolean;
+  /**
+   * Never grow the button to fit its label; shrink the type instead, and let
+   * the tail be clipped if even that is not enough.
+   *
+   * Growing is right when the label *is* the content and the button stands
+   * alone. It is wrong for `gatedButton`, which appends a refusal to a label
+   * sized by the layout around it: a 124px exam button that grew to hold "Die
+   * Harnschau hat Euch niemand gelehrt." covered its neighbours entirely.
+   */
+  keepHeight?: boolean;
 }
 
 /**
@@ -326,7 +336,15 @@ export function makeButton(
     // button — "Mehr Hand-Geschick nötig" wraps to three lines in a 120x28
     // button and still overflowed at the 11px floor, spilling over the rows
     // above and below. Grow the face to match rather than let text escape it.
+    //
+    // Unless the caller forbids it: see `keepHeight`. A button whose size the
+    // surrounding layout depends on must clip rather than shove its
+    // neighbours off the screen.
     if (text.height > h - 8) {
+      if (opts.keepHeight) {
+        text.setCrop(0, 0, avail, h - 8);
+        return;
+      }
       h = Math.ceil(text.height) + 10;
       paint(false);
       // May run a second time, after the hit area already exists, when the
