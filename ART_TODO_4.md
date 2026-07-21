@@ -5,7 +5,7 @@
 - **P1 wordmark** — `public/assets/logo_title.png` reads *Lancet & Linen* with
   real blackletter L’s, true RGBA transparency, no magenta fringe; also copied
   as `steam/library_logo.png` and `steam_library_logo.png`.
-- **P2 Steam set** — `public/assets/steam/` at **current Steamworks sizes**
+- **P2 Steam set** — `store/steam/` at **current Steamworks sizes**
   (verified 2026-07 against partner docs; older 460×215 / 231×87 / 616×353
   numbers in early drafts were wrong). Screenshots intentionally **not**
   generated (Valve requires real gameplay captures).
@@ -77,7 +77,7 @@ asset, so getting it right here does double duty.
 
 ## Priority 2 — Steam store capsules ✅
 
-Delivered under `public/assets/steam/` (PNG + JPG). Manifest: `steam/README.md`.
+Delivered under `store/steam/` (PNG + JPG). Manifest: `steam/README.md`.
 Masters: `_asset_backup_jpg/steam_masters/`.
 
 | Asset | Size (verified 2026-07) | File |

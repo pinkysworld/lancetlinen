@@ -153,3 +153,62 @@ export function weekdayDemand(state: GameState): { delta: number; key: string } 
 export function seasonalTravelWear(state: GameState): number {
   return state.season === WINTER ? 1.6 : state.season === AUTUMN ? 1.2 : 1;
 }
+
+/* ------------------------------------------------------------------ *
+ * Tomorrow
+ * ------------------------------------------------------------------ */
+
+/**
+ * What tomorrow holds, for planning.
+ *
+ * The year and the week got their shape (above), but the player only learned
+ * what kind of day it was on the morning of it. "Do not open the vein today,
+ * tomorrow the sign is favourable" is only a decision if tomorrow is visible
+ * tonight — so the day summary and the hub print these notes.
+ *
+ * Each note is an i18n key plus optional params, chosen from the same
+ * functions that will actually govern tomorrow. No separate prediction logic:
+ * the notes are computed by asking the real rules about `day + 1`, so they
+ * cannot drift from what the morning then does.
+ */
+import { isEgyptianDay, moonSign } from './bloodletting';
+import { MAP_NODE_MAP } from './map';
+
+export interface DayNote {
+  key: string;
+  params?: Record<string, string | number>;
+}
+
+export function tomorrowNotes(state: GameState): DayNote[] {
+  // Season length is 30 days (`economy.ts` advances it at day % 30 === 0);
+  // build tomorrow's state the same way the tick will.
+  const tomorrow: GameState = {
+    ...state,
+    day: state.day + 1,
+    weekday: (state.weekday + 1) % 7,
+    season: (state.day + 1) % 30 === 0 ? (state.season + 1) % 4 : state.season,
+  };
+
+  const notes: DayNote[] = [];
+
+  const wd = weekdayDemand(tomorrow);
+  if (wd) notes.push({ key: `note_${wd.key}` });
+
+  const node = MAP_NODE_MAP[state.locationId];
+  if (node && node.marketDay === tomorrow.weekday) {
+    notes.push({ key: 'note_market_day' });
+  }
+
+  if (isEgyptianDay(tomorrow.day)) {
+    notes.push({ key: 'note_egyptian_day' });
+  } else if (moonSign(tomorrow) !== moonSign(state)) {
+    // Only worth a line when the sign actually changes overnight.
+    notes.push({ key: 'note_moon_moves', params: { sign: `zodiac_${moonSign(tomorrow)}` } });
+  }
+
+  if (tomorrow.season !== state.season) {
+    notes.push({ key: `note_season_${tomorrow.season}` });
+  }
+
+  return notes;
+}

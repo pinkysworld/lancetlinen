@@ -12,6 +12,8 @@ import { bodyText, makeButton, panel, titleText, woodPanel } from '../ui/theme';
 import { floatingNumber, panelIn, sceneBackground, transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
 import { audio } from '../audio/AudioManager';
+import { getState } from '../state';
+import { tomorrowNotes } from '../data/seasons';
 
 export interface DaySummaryData {
   day: number;
@@ -100,6 +102,30 @@ export class DaySummaryScene extends Phaser.Scene {
         fontSize: '14px',
         color: '#a8c0c4',
         wordWrap: { width: boxW - 110 },
+        align: 'center',
+      }).setOrigin(0.5);
+    }
+
+    /*
+     * Tomorrow, so the calendar can be planned against.
+     *
+     * The year and the week got their shape in Block 3, but the player only
+     * ever learned what kind of day it was on the morning of it. "Do not open
+     * the vein today, tomorrow the sign is good" is a decision only if
+     * tomorrow is visible tonight — and the day summary is where a player
+     * decides what to do next.
+     */
+    const notes = tomorrowNotes(getState());
+    if (notes.length) {
+      const line = notes
+        .map((n) =>
+          t(n.key, n.params ? { sign: t(String(n.params.sign)) } : undefined),
+        )
+        .join('  ·  ');
+      bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 158, `${t('tomorrow_label')} ${line}`, {
+        fontSize: '14px',
+        color: '#c9b48a',
+        wordWrap: { width: boxW - 60 },
         align: 'center',
       }).setOrigin(0.5);
     }

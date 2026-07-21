@@ -65,10 +65,17 @@ export class LepraschauScene extends Phaser.Scene {
       seed: this.lepraCase.name,
     });
 
-    const left = GAME_WIDTH / 2 - w / 2 + 170;
-    bodyText(this, left, 120, t('lepra_body', { name: this.lepraCase.name }), {
+    /*
+     * Clear of the portrait *frame*, not the portrait.
+     *
+     * `addPortrait` draws `ui_frame_portrait` wider than the image it holds,
+     * so a text column measured against the 120px portrait had its second
+     * line clipped by the frame's right edge. 210 clears both.
+     */
+    const left = GAME_WIDTH / 2 - w / 2 + 210;
+    const body = bodyText(this, left, 120, t('lepra_body', { name: this.lepraCase.name }), {
       fontSize: fontFor('body'),
-      wordWrap: { width: w - 210 },
+      wordWrap: { width: w - 250 },
     });
 
     if (this.outcomeKey) {
@@ -83,12 +90,14 @@ export class LepraschauScene extends Phaser.Scene {
      * unexamined one, and it is the reason to learn palpation.
      */
     const seen = visibleSigns(s, this.lepraCase);
-    let y = 260;
+    // Flowed under the body rather than pinned: a short summons left a hand's
+    // width of empty panel between the text and the findings.
+    let y = Math.max(230, 120 + body.height + 26);
     if (seen.length === 0) {
       bodyText(this, left, y, t('lepra_no_signs'), {
         fontSize: fontFor('small'),
         color: '#a8c0c4',
-        wordWrap: { width: w - 210 },
+        wordWrap: { width: w - 250 },
       });
       y += 30;
     } else {
@@ -96,7 +105,7 @@ export class LepraschauScene extends Phaser.Scene {
         const line = bodyText(this, left, y, `· ${t(`lepra_sign_${id}`)}`, {
           fontSize: fontFor('small'),
           color: '#e8d5a8',
-          wordWrap: { width: w - 210 },
+          wordWrap: { width: w - 250 },
         });
         y += line.height + 6;
       }
@@ -108,7 +117,7 @@ export class LepraschauScene extends Phaser.Scene {
       bodyText(this, left, y + 4, t('lepra_untrained'), {
         fontSize: '12px',
         color: '#8a7a68',
-        wordWrap: { width: w - 210 },
+        wordWrap: { width: w - 250 },
       });
     }
 
@@ -145,10 +154,10 @@ export class LepraschauScene extends Phaser.Scene {
   }
 
   private renderOutcome(left: number, w: number): void {
-    bodyText(this, left, 270, t(this.outcomeKey!), {
+    bodyText(this, left, 250, t(this.outcomeKey!), {
       fontSize: fontFor('body'),
       color: '#e8d5a8',
-      wordWrap: { width: w - 210 },
+      wordWrap: { width: w - 250 },
     });
     bodyText(this, left, 360, t('coin_amount', { n: LEPRASCHAU_FEE }), {
       fontSize: fontFor('small'),

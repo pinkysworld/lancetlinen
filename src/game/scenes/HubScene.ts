@@ -48,6 +48,7 @@ import { severityMarks } from '../systems/settings';
 import { honour, honourRankKey } from '../systems/honour';
 import { chipRow } from '../ui/icons';
 import { compact, fontFor, gridColumnsX, primarySize, secondarySize } from '../ui/responsive';
+import { tomorrowNotes } from '../data/seasons';
 
 export class HubScene extends Phaser.Scene {
   constructor() {
@@ -220,6 +221,18 @@ export class HubScene extends Phaser.Scene {
     // y=150 and the advisor card at y=200, so stacking three notices ran them
     // straight through both. Joined with a separator they always fit, and the
     // colour of the most urgent one carries.
+    // Tomorrow, appended to today's notices — the hub is where the player
+    // decides whether to open now or wait a day.
+    const ahead = tomorrowNotes(s);
+    if (ahead.length) {
+      notices.push({
+        text: `${t('tomorrow_label')} ${ahead
+          .map((n) => t(n.key, n.params ? { sign: t(String(n.params.sign)) } : undefined))
+          .join(' · ')}`,
+        color: '#a8c0c4',
+      });
+    }
+
     if (notices.length) {
       const urgent = notices.find((n) => n.color === '#b33a3a');
       // y=191, not 182: the title ends at 171 and the cards start at 210. At

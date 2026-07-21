@@ -1,11 +1,33 @@
 # Art round 6 — the people the story talks to, and the council chamber
 
+**Status (2026-07-21): Done.**
+
+| Key | File | Size |
+|---|---|---|
+| `port_gregor` | `public/assets/port_gregor.webp` | 1024² (matches house set; TODO said 512) |
+| `port_ortlieb` | `public/assets/port_ortlieb.webp` | 1024² |
+| `port_guard` | `public/assets/port_guard.webp` | 1024² |
+| `bg_council` | `public/assets/bg_council.webp` | 1920×1080 |
+| `bg_lazar` | `public/assets/bg_lazar.webp` | 1920×1080 |
+
+JPG masters: `_asset_backup_jpg/round6/`. Already in `ART_DEFERRED` /
+`portraitKeyForNpc` / `LepraschauScene` / scenarios — no code change needed.
+
+Steam capsules listed under P2 were **already shipped** in `ART_TODO_4` at
+**current** Steamworks sizes under `store/steam/` (not the obsolete
+460×215 / 231×87 numbers below).
+
+Note on that path: the capsules live in `store/steam/`, *outside* `public/`,
+which is correct — store art must not ship in the web build. Earlier drafts of
+both TODOs said `public/assets/steam/`, which does not exist; corrected here
+rather than by moving the files.
+
 Style reference for everything here: the existing portraits
 (`port_berthold.webp`, `port_krafft.webp`, `port_origin_*.webp`) — late-medieval
 oil-painting look, warm candlelit palette, dark neutral background, head and
 shoulders, subject lit from one side. Same framing and size as the existing
-files: **portraits 512×512**, **backgrounds 1920×1080**, saved as `.webp`
-into `public/assets/`.
+files: **portraits 1024×1024** (set standard), **backgrounds 1920×1080**,
+saved as `.webp` into `public/assets/`.
 
 ## Why this round
 
@@ -52,19 +74,13 @@ autumn light, a bell on a post (lepers carried bells), the city wall receding
 behind. Melancholy, not horror. Used by the "the man you cleared comes back"
 scenario.
 
-### Steam capsules (carried over from ART_TODO_4, never started)
-One master composition, then crops/variants. Master motif: the Bader at work
-in the candlelit Badestube — lancet in one hand, linen over the arm, copper
-kettle steaming behind, patient seated. The wordmark (`logo_title.png`) is
-overlaid by us; leave headroom for it.
+### Steam capsules — superseded by ART_TODO_4 ✅
 
-| File | Size | Notes |
-|---|---|---|
-| `capsule_header.png` | 460×215 | wide crop, wordmark top-left |
-| `capsule_small.png` | 231×87 | **readability first**: at this size only the wordmark and one strong silhouette survive — Bader bust + lancet, nothing else |
-| `capsule_main.png` | 616×353 | full scene |
-| `capsule_vertical.png` | 374×448 | portrait crop, its own composition — not a squeeze of the header |
-| `capsule_library.png` | 600×900 | tall composition: Bader full figure, steam rising, wordmark upper third |
+Do **not** regenerate to the sizes below; they are obsolete. Live set:
+
+`store/steam/` — header 920×430, small 462×174, main 1232×706,
+vertical 748×896, library 600×900, hero 3840×1240, page bg 1438×810,
+library logo 1280×720. See `ART_TODO_4.md` / `ART_WORK.md`.
 
 ## After generating
 
