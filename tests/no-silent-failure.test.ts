@@ -44,6 +44,10 @@ const NOT_ACTIONS = new Set([
   'craftSalve', // RecipeScene has its own ingredient display
   'learnTechniqueFromBook',
   'unlockTechnique', // StudyScene prints price, skill and master-only itself
+  // Its boolean answers "did anything change", not "did it succeed" — it is a
+  // day-tick reconciler with no player-facing refusal to explain. Behind no
+  // button at all: `endDay` and the hub call it.
+  'syncQuests',
 ]);
 
 /** Every `export function name(...): boolean` across the systems layer. */
