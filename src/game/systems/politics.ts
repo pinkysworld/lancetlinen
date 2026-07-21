@@ -2,6 +2,7 @@ import type { GameState, OfficeId, TitleId } from '../types';
 import { addJournal } from './journal';
 import { canHoldOffice, honourFromScandal, honourFromCharity } from './honour';
 import { ensureReputation, eliteForOffice, fameForTitle } from './reputation';
+import { atLeast, firstUnmet, must, type Requirement } from './requirements';
 
 export const OFFICE_COST: Record<Exclude<OfficeId, 'none'>, { coin: number; council: number; guild: number }> = {
   quarter_warden: { coin: 80, council: 15, guild: 5 },
@@ -24,21 +25,51 @@ export function ensurePolitics(state: GameState): void {
   if (state.prestige === undefined) state.prestige = 0;
 }
 
-export function applyForOffice(state: GameState, office: Exclude<OfficeId, 'none'>): boolean {
+/** Rank order of civic offices; you climb, you do not skip or step back. */
+const OFFICE_ORDER: OfficeId[] = [
+  'none',
+  'quarter_warden',
+  'guild_elder',
+  'city_surgeon',
+  'council_seat',
+];
+
+/**
+ * May the player stand for this office, and if not, which condition fails?
+ *
+ * Six separate conditions used to be six identical `return false`s, so the
+ * screen could only say "denied" — the player had no way to learn whether they
+ * were short of coin, of council favour, or of honour. The order is the order
+ * the player should hear it in: standing first, then the specific favours,
+ * then price, because being quoted a price you can meet when the real
+ * obstacle is your reputation sends you off to earn coin you did not need.
+ */
+export function canApplyForOffice(
+  state: GameState,
+  office: Exclude<OfficeId, 'none'>,
+): Requirement {
   ensurePolitics(state);
   ensureReputation(state);
   const cost = OFFICE_COST[office];
-  if (state.coin < cost.coin) return false;
-  if (state.councilFavor < cost.council) return false;
-  if (state.guildFavor < cost.guild) return false;
-  // Elite favour required — offices were not sold to disgraced cutters
-  if (state.repElite < eliteForOffice(office)) return false;
-  // Civic office was closed to a man of doubtful standing. This is the point
-  // where the honour axis bites hardest: coin alone will not buy a seat.
-  if (!canHoldOffice(state).ok) return false;
-  // Rank order
-  const order: OfficeId[] = ['none', 'quarter_warden', 'guild_elder', 'city_surgeon', 'council_seat'];
-  if (order.indexOf(office) <= order.indexOf(state.office)) return false;
+  return firstUnmet(
+    must(
+      OFFICE_ORDER.indexOf(office) > OFFICE_ORDER.indexOf(state.office),
+      'req_office_rank',
+    ),
+    // Civic office was closed to a man of doubtful standing. This is the point
+    // where the honour axis bites hardest: coin alone will not buy a seat.
+    must(canHoldOffice(state).ok, 'req_honour'),
+    // Offices were not handed to disgraced cutters.
+    atLeast('req_elite', state.repElite, eliteForOffice(office)),
+    atLeast('req_council', state.councilFavor, cost.council),
+    atLeast('req_guild', state.guildFavor, cost.guild),
+    atLeast('req_coin', state.coin, cost.coin),
+  );
+}
+
+export function applyForOffice(state: GameState, office: Exclude<OfficeId, 'none'>): boolean {
+  if (!canApplyForOffice(state, office).ok) return false;
+  const cost = OFFICE_COST[office];
 
   state.coin -= cost.coin;
   state.office = office;
@@ -50,16 +81,33 @@ export function applyForOffice(state: GameState, office: Exclude<OfficeId, 'none
   return true;
 }
 
-export function buyTitle(state: GameState, title: Exclude<TitleId, 'citizen'>): boolean {
+/**
+ * May the player take this title?
+ *
+ * The fame threshold is the one the player kept running into blind: the screen
+ * printed "Fame from 15" but never their own figure, and a refusal produced a
+ * bare "denied".
+ */
+export function canBuyTitle(state: GameState, title: Exclude<TitleId, 'citizen'>): Requirement {
   ensurePolitics(state);
   ensureReputation(state);
-  if (state.titlesOwned.includes(title)) return false;
   const cost = TITLE_COST[title];
-  if (state.coin < cost.coin) return false;
-  if (title === 'master_bader' && state.guildRank !== 'master' && state.guildRank !== 'journeyman') {
-    return false;
-  }
-  if (state.repFame < fameForTitle(title)) return false;
+  return firstUnmet(
+    must(!state.titlesOwned.includes(title), 'req_already_have'),
+    must(
+      title !== 'master_bader' ||
+        state.guildRank === 'master' ||
+        state.guildRank === 'journeyman',
+      'req_guild_rank',
+    ),
+    atLeast('req_fame', state.repFame, fameForTitle(title)),
+    atLeast('req_coin', state.coin, cost.coin),
+  );
+}
+
+export function buyTitle(state: GameState, title: Exclude<TitleId, 'citizen'>): boolean {
+  if (!canBuyTitle(state, title).ok) return false;
+  const cost = TITLE_COST[title];
   state.coin -= cost.coin;
   state.titlesOwned.push(title);
   state.title = title;
@@ -69,9 +117,20 @@ export function buyTitle(state: GameState, title: Exclude<TitleId, 'citizen'>): 
   return true;
 }
 
+export const BRIBE_COST = 40;
+export const DONATION_COST = 25;
+
+export function canBribeCouncil(state: GameState): Requirement {
+  return atLeast('req_coin', state.coin, BRIBE_COST);
+}
+
+export function canDonateChurch(state: GameState): Requirement {
+  return atLeast('req_coin', state.coin, DONATION_COST);
+}
+
 export function bribeCouncil(state: GameState): boolean {
-  if (state.coin < 40) return false;
-  state.coin -= 40;
+  if (!canBribeCouncil(state).ok) return false;
+  state.coin -= BRIBE_COST;
   state.councilFavor += 8;
   state.ethics = Math.max(0, state.ethics - 4);
   state.churchHeat += 2;
@@ -81,8 +140,8 @@ export function bribeCouncil(state: GameState): boolean {
 }
 
 export function donateChurch(state: GameState): boolean {
-  if (state.coin < 25) return false;
-  state.coin -= 25;
+  if (!canDonateChurch(state).ok) return false;
+  state.coin -= DONATION_COST;
   state.churchHeat = Math.max(0, state.churchHeat - 12);
   // Alms were the standard route back toward respectability.
   honourFromCharity(state, true);

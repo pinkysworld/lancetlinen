@@ -11,10 +11,11 @@ import {
   upgradeBath,
 } from '../systems/economy';
 import { repairCart, restHorse } from '../systems/travel';
-import { buyProperty, getLocalBath } from '../systems/property';
+import { buyProperty, canUpgradeProperty, getLocalBath, buyPropertyRequirement } from '../systems/property';
 import { TECHNIQUES } from '../data/techniques';
 import { mentorCitiesFor, isMentorOnly, SELF_TAUGHT_MULTIPLIER } from '../data/mentors';
 import { marketNoteKey } from '../data/prices';
+import { gatedButton } from '../ui/gated';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
 import { drawBackground, makeButton, bodyText, panel, titleText, hudText, addHudIcon } from '../ui/theme';
 import { audio } from '../audio/AudioManager';
@@ -264,12 +265,17 @@ export class UpgradesScene extends Phaser.Scene {
         ['hireApprentice', t('upgrade_hireApprentice')],
         ['hireBathMaid', t('upgrade_hireBathMaid')],
       ] as const;
+      // Every one of these was a live-looking button that ran `upgradeBath`
+      // and discarded the result. Several were unreachable at the player's
+      // level and one — `level1` — had no branch in `upgradeProperty` at all,
+      // so the top button on this screen could never have done anything.
       ups.forEach(([id, label], i) => {
-        makeButton(
+        gatedButton(
           this,
           GAME_WIDTH / 2,
           160 + i * 52,
           label,
+          canUpgradeProperty(s, local.id, id),
           () => {
             mutate((st) => upgradeBath(st, id));
             audio.sfx('coin');

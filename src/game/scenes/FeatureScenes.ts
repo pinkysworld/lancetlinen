@@ -9,6 +9,8 @@ import {
   ensureStaff,
 } from '../systems/staff';
 import type { StaffRole } from '../types';
+import { canRepayDebt, repayDebt } from '../systems/economy';
+import { DEBT_CALL_IN } from '../systems/pressure';
 import {
   startCourtship,
   courtAction,
@@ -22,12 +24,17 @@ import {
   buyTitle,
   bribeCouncil,
   donateChurch,
+  canApplyForOffice,
+  canBuyTitle,
+  canBribeCouncil,
+  canDonateChurch,
   OFFICE_COST,
   TITLE_COST,
 } from '../systems/politics';
 import type { OfficeId, TitleId } from '../types';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
 import { drawBackground, makeButton, bodyText, panel, titleText, hudText, COLORS } from '../ui/theme';
+import { gatedButton } from '../ui/gated';
 import { showToast } from '../ui/dialogs';
 import { audio } from '../audio/AudioManager';
 import { activeQuests, questTitleKey } from '../systems/story';
@@ -344,12 +351,49 @@ export class PoliticsScene extends Phaser.Scene {
       70,
       `${t('coin')}: ${s.coin} · ${t('council')}: ${s.councilFavor} · ${t('guild')}: ${s.guildFavor} · ${t('prestige')}: ${s.prestige ?? 0}`,
     );
+    // Fame moves by 0.3–0.8 per success, so a rounded integer sat on the same
+    // number for many treatments and read as "not being calculated at all".
+    // One decimal makes the needle visibly move. Fame is the *imperial* figure
+    // — it carries between cities, unlike the local reputation beside it.
     hudText(
       this,
       40,
       90,
-      `${t('rep_elite')}: ${rs.elite} · ${t('rep_fame')}: ${rs.fame} · ${t('rep_local')}: ${rs.local} (${t(rs.localKey)})`,
+      `${t('rep_elite')}: ${rs.elite} · ${t('rep_fame')}: ${(s.repFame ?? 0).toFixed(1)} · ${t('rep_local')}: ${rs.local} (${t(rs.localKey)})`,
     );
+    // The Lombard. Borrowing existed with no way back out — see `repayDebt`.
+    if ((s.debt ?? 0) > 0) {
+      hudText(this, 640, 70, `${t('debt_owed', { n: Math.round(s.debt) })}`);
+      bodyText(this, 640, 92, t('debt_warning', { n: DEBT_CALL_IN }), {
+        fontSize: '12px',
+        color: s.debt > DEBT_CALL_IN * 0.7 ? '#b33a3a' : '#a88',
+        wordWrap: { width: 560 },
+      });
+      const chunk = Math.min(s.coin, Math.ceil(s.debt));
+      gatedButton(
+        this,
+        1100,
+        545,
+        t('repay_debt_some', { n: chunk }),
+        canRepayDebt(s),
+        () => {
+          let paid = 0;
+          mutate((st) => {
+            paid = repayDebt(st, chunk);
+          });
+          audio.sfx('coin');
+          showToast(
+            this,
+            t('repay_done', { n: paid, rest: Math.round(getState().debt ?? 0) }),
+            '#c9a06a',
+            2600,
+          );
+          saveGame();
+          this.scene.restart();
+        },
+        { width: 240 },
+      );
+    }
 
     panel(this, 40, 120, 600, 470);
     bodyText(this, 60, 135, t('offices'), { fontSize: '18px', color: '#e8c547' });
@@ -360,23 +404,19 @@ export class PoliticsScene extends Phaser.Scene {
     (Object.keys(OFFICE_COST) as Exclude<OfficeId, 'none'>[]).forEach((off, i) => {
       const c = OFFICE_COST[off];
       const needE = eliteForOffice(off);
-      makeButton(
+      // Six separate conditions gate an office and every one of them used to
+      // produce the same "denied" toast, so the player could not tell coin
+      // from council favour from honour.
+      gatedButton(
         this,
         300,
         240 + i * 55,
         `${t(`office_${off}`)} — ${t('coin_amount', { n: c.coin })} · ${t('rep_elite')} ab ${needE}`,
+        canApplyForOffice(s, off),
         () => {
-          let ok = false;
-          mutate((st) => {
-            ok = applyForOffice(st, off);
-          });
-          if (ok) {
-            audio.sfx('guild');
-            showToast(this, t('office_gained'));
-          } else {
-            audio.sfx('fail');
-            showToast(this, t('office_denied'));
-          }
+          mutate((st) => applyForOffice(st, off));
+          audio.sfx('guild');
+          showToast(this, t('office_gained'));
           saveGame();
           this.scene.restart();
         },
@@ -393,36 +433,29 @@ export class PoliticsScene extends Phaser.Scene {
     (Object.keys(TITLE_COST) as Exclude<TitleId, 'citizen'>[]).forEach((title, i) => {
       const c = TITLE_COST[title];
       const needF = fameForTitle(title);
-      makeButton(
+      gatedButton(
         this,
         940,
         240 + i * 55,
         `${t(`title_${title}`)} — ${t('coin_amount', { n: c.coin })} · ${t('rep_fame')} ab ${needF}`,
+        canBuyTitle(s, title),
         () => {
-          let ok = false;
-          mutate((st) => {
-            ok = buyTitle(st, title);
-          });
-          if (ok) {
-            audio.sfx('bell');
-            showToast(this, t('title_gained'));
-          } else {
-            audio.sfx('fail');
-            showToast(this, t('title_denied'));
-          }
+          mutate((st) => buyTitle(st, title));
+          audio.sfx('bell');
+          showToast(this, t('title_gained'));
           saveGame();
           this.scene.restart();
         },
         { width: 360, height: 44, fontSize: '13px' },
       );
     });
-    makeButton(this, 850, 480, t('bribe_council'), () => {
+    gatedButton(this, 850, 480, t('bribe_council'), canBribeCouncil(s), () => {
       mutate((st) => bribeCouncil(st));
       audio.sfx('coin');
       saveGame();
       this.scene.restart();
     }, { width: 240 });
-    makeButton(this, 1100, 480, t('donate_church'), () => {
+    gatedButton(this, 1100, 480, t('donate_church'), canDonateChurch(s), () => {
       mutate((st) => donateChurch(st));
       audio.sfx('church');
       saveGame();

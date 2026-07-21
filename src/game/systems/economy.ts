@@ -19,6 +19,7 @@ import { festivalPatientMult } from './events';
 import { addJournal } from './journal';
 import { tickReputation } from './reputation';
 import { localGoodsMult, type PricedItem } from '../data/prices';
+import { atLeast, firstUnmet, must, type Requirement } from './requirements';
 
 export function dailyOperatingCost(state: GameState): number {
   const local = getLocalBath(state);
@@ -281,6 +282,42 @@ export function isDestitute(state: GameState): boolean {
  *
  * It exists to guarantee the player always has *a* move, not to be a good one.
  */
+/**
+ * Pay the Lombard back.
+ *
+ * **This did not exist.** The player could borrow, the debt compounded at 2%
+ * a day in `applyMorningCosts`, and the only way it ever went down was
+ * `applyDebtCollection` seizing coin — or a property — once it passed
+ * `DEBT_CALL_IN`. There was no voluntary repayment anywhere in the codebase,
+ * so an informed player who wanted to clear the debt before it called in
+ * simply could not. Reported from play as "how do I pay this back?".
+ *
+ * Repaying is partial by design: you hand over what you can spare. Clearing it
+ * entirely returns the small amount of standing that taking it cost, because
+ * a debt honoured was worth something — but only once, and only if you clear
+ * it before the lender has to come asking.
+ */
+export function repayDebt(state: GameState, amount: number): number {
+  const debt = state.debt ?? 0;
+  const paid = Math.max(0, Math.min(amount, state.coin, debt));
+  if (paid <= 0) return 0;
+  state.coin -= paid;
+  state.debt = debt - paid;
+  if (state.debt === 0) {
+    addHonour(state, 1.5, 'journal_debt_cleared');
+    addJournal(state, 'journal_debt_cleared', 'business');
+  }
+  return paid;
+}
+
+/** May the player repay, and if not, why not? */
+export function canRepayDebt(state: GameState): Requirement {
+  return firstUnmet(
+    must((state.debt ?? 0) > 0, 'req_no_debt'),
+    atLeast('req_coin', state.coin, 1),
+  );
+}
+
 export function takeLoan(state: GameState): { coin: number; debt: number } {
   state.coin += LOAN_PRINCIPAL;
   state.debt = (state.debt ?? 0) + LOAN_DEBT;

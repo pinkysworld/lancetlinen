@@ -1,6 +1,7 @@
 import type { GameState, Property, PropertyKind } from '../types';
 import { MAP_NODE_MAP } from '../data/map';
 import { incomeMult } from './settings';
+import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
 
 let propSeq = 1;
 
@@ -81,28 +82,37 @@ export const PROPERTY_COSTS: Record<PropertyKind, number> = {
 export function canBuyProperty(
   state: GameState,
   kind: PropertyKind,
-): { ok: boolean; reason?: string; cost: number } {
+): { ok: boolean; reason?: string; cost: number; need?: number; have?: number } {
   const cityId = state.locationId;
   const node = MAP_NODE_MAP[cityId];
   const cost = PROPERTY_COSTS[kind];
-  if (!node) return { ok: false, reason: 'unknown', cost };
-  if (node.type === 'camp' && kind !== 'stall') return { ok: false, reason: 'camp', cost };
-  if (hasKind(state, cityId, kind)) return { ok: false, reason: 'owned', cost };
+  if (!node) return { ok: false, reason: 'req_unknown', cost };
+  if (node.type === 'camp' && kind !== 'stall') return { ok: false, reason: 'req_camp', cost };
+  if (hasKind(state, cityId, kind)) return { ok: false, reason: 'req_already_have', cost };
   if (kind === 'bathhouse') {
     const licenseKey = `license_${cityId}`;
     if (!state.storyFlags[licenseKey] && !state.storyFlags['bath_license']) {
       // Nürnberg global license still works for Nürnberg
       if (!(cityId === 'nurnberg' && state.storyFlags['bath_license'])) {
-        return { ok: false, reason: 'license', cost };
+        return { ok: false, reason: 'req_license', cost };
       }
     }
     if (!node.hasBathLicenseShop && cityId !== 'nurnberg') {
       // still allow if license flag set
-      if (!state.storyFlags[licenseKey]) return { ok: false, reason: 'no_shop', cost };
+      if (!state.storyFlags[licenseKey]) return { ok: false, reason: 'req_no_shop', cost };
     }
   }
-  if (state.coin < cost) return { ok: false, reason: 'coin', cost };
+  if (state.coin < cost) return { ok: false, reason: 'req_coin', cost, need: cost, have: state.coin };
   return { ok: true, cost };
+}
+
+/** The same answer in the shared `Requirement` shape, for the UI helpers. */
+export function buyPropertyRequirement(state: GameState, kind: PropertyKind): Requirement {
+  const c = canBuyProperty(state, kind);
+  if (c.ok) return { ok: true };
+  return c.reason === 'req_coin'
+    ? { ok: false, reasonKey: 'req_coin', need: c.cost, have: state.coin }
+    : refuse(c.reason ?? 'req_unknown');
 }
 
 export function buyProperty(state: GameState, kind: PropertyKind): boolean {
@@ -148,49 +158,104 @@ export function hireManager(state: GameState, propertyId: string): boolean {
   return true;
 }
 
-export function upgradeProperty(state: GameState, propertyId: string, upgradeId: string): boolean {
+/**
+ * Cost and prerequisite of every upgrade, in one table.
+ *
+ * Split out of the switch below so the UI can say *why* an upgrade is barred
+ * instead of presenting eight identical live buttons that quietly do nothing —
+ * which is what the screen did, and what was reported from play.
+ */
+export const UPGRADE_SPECS: Record<
+  string,
+  { coin: number; minLevel: number; reasonKey: string; done?: (p: Property) => boolean }
+> = {
+  // This had no branch in the switch at all, so it fell through to `default:
+  // return false` and could never be bought — the first button on the screen.
+  level1: { coin: 120, minLevel: 0, reasonKey: 'req_needs_premises' },
+  level2: { coin: 250, minLevel: 1, reasonKey: 'req_needs_level1' },
+  level3: { coin: 500, minLevel: 2, reasonKey: 'req_needs_level2' },
+  boiler: { coin: 80, minLevel: 1, reasonKey: 'req_needs_level1', done: (p) => p.boiler },
+  privateBooth: {
+    coin: 150,
+    minLevel: 2,
+    reasonKey: 'req_needs_level2',
+    done: (p) => p.privateBooth,
+  },
+  apprenticeBunks: {
+    coin: 100,
+    minLevel: 1,
+    reasonKey: 'req_needs_level1',
+    done: (p) => p.apprenticeBunks,
+  },
+  hireApprentice: {
+    coin: 40,
+    minLevel: 1,
+    reasonKey: 'req_needs_bunks',
+    done: (p) => p.staffApprentice >= 2,
+  },
+  hireBathMaid: {
+    coin: 50,
+    minLevel: 1,
+    reasonKey: 'req_needs_level1',
+    done: (p) => p.staffBathMaid >= 1,
+  },
+  comfort: { coin: 30, minLevel: 0, reasonKey: 'req_needs_home', done: (p) => p.comfort >= 100 },
+};
+
+/** May this upgrade be bought, and if not, why not? */
+export function canUpgradeProperty(
+  state: GameState,
+  propertyId: string,
+  upgradeId: string,
+): Requirement {
   const p = (state.properties ?? []).find((x) => x.id === propertyId);
-  if (!p) return false;
+  if (!p) return refuse('req_no_premises');
+  const spec = UPGRADE_SPECS[upgradeId];
+  if (!spec) return refuse('req_unknown');
+  if (spec.done?.(p)) return refuse('req_already_have');
+  if (upgradeId === 'comfort' && p.kind !== 'home') return refuse('req_needs_home');
+  if (upgradeId === 'hireApprentice' && !p.apprenticeBunks) return refuse('req_needs_bunks');
+  return firstUnmet(
+    must(p.level >= spec.minLevel, spec.reasonKey),
+    atLeast('req_coin', state.coin, spec.coin),
+  );
+}
+
+export function upgradeProperty(state: GameState, propertyId: string, upgradeId: string): boolean {
+  // The gate lives in `canUpgradeProperty` and nowhere else — restating it here
+  // is how two copies of a rule drift apart.
+  if (!canUpgradeProperty(state, propertyId, upgradeId).ok) return false;
+  const p = (state.properties ?? []).find((x) => x.id === propertyId)!;
+  state.coin -= UPGRADE_SPECS[upgradeId]!.coin;
   switch (upgradeId) {
+    case 'level1':
+      // Simple bathhouse rights: a stall becomes premises you can work from.
+      p.level = 1;
+      if (p.kind === 'stall') p.kind = 'bathhouse';
+      break;
     case 'level2':
-      if (p.level < 1 || state.coin < 250) return false;
-      state.coin -= 250;
       p.level = 2;
       break;
     case 'level3':
-      if (p.level < 2 || state.coin < 500) return false;
-      state.coin -= 500;
       p.level = 3;
       state.guildRank = 'master';
       break;
     case 'boiler':
-      if (p.boiler || p.level < 1 || state.coin < 80) return false;
-      state.coin -= 80;
       p.boiler = true;
       break;
     case 'privateBooth':
-      if (p.privateBooth || p.level < 2 || state.coin < 150) return false;
-      state.coin -= 150;
       p.privateBooth = true;
       break;
     case 'apprenticeBunks':
-      if (p.apprenticeBunks || p.level < 1 || state.coin < 100) return false;
-      state.coin -= 100;
       p.apprenticeBunks = true;
       break;
     case 'hireApprentice':
-      if (!p.apprenticeBunks || state.coin < 40 || p.staffApprentice >= 2) return false;
-      state.coin -= 40;
       p.staffApprentice += 1;
       break;
     case 'hireBathMaid':
-      if (p.level < 1 || state.coin < 50 || p.staffBathMaid >= 1) return false;
-      state.coin -= 50;
       p.staffBathMaid += 1;
       break;
     case 'comfort':
-      if (p.kind !== 'home' || state.coin < 30 || p.comfort >= 100) return false;
-      state.coin -= 30;
       p.comfort = Math.min(100, p.comfort + 15);
       break;
     default:

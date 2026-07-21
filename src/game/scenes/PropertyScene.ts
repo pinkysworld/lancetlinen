@@ -4,7 +4,7 @@ import { getState, mutate, saveGame } from '../state';
 import {
   buyCityLicense,
   buyProperty,
-  canBuyProperty,
+  buyPropertyRequirement,
   getLocalHome,
   hireManager,
   hostGathering,
@@ -20,6 +20,7 @@ import { audio } from '../audio/AudioManager';
 import { MAP_NODE_MAP } from '../data/map';
 import { sceneBackground, transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
+import { gatedButton } from '../ui/gated';
 
 export class PropertyScene extends Phaser.Scene {
   constructor() {
@@ -62,25 +63,28 @@ export class PropertyScene extends Phaser.Scene {
 
     const kinds: PropertyKind[] = ['stall', 'bathhouse', 'home', 'warehouse'];
     kinds.forEach((kind, i) => {
-      const check = canBuyProperty(s, kind);
       const labels: Record<PropertyKind, string> = {
         stall: t('buy_stall'),
         bathhouse: t('buy_bathhouse'),
         home: t('buy_home'),
         warehouse: t('buy_warehouse'),
       };
-      makeButton(
+      // Greyed with no explanation before this. "In Nürnberg I cannot buy a
+      // bathhouse and I do not know why" — `canBuyProperty` computed the exact
+      // reason ('req_license') right here and the scene discarded it.
+      gatedButton(
         this,
         900,
         165 + i * 48,
         labels[kind],
+        buyPropertyRequirement(s, kind),
         () => {
           mutate((st) => buyProperty(st, kind));
           audio.sfx('coin');
           saveGame();
           this.scene.restart();
         },
-        { width: 320, height: 40, fontSize: '15px', disabled: !check.ok },
+        { width: 320, height: 40, fontSize: '15px' },
       );
     });
 
