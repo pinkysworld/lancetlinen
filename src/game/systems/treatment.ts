@@ -19,7 +19,7 @@ import {
   templateWeight,
 } from '../data/patients';
 import { bloodlettingDayModifier, seasonalHumorBias } from '../data/history';
-import { complaintRegion, judgeVein } from '../data/bloodletting';
+import { complaintRegion, judgeVein, type BodyRegion } from '../data/bloodletting';
 import { classWeight, reputationPayMult, applyTreatmentReputation } from './reputation';
 import { staffSkillBonus, staffSupplySaveChance } from './staff';
 import {
@@ -634,4 +634,72 @@ export function readUrine(state: GameState, patient: PatientInstance): UrineRead
       : 'urine_high_clear';
 
   return { qualityKey, candidates, misread };
+}
+
+/* ------------------------------------------------------------------ *
+ * The taught examinations
+ * ------------------------------------------------------------------ */
+
+export interface PalpationReading {
+  /** The region the hand finds the trouble in — feeds the choice of vein. */
+  region: BodyRegion | null;
+  textKey: string;
+  /** What the belly felt like, for the flavour line. */
+  qualityKey: string;
+}
+
+/**
+ * Feel for it.
+ *
+ * The wound-surgeon's habit: hardness, heat and tenderness under the hand.
+ * It reads neither the hot/cold axis nor the moist/dry one — it reads *where*,
+ * which is the third question and the one nothing else answered.
+ *
+ * That makes it the examination that talks to the Aderlaßmännchen: knowing
+ * the seat of the trouble is exactly what `judgeVein` needs to tell a
+ * well-chosen vein from an ill-matched one. A field surgeon therefore bleeds
+ * better than a scholar, while the scholar names the humour better — which is
+ * the distinction the two trades actually had.
+ */
+export function readPalpation(state: GameState, patient: PatientInstance): PalpationReading {
+  patient.palpated = true;
+  const truth = complaintRegion(patient.templateId);
+  // The hand is more honest than the eye here: you are touching the thing.
+  // But a seat that is not in the table cannot be found by feel either.
+  const sure = Math.random() < 0.6 + state.stats.hand * 0.04;
+  const region = truth && sure ? truth : null;
+  const hot = HUMOR_QUALITIES[patient.dominantHumor].hot;
+  return {
+    region,
+    qualityKey: hot ? 'palpate_hot' : 'palpate_cold',
+    textKey: region ? 'palpate_found' : 'palpate_vague',
+  };
+}
+
+export interface TongueReading {
+  candidates: Humor[];
+  qualityKey: string;
+}
+
+/**
+ * Read the tongue and the complexion.
+ *
+ * The kitchen-table examination — no book behind it, no flask, no waiting.
+ * It costs nothing and narrows the humours only by half, and it can mislead
+ * more readily than the pulse, which is honest about what folk practice was
+ * worth: better than nothing, and not what the physician charged for.
+ */
+export function readTongue(state: GameState, patient: PatientInstance): TongueReading {
+  patient.tongueRead = true;
+  const actual = HUMOR_QUALITIES[patient.dominantHumor];
+  // Cruder than uroscopy and much cruder than the pulse.
+  const misread = Math.random() > 0.5 + state.stats.eye * 0.035;
+  const seenHot = misread ? !actual.hot : actual.hot;
+  const candidates = (Object.keys(HUMOR_QUALITIES) as Humor[]).filter(
+    (h) => HUMOR_QUALITIES[h].hot === seenHot,
+  );
+  return {
+    candidates,
+    qualityKey: seenHot ? 'tongue_red_dry' : 'tongue_pale_furred',
+  };
 }

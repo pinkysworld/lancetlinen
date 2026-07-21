@@ -105,6 +105,10 @@ export interface PatientInstance {
   pulseRead: boolean;
   /** Whether the urine flask has been read — see `readUrine`. */
   urineRead?: boolean;
+  /** Whether the body has been felt — see `readPalpation`. */
+  palpated?: boolean;
+  /** Whether the tongue has been read — see `readTongue`. */
+  tongueRead?: boolean;
   storyFlag?: string;
   portraitKey?: string;
   /**

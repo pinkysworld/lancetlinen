@@ -8,7 +8,11 @@ import {
   generatePatient,
   readPulse,
   readUrine,
+  readPalpation,
+  readTongue,
+  type PalpationReading,
   type PulseReading,
+  type TongueReading,
   type UrineReading,
 } from '../systems/treatment';
 import { TECHNIQUES, TECH_DISPLAY_ORDER, TECHNIQUE_MAP } from '../data/techniques';
@@ -113,6 +117,8 @@ export class TreatmentScene extends Phaser.Scene {
   private diagnosisConfidenceKey: string | null = null;
   private pulse: PulseReading | null = null;
   private urine: UrineReading | null = null;
+  private palpation: PalpationReading | null = null;
+  private tongue: TongueReading | null = null;
   private finishing = false;
   private techPage = 0;
   /** Display-list objects that survive a `render()` — see `buildStatic`. */
@@ -135,6 +141,8 @@ export class TreatmentScene extends Phaser.Scene {
     this.diagnosisConfidenceKey = null;
     this.pulse = null;
     this.urine = null;
+    this.palpation = null;
+    this.tongue = null;
     this.finishing = false;
     this.techPage = 0;
     void audio.setContext('treatment');
@@ -191,7 +199,9 @@ export class TreatmentScene extends Phaser.Scene {
     // Pulse gives the hot/cold axis, urine the moist/dry one. Together they
     // name a single humour; either alone leaves two. Intersect them first,
     // then fold in the (fallible) diagnosis.
-    const pulseC = this.pulse?.candidates ?? null;
+    // The tongue reads the same hot/cold axis as the pulse, more crudely; it
+    // only adds anything when the pulse has not been taken.
+    const pulseC = this.pulse?.candidates ?? this.tongue?.candidates ?? null;
     const urineC = this.urine?.candidates ?? null;
     const pulseCandidates =
       pulseC && urineC
@@ -307,6 +317,32 @@ export class TreatmentScene extends Phaser.Scene {
         findY,
         `${t(this.pulse.qualityKey)} — ${t('pulse_suggests')}: ${narrowed}`,
         { fontSize: fontFor('small'), color: '#a8c0c4', wordWrap: { width: 528 } },
+      );
+      findY += line.height + 6;
+    }
+
+    if (this.palpation) {
+      const where = this.palpation.region
+        ? t(`region_${this.palpation.region}`)
+        : t('region_unclear');
+      const line = bodyText(
+        this,
+        56,
+        findY,
+        `${t(this.palpation.qualityKey)} — ${t(this.palpation.textKey, { where })}`,
+        { fontSize: fontFor('small'), color: '#c4a574', wordWrap: { width: 528 } },
+      );
+      findY += line.height + 6;
+    }
+
+    if (this.tongue) {
+      const narrowed = this.tongue.candidates.map((h) => humorName(h)).join(' / ');
+      const line = bodyText(
+        this,
+        56,
+        findY,
+        `${t(this.tongue.qualityKey)} — ${t('pulse_suggests')}: ${narrowed}`,
+        { fontSize: fontFor('small'), color: '#b0a08a', wordWrap: { width: 528 } },
       );
       findY += line.height + 6;
     }
@@ -467,6 +503,45 @@ export class TreatmentScene extends Phaser.Scene {
       },
     );
 
+    /* ── The taught examinations ──────────────────────────────────────
+     * Palpation and the tongue. Gated on training like uroscopy, and greyed
+     * with the reason rather than hidden, so a player who cannot do them
+     * learns they exist and can be taught.
+     */
+    const taughtY = cycY + (compact() ? cycH + 10 : 34);
+    if (!compact()) {
+      gatedButton(
+        this,
+        cycX[0]!,
+        taughtY,
+        t('palpate'),
+        this.palpation ? ({ ok: false, reasonKey: 'req_already_have' } as const) : canExamine(s, 'palpate'),
+        () => {
+          mutate((st) => {
+            this.palpation = readPalpation(st, this.patient);
+          });
+          audio.sfx('pulse');
+          this.render();
+        },
+        { width: 258, height: 32, fontSize: '13px', noHotkey: true },
+      );
+      gatedButton(
+        this,
+        cycX[1]!,
+        taughtY,
+        t('tongue_look'),
+        this.tongue ? ({ ok: false, reasonKey: 'req_already_have' } as const) : canExamine(s, 'tongue'),
+        () => {
+          mutate((st) => {
+            this.tongue = readTongue(st, this.patient);
+          });
+          audio.sfx('page');
+          this.render();
+        },
+        { width: 258, height: 32, fontSize: '13px', noHotkey: true },
+      );
+    }
+
     /* ── The Aderlaßmännchen ──────────────────────────────────────────
      * Which vein, judged against the moon's sign and the seat of the
      * complaint. The codex has claimed this mechanic exists since long before
@@ -478,11 +553,14 @@ export class TreatmentScene extends Phaser.Scene {
     );
     if (knowsBloodArt && !compact()) {
       const sign = moonSign(s);
-      const region = complaintRegion(p.templateId);
+      // The seat of the trouble is only known if the hand found it. Without
+      // palpation the player is choosing a vein blind — which is exactly the
+      // advantage a field surgeon has over a scholar at the bleeding bowl.
+      const region = this.palpation?.region ?? null;
       bodyText(
         this,
         56,
-        cycY + 34,
+        taughtY + 26,
         `${t('moon_in', { sign: t(`zodiac_${sign}`), n: daysInSign(s) })}${
           isEgyptianDay(s.day) ? ` · ${t('egyptian_day_warn')}` : ''
         }`,
@@ -499,7 +577,7 @@ export class TreatmentScene extends Phaser.Scene {
         makeButton(
           this,
           176,
-          cycY + 68,
+          taughtY + 58,
           `${t('vein_label')}: ${t(`vein_${current}`)} ▸`,
           () => {
             const i = veins.findIndex((v) => v.id === current);
@@ -520,7 +598,7 @@ export class TreatmentScene extends Phaser.Scene {
                   : COLORS.panelLight,
           },
         );
-        bodyText(this, 320, cycY + 60, t(verdict.key), {
+        bodyText(this, 320, taughtY + 50, t(verdict.key), {
           fontSize: '12px',
           color:
             verdict.tone === 'good' ? '#5a9a6e' : verdict.tone === 'bad' ? '#c9a227' : '#a88',

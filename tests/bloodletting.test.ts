@@ -273,3 +273,50 @@ describe('no origin is left without a way of reading a patient', () => {
     }
   });
 });
+
+describe('the taught examinations actually do something', () => {
+  // Gating an examination that has no implementation would be precisely the
+  // "written but never reached" defect this project keeps producing — the
+  // framework would look complete and two of its five entries would be dead.
+
+  it('has a reading function for every examination it gates', () => {
+    const src = readFileSync(join(process.cwd(), 'src/game/systems/treatment.ts'), 'utf8');
+    const impl: Record<string, string> = {
+      inspect: 'export function diagnosePatient',
+      pulse: 'export function readPulse',
+      uroscopy: 'export function readUrine',
+      palpate: 'export function readPalpation',
+      tongue: 'export function readTongue',
+    };
+    for (const e of EXAMINATIONS) {
+      expect(src, `${e.id} is gated but unimplemented`).toContain(impl[e.id]!);
+    }
+  });
+
+  it('reaches all five from the treatment screen', () => {
+    for (const call of ['diagnosePatient(', 'readPulse(', 'readUrine(', 'readPalpation(', 'readTongue(']) {
+      expect(SCENE, `${call} unreachable`).toContain(call);
+    }
+  });
+
+  it('lets palpation feed the choice of vein', () => {
+    // This is the join between the two halves of the block: the hand finds
+    // the seat, and the seat is what the Aderlaßmännchen judges the vein
+    // against. Without it the field surgeon's advantage would be flavour.
+    expect(SCENE).toContain('this.palpation?.region ?? null');
+  });
+
+  it('names every region and reading in both locales', () => {
+    const keys = [
+      'palpate_hot', 'palpate_cold', 'palpate_found', 'palpate_vague',
+      'tongue_red_dry', 'tongue_pale_furred', 'region_unclear',
+    ];
+    for (const r of Object.values(SIGN_REGION)) keys.push(`region_${r}`);
+    const missing: string[] = [];
+    for (const k of new Set(keys)) {
+      if (!EN.includes(`${k}:`)) missing.push(`en:${k}`);
+      if (!DE.includes(`${k}:`)) missing.push(`de:${k}`);
+    }
+    expect(missing).toEqual([]);
+  });
+});
