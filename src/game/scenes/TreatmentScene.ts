@@ -12,7 +12,7 @@ import {
   type UrineReading,
 } from '../systems/treatment';
 import { TECHNIQUES, TECH_DISPLAY_ORDER, TECHNIQUE_MAP } from '../data/techniques';
-import type { Humor, PatientInstance, TreatmentResult } from '../types';
+import type { FeeStance, Humor, Intensity, PatientInstance, TreatmentResult } from '../types';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
 import { runSkillCheck } from '../ui/skillcheck';
 import { installSceneKeys } from '../ui/input';
@@ -57,6 +57,24 @@ import { compact, fontFor } from '../ui/responsive';
  */
 const TECH_LIST_TOP = 142;
 const TECH_LIST_BOTTOM = 600;
+
+/**
+ * Cycle orders for the two pre-treatment choices. Literal key maps rather than
+ * `'stance_' + id`, so the i18n scan can see every key that will be asked for.
+ */
+const STANCES: FeeStance[] = ['usual', 'demand', 'lenient', 'alms'];
+const STANCE_KEYS: Record<FeeStance, string> = {
+  usual: 'stance_usual',
+  demand: 'stance_demand',
+  lenient: 'stance_lenient',
+  alms: 'stance_alms',
+};
+const INTENSITIES: Intensity[] = ['usual', 'careful', 'bold'];
+const INTENSITY_KEYS: Record<Intensity, string> = {
+  usual: 'intensity_usual',
+  careful: 'intensity_careful',
+  bold: 'intensity_bold',
+};
 
 /**
  * Rows are sized from the real button height, and the page size follows.
@@ -383,6 +401,56 @@ export class TreatmentScene extends Phaser.Scene {
       transitionTo(this, 'Bathhouse');
     }, { width: exW, height: exH, fontSize: exFont, fill: COLORS.blood });
 
+    /* ── Fee and hand — the decisions that make a patient a negotiation ──
+     * Fees were haggled, not fixed, and treating the poor for nothing was the
+     * standard route back to respectability. Both are cycle buttons: tap to
+     * step through, chosen per patient, read by `applyTreatment`. No hotkeys,
+     * so the technique keys (4–9) stay where the help text says they are.
+     */
+    const stance = p.feeStance ?? 'usual';
+    const intensity = p.intensity ?? 'usual';
+    // Two 258px buttons centred at 176 and 452 span 47–581, inside the 40–600
+    // panel — the four exam columns (112/244/…) would overlap at this width.
+    const cycX = [176, 452];
+    const cycY = compact() ? exY[2]! + exH + 10 : examRowY + 52;
+    const cycH = compact() ? 56 : 36;
+    makeButton(
+      this,
+      cycX[0]!,
+      cycY,
+      `${t('fee_stance_label')}: ${t(STANCE_KEYS[stance])} ▸`,
+      () => {
+        p.feeStance = STANCES[(STANCES.indexOf(stance) + 1) % STANCES.length]!;
+        audio.sfx('click');
+        this.render();
+      },
+      {
+        width: 258,
+        height: cycH,
+        fontSize: exFont,
+        noHotkey: true,
+        fill: stance === 'alms' ? COLORS.green : stance === 'demand' ? 0x5a4420 : COLORS.panelLight,
+      },
+    );
+    makeButton(
+      this,
+      cycX[1]!,
+      cycY,
+      `${t('intensity_label')}: ${t(INTENSITY_KEYS[intensity])} ▸`,
+      () => {
+        p.intensity = INTENSITIES[(INTENSITIES.indexOf(intensity) + 1) % INTENSITIES.length]!;
+        audio.sfx('click');
+        this.render();
+      },
+      {
+        width: 258,
+        height: cycH,
+        fontSize: exFont,
+        noHotkey: true,
+        fill: intensity === 'bold' ? 0x5a3020 : COLORS.panelLight,
+      },
+    );
+
     // Techniques list
     panel(this, 580, 42, 660, 620);
     bodyText(this, 600, 52, t('technique_pick'), { fontSize: '18px', color: '#e8c547' });
@@ -607,6 +675,18 @@ export class TreatmentScene extends Phaser.Scene {
       `${t('pay')}: ${r.pay} · XP: ${r.xp} · ${t('reputation')}: ${r.reputationDelta >= 0 ? '+' : ''}${r.reputationDelta}`,
       { fontSize: '16px', color: '#e8d5a8' },
     ).setOrigin(0.5);
+
+    // Whether the fee posture held — "they paid the higher fee", "they haggled
+    // you down", "treated as alms". Without this line the Tongue check is a
+    // hidden roll and demanding never becomes a readable gamble.
+    if (r.stanceNoteKey) {
+      bodyText(this, GAME_WIDTH / 2, 408, t(r.stanceNoteKey), {
+        fontSize: '14px',
+        color: '#c9b48a',
+        wordWrap: { width: 560 },
+        align: 'center',
+      }).setOrigin(0.5);
+    }
 
     // Drift the deltas so the numbers register rather than just appearing.
     if (r.pay > 0) {

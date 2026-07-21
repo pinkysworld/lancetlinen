@@ -14,6 +14,7 @@ import { repairCart, restHorse } from '../systems/travel';
 import { buyProperty, getLocalBath } from '../systems/property';
 import { TECHNIQUES } from '../data/techniques';
 import { mentorCitiesFor, isMentorOnly, SELF_TAUGHT_MULTIPLIER } from '../data/mentors';
+import { marketNoteKey } from '../data/prices';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
 import { drawBackground, makeButton, bodyText, panel, titleText, hudText, addHudIcon } from '../ui/theme';
 import { audio } from '../audio/AudioManager';
@@ -38,6 +39,15 @@ export class MarketScene extends Phaser.Scene {
     const prices = marketPrices(s);
     addHudIcon(this, 40, 100, 'icon_coin', 28);
     hudText(this, 60, 90, `${t('coin')}: ${s.coin}`);
+
+    // Name what this market is good for. Prices now vary by settlement, and a
+    // difference the player cannot see is not depth — it is just noise in the
+    // numbers. This is the line that turns it into a reason to travel.
+    bodyText(this, 240, 92, t(marketNoteKey(s.locationId)), {
+      fontSize: compact() ? fontFor('small') : '14px',
+      color: '#c9b48a',
+      wordWrap: { width: GAME_WIDTH - 300 },
+    });
 
     panel(this, 80, 130, GAME_WIDTH - 160, compact() ? 540 : 480);
     const items = Object.keys(prices) as (keyof typeof prices)[];

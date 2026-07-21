@@ -21,8 +21,14 @@ import {
 import { bloodlettingDayModifier, seasonalHumorBias } from '../data/history';
 import { classWeight, reputationPayMult, applyTreatmentReputation } from './reputation';
 import { staffSkillBonus, staffSupplySaveChance } from './staff';
-import { honourFromTreatment, honourFromPlagueService } from './honour';
+import {
+  honourFromTreatment,
+  honourFromPlagueService,
+  honourFromCharity,
+  addHonour,
+} from './honour';
 import { bestRemedyFor, consumeRemedy, RECIPE_MAP } from '../data/recipes';
+import { localFeeMult } from '../data/prices';
 import { titlePayMult } from './politics';
 import { incomeMult } from './settings';
 import { pickPortraitKey } from '../ui/art';
@@ -234,6 +240,13 @@ export function applyTreatment(
 
   spendCosts(state, tech.costItems);
 
+  // How boldly the hand works. Only a technique that can actually hurt someone
+  // reads this — a careful shave is not a thing the fee reflects. The bold cut
+  // paid better and killed more often; that trade-off is the whole point.
+  const intensity = tech.risk >= 0.05 ? (patient.intensity ?? 'usual') : 'usual';
+  const riskMult = intensity === 'careful' ? 0.75 : intensity === 'bold' ? 1.3 : 1;
+  const intensityPayMult = intensity === 'careful' ? 0.8 : intensity === 'bold' ? 1.25 : 1;
+
   const isBest = patient.bestTechniques.includes(techniqueId);
   const humorMatch = tech.humorTargets.includes(patient.dominantHumor);
   const diagnosisBonus = patient.diagnosed ? 0.08 : 0;
@@ -290,7 +303,7 @@ export function applyTreatment(
   let kind: TreatmentResultKind;
   if (roll < chance) {
     kind = roll < chance * 0.55 ? 'success' : 'partial';
-  } else if (roll > 1 - tech.risk * (1 - state.stats.soul * 0.05) * (patient.severity * 0.15)) {
+  } else if (roll > 1 - tech.risk * riskMult * (1 - state.stats.soul * 0.05) * (patient.severity * 0.15)) {
     kind = patient.severity >= 4 && Math.random() < 0.35 ? 'death' : 'fail';
   } else {
     kind = 'fail';
@@ -307,6 +320,30 @@ export function applyTreatment(
   // Death rarer with hygiene on plague
   if (kind === 'death' && techniqueId === 'hygiene_clean') {
     kind = Math.random() < 0.7 ? 'partial' : 'fail';
+  }
+
+  // The fee posture struck before work began. Fees were haggled, not fixed —
+  // whether "demand" sticks is what finally gives Tongue a visible role
+  // instead of a 3%-per-point rounding error.
+  const stance = patient.feeStance ?? 'usual';
+  const poor = patient.class === 'beggar' || patient.class === 'peasant';
+  let stanceNoteKey: string | undefined;
+  let stancePayMult = 1;
+  if (stance === 'demand') {
+    const held = Math.random() < 0.35 + state.stats.tongue * 0.06;
+    stancePayMult = held ? 1.35 : 1;
+    stanceNoteKey = held ? 'stance_demand_ok' : 'stance_demand_fail';
+    // Pressing a poor patient for more is noticed, whether or not it works.
+    if (poor) addHonour(state, -1);
+  } else if (stance === 'lenient') {
+    stancePayMult = 0.6;
+    stanceNoteKey = 'stance_lenient_note';
+    addHonour(state, 0.5);
+  } else if (stance === 'alms') {
+    stanceNoteKey = 'stance_alms_done';
+    // Alms to the poor were what actually counted toward respectability;
+    // treating a merchant free of charge merely puzzled him.
+    honourFromCharity(state, poor);
   }
 
   const payBase = patient.basePay * classPayMult(patient.class) * tech.payMult;
@@ -327,6 +364,11 @@ export function applyTreatment(
       titleMult *
       reputationPayMult(state, patient.class) *
       remedyPay *
+      stancePayMult *
+      intensityPayMult *
+      // What local custom bears. A noble's fee in Mühlbach used to equal a
+      // noble's fee in an imperial city, which made the map economically flat.
+      localFeeMult(state) *
       incomeMult(),
   );
 
@@ -366,10 +408,27 @@ export function applyTreatment(
       break;
   }
 
-  // Charity option handled outside; beggars pay little
+  // Beggars pay little even at full fee
   if (patient.class === 'beggar') {
     pay = Math.min(pay, 4);
     ethicsDelta += 2;
+  }
+
+  // The careful hand learns less; the bold one, more — if the patient lives.
+  if (intensity === 'careful') xp = Math.round(xp * 0.85);
+  if (intensity === 'bold') xp = Math.round(xp * 1.1);
+
+  // Fee posture lands on top of the outcome. A Bader who demanded a high fee
+  // and then botched the work is talked about twice as loudly; one who eased
+  // the fee or worked for alms is remembered kindly.
+  if (stance === 'demand' && (kind === 'fail' || kind === 'death')) {
+    reputationDelta *= 2;
+  }
+  if (stance === 'lenient') reputationDelta += 1;
+  if (stance === 'alms') {
+    pay = 0;
+    reputationDelta += 2;
+    ethicsDelta += 1;
   }
 
   // Epidemic cases
@@ -425,6 +484,7 @@ export function applyTreatment(
       rep: reputationDelta,
       ...(astroNote ? { astro: astroNote } : {}),
     },
+    ...(stanceNoteKey ? { stanceNoteKey } : {}),
   };
 }
 

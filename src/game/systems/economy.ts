@@ -18,6 +18,7 @@ import { officeIncomeBonus } from './politics';
 import { festivalPatientMult } from './events';
 import { addJournal } from './journal';
 import { tickReputation } from './reputation';
+import { localGoodsMult, type PricedItem } from '../data/prices';
 
 export function dailyOperatingCost(state: GameState): number {
   const local = getLocalBath(state);
@@ -227,15 +228,23 @@ export function upgradeBath(state: GameState, upgradeId: string): boolean {
 export function marketPrices(state: GameState): Record<string, number> {
   const epidemic = state.epidemicActive ? 1.5 : 1;
   const season = state.season;
-  return {
-    linen: Math.round(4 * epidemic),
-    herbs: Math.round((3 + (season === 3 ? 2 : 0)) * epidemic),
-    leeches: Math.round(5 * epidemic),
+  const base: Record<PricedItem, number> = {
+    linen: 4 * epidemic,
+    herbs: (3 + (season === 3 ? 2 : 0)) * epidemic,
+    leeches: 5 * epidemic,
     soap: 3,
     wood: season === 3 ? 4 : 2,
     salve: 8,
     ironTools: 12,
   };
+  // Where you stand decides what things cost. Nürnberg is the Empire's metal
+  // town and Ebrach keeps a physic garden; before this they quoted the same
+  // list, so travelling had a cost and no commercial reason.
+  const out: Record<string, number> = {};
+  for (const [item, price] of Object.entries(base) as [PricedItem, number][]) {
+    out[item] = Math.max(1, Math.round(price * localGoodsMult(state.locationId, item)));
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ *

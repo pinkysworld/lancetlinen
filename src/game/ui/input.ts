@@ -93,6 +93,13 @@ export function installSceneKeys(scene: Phaser.Scene, opts: SceneKeysOpts = {}):
 
   const all = sceneButtons(scene);
   const numbered = hotkeyable(scene).slice(0, 9);
+  /**
+   * Width the number chip claims on a button's left edge.
+   *
+   * The chip spans `x - w/2 + 4` to `x - w/2 + 22`; 26 leaves two pixels of
+   * air between it and the first letter.
+   */
+  const CHIP_GUTTER = 26;
 
   const backBtn = all.find((b) => b.back && !b.disabled);
   const primaryBtn = all.find((b) => b.primary && !b.disabled);
@@ -102,6 +109,11 @@ export function installSceneKeys(scene: Phaser.Scene, opts: SceneKeysOpts = {}):
   if (opts.chips !== false && !isTouchDevice()) {
     numbered.forEach((b, i) => {
       const cx = b.x - b.w / 2 + 13;
+      // The chip is opaque and sits at depth 1001, above the label. Tell the
+      // button to keep that strip clear first — otherwise a label wide enough
+      // to reach the left edge is painted over, which is what turned
+      // "Geschenk" and "Schulen" into "1Geschenk" and "2Schulen".
+      b.reserveChipGutter?.(CHIP_GUTTER);
       const g = scene.add.graphics().setDepth(1001);
       g.fillStyle(COLORS.ink, 0.5);
       g.fillRoundedRect(cx - 9, b.y - 9, 18, 18, 4);

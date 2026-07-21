@@ -167,6 +167,15 @@ export interface ButtonEntry {
   noHotkey: boolean;
   activate: () => void;
   setHover: (on: boolean) => void;
+  /**
+   * The label object, so the number chip can move out of its way.
+   *
+   * The chip is painted from the completed registry, *after* every button
+   * exists — at which point the label has already been centred and fitted to
+   * the full width. Without a handle on it the chip lands on top of the first
+   * few characters, which is what made "1Geschenk" and "2Schulen" unreadable.
+   */
+  reserveChipGutter?: (px: number) => void;
 }
 
 /**
@@ -285,13 +294,28 @@ export function makeButton(
     })
     .setOrigin(0.5);
 
-  if (label) {
-    const startPx = parseFloat(fontSize) || 18;
+  const startPx = parseFloat(fontSize) || 18;
+  /** Assigned below; `fitLabel` may be called again once it exists. */
+  let hitArea: Phaser.GameObjects.Rectangle | undefined;
+
+  /**
+   * Fit the label into the face, optionally leaving a gutter on the left.
+   *
+   * `gutter` is the room the number chip needs. The label is re-centred in
+   * what remains, so it neither sits under the chip nor drifts off the right
+   * edge — a chip-bearing button loses width on one side only.
+   */
+  const fitLabel = (gutter = 0): void => {
+    if (!label) return;
+    const avail = w - 16 - gutter;
+    text.setFontSize(startPx);
+    text.setWordWrapWidth(avail);
+    text.setX(x + gutter / 2);
     // 11px is the floor: below that the serif face stops being readable at
     // 1080p.
     for (let px = startPx; text.height > h - 8 && px > 11; px -= 1) {
       text.setFontSize(px);
-      text.setWordWrapWidth(w - 16);
+      text.setWordWrapWidth(avail);
     }
     // Shrinking alone is not enough for a genuinely long label in a small
     // button — "Mehr Hand-Geschick nötig" wraps to three lines in a 120x28
@@ -300,8 +324,12 @@ export function makeButton(
     if (text.height > h - 8) {
       h = Math.ceil(text.height) + 10;
       paint(false);
+      // May run a second time, after the hit area already exists, when the
+      // number chip claims its gutter and the label re-wraps taller.
+      hitArea?.setSize(w, h);
     }
-  }
+  };
+  fitLabel();
 
   // Hit area matches the painted face exactly.
   //
@@ -313,6 +341,7 @@ export function makeButton(
     .rectangle(x, y, w, h, 0xffffff, 0.001)
     .setOrigin(0.5)
     .setDepth(1000);
+  hitArea = hit;
 
   if (!disabled) {
     hit.setInteractive({ useHandCursor: true });
@@ -386,6 +415,7 @@ export function makeButton(
       paint(on);
       text.setColor(on ? '#fff8e0' : (opts.textColor ?? '#f5ecd7'));
     },
+    reserveChipGutter: (px: number) => fitLabel(px),
   });
 
   const c = scene.add.container(0, 0, [g, text, hit]);

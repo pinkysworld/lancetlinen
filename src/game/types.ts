@@ -75,6 +75,22 @@ export interface PatientTemplate {
   weight?: number;
 }
 
+/**
+ * The fee posture struck before treating.
+ *
+ * Fees were negotiated, not fixed — and treating the poor without charge was
+ * the standard route back to respectability for a dishonourable trade.
+ */
+export type FeeStance = 'demand' | 'usual' | 'lenient' | 'alms';
+
+/**
+ * How boldly the hand works.
+ *
+ * The bold cut paid better and killed more often; the careful one was slower,
+ * cheaper and safer. Only techniques that carry real risk read this.
+ */
+export type Intensity = 'careful' | 'usual' | 'bold';
+
 export interface PatientInstance {
   uid: string;
   templateId: string;
@@ -99,6 +115,10 @@ export interface PatientInstance {
    * portraits are female, so this happened often.
    */
   female?: boolean;
+  /** Fee posture chosen before treatment — see `FeeStance`. */
+  feeStance?: FeeStance;
+  /** How boldly to work — see `Intensity`. */
+  intensity?: Intensity;
 }
 
 export type TreatmentResultKind = 'success' | 'partial' | 'fail' | 'death';
@@ -111,6 +131,12 @@ export interface TreatmentResult {
   xp: number;
   messageKey: string;
   messageParams?: Record<string, string | number>;
+  /**
+   * What became of the fee posture — "they agreed", "they haggled you down",
+   * "treated as alms". Shown as its own line so the player learns whether
+   * demanding worked, which is what makes the Tongue stat legible.
+   */
+  stanceNoteKey?: string;
 }
 
 export interface Inventory {

@@ -8,7 +8,13 @@ import {
   exportSave,
   hasSave,
 } from '../state';
-import { applyMorningCosts, endDay, isDestitute, takeLoan } from '../systems/economy';
+import {
+  applyMorningCosts,
+  dailyOperatingCost,
+  endDay,
+  isDestitute,
+  takeLoan,
+} from '../systems/economy';
 import { pendingStoryDialogue, activeQuests, tutorialTipKey, questTitleKey, questGuideKey } from '../systems/story';
 import { getLocalBath } from '../systems/property';
 import { drawBackground, makeButton, bodyText, titleText, panel, woodPanel, hudText, COLORS, addDecorImage, addHudIcon } from '../ui/theme';
@@ -253,12 +259,23 @@ export class HubScene extends Phaser.Scene {
     // reads as the obvious thing to do.
     sectionLabel(this, cx, 322, 'section_work');
     const broke = isDestitute(s);
-    makeButton(this, cx, 358, t('open_bath'), () => this.openBusiness(), {
-      width: broke ? 200 : 320,
-      height: 52,
-      fill: primaryFill(step.action === 'open'),
-      primary: true,
-    });
+    // The price belongs on the button. Without it the player clicks a bare
+    // "Open the shop", is told they cannot afford it, and has no way to find
+    // out what it would have cost or how far short they are — reported three
+    // separate times as "I have supplies and coin but cannot open".
+    makeButton(
+      this,
+      cx,
+      358,
+      `${t('open_bath')}\n${t('open_bath_cost', { n: dailyOperatingCost(s) })}`,
+      () => this.openBusiness(),
+      {
+        width: broke ? 200 : 320,
+        height: 52,
+        fill: primaryFill(step.action === 'open'),
+        primary: true,
+      },
+    );
 
     // Only shown when the player genuinely cannot open. Opening needs the day's
     // costs in coin, and travelling costs too — without this a player with an
@@ -373,12 +390,19 @@ export class HubScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     const broke = isDestitute(s);
-    makeButton(this, broke ? cx - 170 : cx, 190, t('open_bath'), () => this.openBusiness(), {
-      ...prim,
-      width: broke ? 380 : prim.width,
-      fill: primaryFill(step.action === 'open'),
-      primary: true,
-    });
+    makeButton(
+      this,
+      broke ? cx - 170 : cx,
+      190,
+      `${t('open_bath')}\n${t('open_bath_cost', { n: dailyOperatingCost(s) })}`,
+      () => this.openBusiness(),
+      {
+        ...prim,
+        width: broke ? 380 : prim.width,
+        fill: primaryFill(step.action === 'open'),
+        primary: true,
+      },
+    );
     if (broke) {
       makeButton(this, cx + 230, 190, t('take_loan'), () => this.borrow(), {
         ...sec,
@@ -535,19 +559,29 @@ export class HubScene extends Phaser.Scene {
     const s = getState();
     if (!s.storyFlags['last_morning_ok']) {
       // brief feedback then stay on hub
+      // State the arithmetic. "Sell supplies or travel" with no figures gave
+      // the player nothing to act on and read as a bug when they could see
+      // coin in their purse.
+      const need = Number(s.storyFlags['last_morning_cost'] ?? 0);
       const msg = this.add
-        .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, t('cannot_afford_day'), {
-          fontFamily: 'Georgia, serif',
-          fontSize: '20px',
-          color: '#b33a3a',
-          backgroundColor: '#1a120cee',
-          padding: { x: 16, y: 12 },
-          wordWrap: { width: 500 },
-          align: 'center',
-        })
+        .text(
+          GAME_WIDTH / 2,
+          GAME_HEIGHT / 2,
+          `${t('cannot_afford_day')}\n${t('cannot_afford_detail', { need, have: s.coin })}`,
+          {
+            fontFamily: 'Georgia, serif',
+            fontSize: '20px',
+            color: '#b33a3a',
+            backgroundColor: '#1a120cee',
+            padding: { x: 16, y: 12 },
+            wordWrap: { width: 500 },
+            align: 'center',
+          },
+        )
         .setOrigin(0.5)
         .setDepth(100);
-      this.time.delayedCall(2200, () => {
+      // 2.2s was too short to read two lines; the restart also wiped it early.
+      this.time.delayedCall(3600, () => {
         msg.destroy();
         this.scene.restart();
       });
