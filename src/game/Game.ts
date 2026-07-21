@@ -5,6 +5,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { CharacterScene } from './scenes/CharacterScene';
 import { LexiconScene } from './scenes/LexiconScene';
+import { RecipeScene } from './scenes/RecipeScene';
 import { HubScene, BathhouseScene } from './scenes/HubScene';
 import { TreatmentScene } from './scenes/TreatmentScene';
 import { TravelMapScene, TravelResultScene } from './scenes/TravelScene';
@@ -28,6 +29,7 @@ import { CreditsScene } from './scenes/CreditsScene';
 import { ScenarioScene } from './scenes/ScenarioScene';
 import { isTouchDevice } from './mobile';
 import { fadeInScene } from './ui/fx';
+import { installPinchZoom, requestFullscreenOnFirstTouch } from './ui/pinch';
 
 export function createGame(parent: string | HTMLElement): Phaser.Game {
   const touch = isTouchDevice();
@@ -93,6 +95,7 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
       EndingScene,
       CodexScene,
       LexiconScene,
+      RecipeScene,
     ],
   };
 
@@ -136,6 +139,9 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
         // Fade in after the camera is positioned, or the fade covers the wrong
         // region on the first frame.
         fadeInScene(scene);
+        // Phones only. Must come after the render scale, since it treats the
+        // current zoom as the floor.
+        installPinchZoom(scene);
       });
     }
   });
@@ -158,6 +164,8 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
   window.visualViewport?.addEventListener('resize', () => {
     setTimeout(refreshScale, 50);
   });
+
+  requestFullscreenOnFirstTouch(game);
 
   return game;
 }

@@ -243,6 +243,13 @@ export interface GameState {
   techniqueXp: Record<string, number>;
   unlockedTechniques: string[];
   inventory: Inventory;
+  /**
+   * Prepared remedies, keyed by recipe id — see `data/recipes.ts`.
+   *
+   * Its own record rather than fields on `Inventory` so that adding a recipe
+   * needs no save migration; absent on saves that predate the system.
+   */
+  remedies?: Record<string, number>;
   bathhouse: BathhouseState;
   properties: Property[];
   cart: CartState;

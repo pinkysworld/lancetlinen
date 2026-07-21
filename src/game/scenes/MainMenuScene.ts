@@ -18,6 +18,7 @@ import { audio } from '../audio/AudioManager';
 import { applySettings } from '../systems/settings';
 import { transitionTo, sceneBackground } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
+import { isTouchDevice } from '../mobile';
 
 export class MainMenuScene extends Phaser.Scene {
   constructor() {
@@ -159,10 +160,15 @@ export class MainMenuScene extends Phaser.Scene {
       wordWrap: { width: 860 },
       align: 'center',
     }).setOrigin(0.5);
-    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 24, t('menu_quit_hint'), {
-      fontSize: '12px',
-      color: '#7a6a58',
-    }).setOrigin(0.5);
+    // On a phone the quit hint is wrong (there is no tab to close) and the
+    // zoom gesture is undiscoverable, so swap one for the other.
+    bodyText(
+      this,
+      GAME_WIDTH / 2,
+      GAME_HEIGHT - 24,
+      isTouchDevice() ? t('touch_zoom_hint') : t('menu_quit_hint'),
+      { fontSize: '12px', color: '#7a6a58' },
+    ).setOrigin(0.5);
     bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 8, '© Michél Nguyen · minh.systems', {
       fontSize: '11px',
       color: '#6b5d4d',

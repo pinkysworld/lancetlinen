@@ -117,11 +117,11 @@ export class StudyScene extends Phaser.Scene {
     const s = getState();
     hudText(this, 50, 80, `${t('coin')}: ${s.coin}`);
 
-    makeButton(this, 280, 130, t('craft_salve'), () => {
-      mutate((st) => craftSalve(st));
-      saveGame();
-      this.scene.restart();
-    }, { width: 400 });
+    // The single "brew salve" button became a whole bench — see RecipeScene.
+    makeButton(this, 300, 130, t('recipes_title'), () =>
+      transitionTo(this, 'Recipes', { from: 'Study' }), {
+      width: 400, height: 44, fontSize: '15px',
+    });
 
     makeButton(this, 700, 130, t('rest_horse'), () => {
       mutate((st) => restHorse(st));

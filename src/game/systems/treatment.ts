@@ -22,6 +22,7 @@ import { bloodlettingDayModifier, seasonalHumorBias } from '../data/history';
 import { classWeight, reputationPayMult, applyTreatmentReputation } from './reputation';
 import { staffSkillBonus, staffSupplySaveChance } from './staff';
 import { honourFromTreatment, honourFromPlagueService } from './honour';
+import { bestRemedyFor, consumeRemedy, RECIPE_MAP } from '../data/recipes';
 import { titlePayMult } from './politics';
 import { incomeMult } from './settings';
 import { pickPortraitKey } from '../ui/art';
@@ -270,6 +271,15 @@ export function applyTreatment(
   // loyalty the Staff screen lets you invest in; now those are what count.
   chance += staffSkillBonus(state);
 
+  // A prepared remedy, if one applies and the player has stock. Consumed
+  // whether the treatment succeeds or not — the salve is used either way.
+  const remedy = bestRemedyFor(state, tech.category);
+  let remedyUsed: string | undefined;
+  if (remedy && consumeRemedy(state, remedy.id)) {
+    chance += remedy.effect.successBonus ?? 0;
+    remedyUsed = remedy.id;
+  }
+
   chance = Math.max(0.08, Math.min(0.96, chance));
 
   const roll = Math.random();
@@ -280,6 +290,14 @@ export function applyTreatment(
     kind = patient.severity >= 4 && Math.random() < 0.35 ? 'death' : 'fail';
   } else {
     kind = 'fail';
+  }
+
+  // A remedy with `safety` pulls a death back to a mere failure. Wound drink
+  // and theriac both carry it — the first because yarrow really does slow
+  // bleeding, the second because it was believed to counter any poison.
+  if (kind === 'death' && remedyUsed) {
+    const safety = RECIPE_MAP[remedyUsed]?.effect.safety ?? 0;
+    if (safety > 0 && Math.random() < safety) kind = 'fail';
   }
 
   // Death rarer with hygiene on plague
@@ -295,8 +313,17 @@ export function applyTreatment(
   const titleMult = titlePayMult(state);
   // Difficulty scales the base, so every clamp below still binds: a death pays
   // 0 and a beggar is capped at 4 even on the merciful setting.
+  // A named preparation is worth more than a bare treatment — the patient can
+  // see they were given something the Bader made.
+  const remedyPay = remedyUsed ? (RECIPE_MAP[remedyUsed]?.effect.payMult ?? 1) : 1;
   let pay = Math.round(
-    payBase * tongueBonus * boothBonus * titleMult * reputationPayMult(state, patient.class) * incomeMult(),
+    payBase *
+      tongueBonus *
+      boothBonus *
+      titleMult *
+      reputationPayMult(state, patient.class) *
+      remedyPay *
+      incomeMult(),
   );
 
   let reputationDelta = 0;
