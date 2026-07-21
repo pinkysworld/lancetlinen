@@ -38,14 +38,23 @@ export const MENTOR_OFFERS: MentorOffer[] = [
     minRep: 5,
     descKey: 'mentor.sweat',
   },
-  {
-    cityId: 'bamberg',
-    mentorKey: 'npc_clergy_surgeon',
-    techniqueId: 'cupping',
-    cost: 40,
-    minRep: 8,
-    descKey: 'mentor.cupping',
-  },
+  /*
+   * A cupping offer at Bamberg stood here, and is gone: it became a dead
+   * purchase the moment cupping was made a starter art — 40 coin for something
+   * already in hand, with nothing in the study screen to say so.
+   *
+   * The man who taught it has also been renamed. He was `npc_clergy_surgeon`,
+   * "Cathedral surgeon" / "Domchirurg", and he taught scarification and
+   * trepanning — which Lateran IV (1215) c.18 forbade to anyone in major
+   * orders, contradicting the game's own codex entry on that very canon.
+   *
+   * Stripping his offers would have been the wrong repair. Cathedral chapters
+   * really did contract *lay* wound surgeons, precisely because canon law shut
+   * the clergy out of cutting. He is now the `npc_chapter_woundarzt` — the
+   * chapter's Domstiftswundarzt — so the arts he teaches are legitimate, and
+   * the reason they had to hire him outside the cloister is itself the history
+   * the player meets.
+   */
   {
     cityId: 'augsburg',
     mentorKey: 'npc_merchant_leech',
@@ -89,7 +98,7 @@ export const MENTOR_OFFERS: MentorOffer[] = [
   },
   {
     cityId: 'bamberg',
-    mentorKey: 'npc_clergy_surgeon',
+    mentorKey: 'npc_chapter_woundarzt',
     techniqueId: 'scarify',
     cost: 30,
     minRep: 5,
@@ -145,7 +154,7 @@ export const MENTOR_OFFERS: MentorOffer[] = [
   },
   {
     cityId: 'bamberg',
-    mentorKey: 'npc_clergy_surgeon',
+    mentorKey: 'npc_chapter_woundarzt',
     techniqueId: 'purge_draught',
     cost: 35,
     minRep: 8,
@@ -239,7 +248,7 @@ export const MENTOR_OFFERS: MentorOffer[] = [
   },
   {
     cityId: 'wurzburg',
-    mentorKey: 'npc_clergy_surgeon',
+    mentorKey: 'npc_chapter_woundarzt',
     techniqueId: 'trepan',
     cost: 230,
     minRep: 26,

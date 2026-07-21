@@ -95,15 +95,29 @@ export const TECHNIQUES: Technique[] = [
   },
   {
     id: 'cupping',
+    /**
+     * *Schröpfen* — the everyday service, not an advanced art.
+     *
+     * This was gated behind 50 coin and Hand 3 while venesection was given
+     * away free, which is the trade backwards. Dry cupping was the routine
+     * work of the Badestube, frequently done by the *Bademagd* rather than the
+     * master: warm a glass, set it on the skin, draw the humour to the
+     * surface. No blade, so little can go wrong. Opening a vein was the act
+     * that took judgement — which vein, and on which day.
+     *
+     * It therefore starts unlocked, is the safest of the blood arts, and pays
+     * least. `scarify` remains the learned half: scarification is the cut that
+     * turns dry cupping into wet.
+     */
     category: 'blood',
     humorTargets: ['phlegm', 'blackBile'],
-    baseSuccess: 0.75,
-    risk: 0.12,
+    baseSuccess: 0.8,
+    risk: 0.06,
     costItems: { linen: 1 },
-    minHand: 3,
-    unlockCost: 50,
-    payMult: 1.35,
-    xp: 13,
+    minHand: 1,
+    unlockCost: 0,
+    payMult: 1.1,
+    xp: 9,
   },
   {
     id: 'scarify',
@@ -503,6 +517,9 @@ export const STARTER_TECHNIQUES = [
   'beard_trim',
   'bath_wash',
   'bloodletting',
+  // Schröpfen was the Badestube's daily bread — see the entry above for why it
+  // is no longer sold as an advanced art.
+  'cupping',
   'wound_dress',
   'tooth_ease',
   'mouth_wash',

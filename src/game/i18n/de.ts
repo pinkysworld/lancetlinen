@@ -67,7 +67,7 @@ export const de = {
   mentor_village_herb: 'Großmutters Umschlag am Brunnen.',
   npc_monk: 'Bruder Kräutermann',
   npc_bath_master: 'Alter Bademeister',
-  npc_clergy_surgeon: 'Domchirurg',
+  npc_chapter_woundarzt: 'Domstiftswundarzt',
   npc_merchant_leech: 'Egelhändler',
   npc_guild_master: 'Zunftmeister',
   npc_scribe: 'Domkapitelschreiber',

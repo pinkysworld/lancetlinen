@@ -68,7 +68,7 @@ export const en = {
   mentor_village_herb: 'Grandmother’s poultice by the well.',
   npc_monk: 'Brother Herbalist',
   npc_bath_master: 'Old bath-master',
-  npc_clergy_surgeon: 'Cathedral surgeon',
+  npc_chapter_woundarzt: 'The chapter’s wound surgeon',
   npc_merchant_leech: 'Leech merchant',
   npc_guild_master: 'Guild master',
   npc_scribe: 'Cathedral chapter scribe',
