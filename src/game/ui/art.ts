@@ -119,15 +119,36 @@ export function addManagementBackground(scene: Phaser.Scene, key: string): void 
   });
 }
 
+/**
+ * NPC portrait keys, with the dedicated art first and an honest stand-in
+ * second.
+ *
+ * The first-choice keys (`port_gregor`, `port_ortlieb`, `port_guard`) are on
+ * the ART_TODO_6 list; `addPortrait` falls back through `textures.exists`, so
+ * until the files arrive the stand-ins render.
+ *
+ * Father Gregor's stand-in used to be `port_adelheid` — a monk with a woman's
+ * face, the same defect class as "Claus Gerber" among the patients, and found
+ * the same way: by checking the mapping against `FEMALE_PORTRAITS` instead of
+ * trusting it.
+ */
 export function portraitKeyForNpc(speakerKey: string): string {
   const k = speakerKey.replace('npc.', 'npc_');
   if (k.includes('berthold')) return 'port_berthold';
   if (k.includes('adelheid')) return 'port_adelheid';
   if (k.includes('krafft')) return 'port_krafft';
-  if (k.includes('ortlieb') || k.includes('guard') || k.includes('captain')) return 'port_merchant';
-  if (k.includes('gregor') || k.includes('monk')) return 'port_adelheid';
+  if (k.includes('ortlieb')) return 'port_ortlieb';
+  if (k.includes('guard') || k.includes('captain')) return 'port_guard';
+  if (k.includes('gregor') || k.includes('monk')) return 'port_gregor';
   return 'port_berthold';
 }
+
+/** Stand-ins until the dedicated NPC art arrives — all of the right sex. */
+export const NPC_PORTRAIT_FALLBACKS: Record<string, string> = {
+  port_gregor: 'port_clergy',
+  port_ortlieb: 'port_merchant',
+  port_guard: 'port_soldier',
+};
 
 export function portraitKeyForPatientClass(c: PatientClass, female = false): string {
   return poolFor(c, female)[0] ?? 'port_peasant';
@@ -240,7 +261,16 @@ export function addPortrait(
   const depth = o.depth ?? 0;
 
   const wanted = resolvePortraitVariant(scene, key, o.seed);
-  const tryKeys = [wanted, key, 'port_peasant', 'art_portrait', 'portrait_patient'];
+  // The NPC stand-in comes before the generic peasant: until Grok delivers
+  // `port_gregor`, Father Gregor should at least be *a monk*, not a farmhand.
+  const tryKeys = [
+    wanted,
+    key,
+    NPC_PORTRAIT_FALLBACKS[key] ?? '',
+    'port_peasant',
+    'art_portrait',
+    'portrait_patient',
+  ].filter(Boolean);
   const use = tryKeys.find((k) => scene.textures.exists(k));
 
   if (!use) {

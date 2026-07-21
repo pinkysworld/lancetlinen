@@ -133,3 +133,31 @@ describe('generation, not just the tables', () => {
     expect(calls.length).toBe(1);
   });
 });
+
+describe('NPC portraits match the speaker', () => {
+  /**
+   * Father Gregor — a monk — was mapped to `port_adelheid`, a woman's face:
+   * the same defect as "Claus Gerber" among the patients, surviving in the
+   * NPC mapping because the earlier fix only checked the patient pools.
+   */
+  const MALE_NPCS = ['npc.berthold', 'npc.krafft', 'npc.gregor', 'npc.ortlieb', 'npc.guard', 'npc.captain'];
+
+  it('never hands a male speaker a female portrait, nor its fallback', () => {
+    const art = readFileSync(join(process.cwd(), 'src/game/ui/art.ts'), 'utf8');
+    const fallbacks = Object.fromEntries(
+      [...art.matchAll(/(port_[a-z_]+): '(port_[a-z_]+)'/g)].map((m) => [m[1]!, m[2]!]),
+    );
+    // Re-implement the mapping's decisions at source level: for each male
+    // NPC, the mapped key and its stand-in must both be outside the female set.
+    const mapFn = art.slice(art.indexOf('export function portraitKeyForNpc'));
+    for (const npc of MALE_NPCS) {
+      const frag = npc.replace('npc.', '');
+      const m = new RegExp(`includes\\('${frag}'\\)[^;]*return '(port_[a-z_]+)'`).exec(mapFn);
+      if (!m) continue; // covered by the default, which is Berthold
+      const key = m[1]!;
+      expect(FEMALE_PORTRAITS.has(key), `${npc} -> ${key}`).toBe(false);
+      const fb = fallbacks[key];
+      if (fb) expect(FEMALE_PORTRAITS.has(fb), `${npc} fallback ${fb}`).toBe(false);
+    }
+  });
+});

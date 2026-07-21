@@ -107,6 +107,14 @@ const ART_DEFERRED: [string, string][] = [
   ['bg_rival', 'assets/bg_rival.webp'],
   ['art_pulse', 'assets/art_pulse.webp'],
   ['art_dental', 'assets/art_dental.webp'],
+  // Round 6 — NPC faces and the council chamber (see ART_TODO_6.md). The
+  // files may not exist yet; the loader tolerates 404s and every consumer
+  // guards with `textures.exists`, falling back to same-sex stand-ins.
+  ['port_gregor', 'assets/port_gregor.webp'],
+  ['port_ortlieb', 'assets/port_ortlieb.webp'],
+  ['port_guard', 'assets/port_guard.webp'],
+  ['bg_council', 'assets/bg_council.webp'],
+  ['bg_lazar', 'assets/bg_lazar.webp'],
 ];
 
 /** Generate canvas textures so the game is playable without external art. */
