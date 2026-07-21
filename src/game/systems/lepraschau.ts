@@ -158,6 +158,7 @@ export function resolveLepraschau(
   const correct = (verdict === 'leprous') === c.afflicted;
 
   if (correct) {
+    state.lepraRight = (state.lepraRight ?? 0) + 1;
     state.councilFavor += 4;
     addFacetRep(state, { elite: 2, local: 2, fame: 0.6 });
     addHonour(state, 1.5);
@@ -171,6 +172,7 @@ export function resolveLepraschau(
 
   if (verdict === 'leprous') {
     // A healthy man sent out. The heavier error, and the one people remember.
+    state.lepraWrong = (state.lepraWrong ?? 0) + 1;
     state.councilFavor = Math.max(0, state.councilFavor - 3);
     addFacetRep(state, { folk: -6, local: -4, elite: -2 });
     addHonour(state, -4, 'journal_lepra_wrong_sent');
@@ -178,7 +180,9 @@ export function resolveLepraschau(
     return { correct: false, messageKey: 'lepra_wrong_sent', coin: LEPRASCHAU_FEE };
   }
 
-  // A sick man left among people. Quieter, and it comes back.
+  // A sick man left among people. Quieter, and it comes back — see the
+  // `lepra_return` scenario, which reads this counter.
+  state.lepraWrong = (state.lepraWrong ?? 0) + 1;
   state.storyFlags['lepra_missed'] = Number(state.storyFlags['lepra_missed'] ?? 0) + 1;
   state.councilFavor = Math.max(0, state.councilFavor - 2);
   addFacetRep(state, { elite: -3, local: -2 });

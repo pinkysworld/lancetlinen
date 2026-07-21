@@ -309,6 +309,11 @@ export interface GameState {
   ending: EndingId;
   tutorialStep: number;
   deathsOnHands: number;
+  /** Patients treated for nothing, by the alms fee stance. The epilogue reads it. */
+  almsGiven?: number;
+  /** Lepraschau verdicts that held / that did not. The epilogue reads them. */
+  lepraRight?: number;
+  lepraWrong?: number;
   totalTreated: number;
   rivalActive: boolean;
   epidemicActive: boolean;

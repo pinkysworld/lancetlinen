@@ -8,6 +8,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../types';
 import { drawBackground, makeButton, bodyText, panel, titleText } from '../ui/theme';
 import { audio } from '../audio/AudioManager';
 import { sceneBackground, transitionTo } from '../ui/fx';
+import { epilogueLines } from '../systems/story';
 import { installSceneKeys } from '../ui/input';
 
 export class EndingScene extends Phaser.Scene {
@@ -35,23 +36,43 @@ export class EndingScene extends Phaser.Scene {
               ? 'ending_dynasty'
               : 'ending_ruined';
 
-    panel(this, 140, 200, GAME_WIDTH - 280, 220);
-    bodyText(this, GAME_WIDTH / 2, 280, t(key), {
-      fontSize: '22px',
+    panel(this, 140, 180, GAME_WIDTH - 280, 300);
+    bodyText(this, GAME_WIDTH / 2, 230, t(key), {
+      fontSize: '20px',
       wordWrap: { width: 800 },
       align: 'center',
       color: '#e8d5a8',
     }).setOrigin(0.5);
 
+    /*
+     * How the town remembers you.
+     *
+     * The ending paragraph was identical for every run that reached it, while
+     * the game counted alms, verdicts, deaths, the rival and the marriage
+     * without the epilogue ever reading any of it. Three lines at most — an
+     * epitaph, not a ledger; the full accounting is the line of figures below.
+     */
+    const remembered = epilogueLines(s).slice(0, 3);
+    let ey = 300;
+    for (const lineKey of remembered) {
+      const line = bodyText(this, GAME_WIDTH / 2, ey, t(lineKey), {
+        fontSize: '15px',
+        color: '#c9b48a',
+        wordWrap: { width: 760 },
+        align: 'center',
+      }).setOrigin(0.5, 0);
+      ey += line.height + 8;
+    }
+
     bodyText(
       this,
       GAME_WIDTH / 2,
-      400,
+      Math.max(430, ey + 18),
       `${s.playerName} · ${t('day', { n: s.day })} · ${t('coin')}: ${s.coin} · ${t('ethics')}: ${s.ethics}\n${t('prestige')}: ${s.prestige ?? 0} · ${t('total_treated', { n: s.totalTreated })}`,
-      { fontSize: '16px', color: '#c4a574', align: 'center' },
+      { fontSize: '15px', color: '#c4a574', align: 'center' },
     ).setOrigin(0.5);
 
-    makeButton(this, GAME_WIDTH / 2 - 140, 520, t('free_play'), () => {
+    makeButton(this, GAME_WIDTH / 2 - 140, 540, t('free_play'), () => {
       mutate((st) => {
         st.freePlay = true;
       });

@@ -16,6 +16,7 @@
  */
 import type { GameState } from '../types';
 import { addFacetRep, applyCharityRep, applyScandalRep } from './reputation';
+import { addHonour } from './honour';
 import { addJournal } from './journal';
 
 export interface ScenarioChoice {
@@ -34,7 +35,13 @@ export interface ScenarioChoice {
   };
   setFlag?: string;
   /** Special post-effects */
-  special?: 'charity' | 'scandal_mild' | 'scandal_harsh';
+  special?:
+    | 'charity'
+    | 'scandal_mild'
+    | 'scandal_harsh'
+    | 'lepra_second_look'
+    | 'lepra_quiet_word'
+    | 'lepra_look_away';
 }
 
 export interface ScenarioDef {
@@ -363,7 +370,52 @@ export const SCENARIOS: ScenarioDef[] = [
       },
     ],
   },
+  {
+    /*
+     * The man you cleared comes back.
+     *
+     * `resolveLepraschau` counts a missed case in `lepra_missed` and promised
+     * — in a comment — that it comes back. For a day, nothing read the
+     * counter: the exact "written but never reached" defect this project
+     * keeps producing, caught by grep the morning after it was written.
+     *
+     * Weeks later the man stands in the lane again, visibly worse, and the
+     * neighbours who denounced him the first time are watching you. All
+     * three ways out are period-true, and none is clean.
+     */
+    id: 'lepra_return',
+    titleKey: 'scenario_lepra_return_title',
+    bodyKey: 'scenario_lepra_return_body',
+    bgKey: 'bg_lazar',
+    minTreated: 10,
+    requireFlag: 'lepra_missed',
+    choices: [
+      {
+        // Call the council and judge him again: the error is repaired and
+        // publicly owned. The council values the correction more than it
+        // minds the mistake; the town hears you were wrong.
+        textKey: 'scenario_lepra_second_look',
+        effects: { councilFavor: 3, local: -1 },
+        special: 'lepra_second_look',
+      },
+      {
+        // A quiet word, no council: you walk him to the lazar house yourself.
+        // Decent, and entirely outside your authority.
+        textKey: 'scenario_lepra_quiet_word',
+        effects: { churchHeat: 4, folk: 1 },
+        special: 'lepra_quiet_word',
+      },
+      {
+        // Look away. The counter stays; the second time, the town starts
+        // saying aloud who declared him clean.
+        textKey: 'scenario_lepra_look_away',
+        effects: {},
+        special: 'lepra_look_away',
+      },
+    ],
+  },
 ];
+
 
 export function pendingScenario(state: GameState): ScenarioDef | null {
   const day = state.day;
@@ -407,6 +459,14 @@ export function pendingScenario(state: GameState): ScenarioDef | null {
       } else if (Math.random() < 0.1) {
         candidates.push(sc);
       }
+      continue;
+    }
+    if (sc.id === 'lepra_return') {
+      // Not the very next morning — the man needs time to worsen — and not
+      // guaranteed, so it lands as a consequence rather than a scheduled tax.
+      if (state.storyFlags['lepra_return_recent'] === day) continue;
+      if (Number(state.storyFlags['lepra_recent'] ?? 0) >= day - 2) continue;
+      if (Math.random() < 0.3) candidates.push(sc);
       continue;
     }
     if (sc.id === 'rival_smear') {
@@ -457,6 +517,23 @@ export function applyScenarioChoice(
   });
 
   if (choice.special === 'charity') applyCharityRep(state);
+  if (choice.special === 'lepra_second_look') {
+    // The judgement is corrected and the correction is yours to own.
+    state.storyFlags['lepra_missed'] = Math.max(0, Number(state.storyFlags['lepra_missed'] ?? 1) - 1);
+    addHonour(state, -1);
+  }
+  if (choice.special === 'lepra_quiet_word') {
+    state.storyFlags['lepra_missed'] = Math.max(0, Number(state.storyFlags['lepra_missed'] ?? 1) - 1);
+    addHonour(state, 1);
+  }
+  if (choice.special === 'lepra_look_away') {
+    // The counter stays. The second refusal is the one the town talks about.
+    if (state.storyFlags['lepra_looked_away']) {
+      addFacetRep(state, { folk: -6, local: -3 });
+      addJournal(state, 'journal_lepra_town_knows', 'politics');
+    }
+    state.storyFlags['lepra_looked_away'] = true;
+  }
   if (choice.special === 'scandal_mild') applyScandalRep(state, 'mild');
   if (choice.special === 'scandal_harsh') applyScandalRep(state, 'harsh');
 

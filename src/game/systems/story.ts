@@ -25,6 +25,21 @@ export function applyChoice(state: GameState, choice: DialogueChoice): string | 
   if (choice.setFlag) {
     state.storyFlags[choice.setFlag] = true;
     if (choice.setFlag === 'rival_war') state.rivalActive = true;
+    // The aftermath dialogues fire "days later", which needs a day to count
+    // from — the outcome flags alone carry no time.
+    if (
+      choice.setFlag === 'rival_exposed' ||
+      choice.setFlag === 'rival_truce' ||
+      choice.setFlag === 'rival_mud'
+    ) {
+      state.storyFlags['rival_outcome_day'] = state.day;
+    }
+    // Closing the exposed rival's aftermath is also his departure: the
+    // rivalry ends with him. Keyed to the flag the interrupt checks, so a
+    // single setFlag both silences the interrupt and retires the rival.
+    if (choice.setFlag === 'krafft_after_done' && state.storyFlags['rival_exposed']) {
+      state.rivalActive = false;
+    }
     if (choice.setFlag === 'epidemic_fighting' || choice.setFlag === 'epidemic_hid') {
       state.epidemicActive = true;
     }
@@ -200,6 +215,18 @@ export function resolveEnding(state: GameState): EndingId {
 export function pendingStoryDialogue(state: GameState): string | null {
   if (!state.storyFlags['intro_done'] && !state.storyFlags['intro_started']) {
     return 'intro_1';
+  }
+  /*
+   * Krafft's aftermath. The rivalry had three endings and every one of them
+   * simply stopped — the flag was set and the man vanished mid-sentence.
+   * Days later he gets a last word, one per outcome: the exposed man leaves,
+   * the reconciled one sends a patient, the slanderer needles on.
+   */
+  const rivalOutcomeDay = Number(state.storyFlags['rival_outcome_day'] ?? 0);
+  if (rivalOutcomeDay && state.day >= rivalOutcomeDay + 3 && !state.storyFlags['krafft_after_done']) {
+    if (state.storyFlags['rival_exposed']) return 'krafft_after_exposed';
+    if (state.storyFlags['rival_truce']) return 'krafft_after_truce';
+    if (state.storyFlags['rival_mud']) return 'krafft_after_mud';
   }
   if (
     state.locationId === 'small_village' &&
@@ -383,4 +410,54 @@ export function tutorialTipKey(state: GameState): string | null {
     default:
       return null;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * The epilogue
+ * ------------------------------------------------------------------ */
+
+/**
+ * How the town remembers you.
+ *
+ * The five endings each had one sentence, identical for every run that
+ * reached them — the game counts a great deal by now (alms, verdicts, deaths,
+ * the rival, the marriage, the plague) and the epilogue read none of it.
+ *
+ * Each line is chosen from a real counter, so two players with the same
+ * ending read different last pages. Order is roughly: how you practised, how
+ * you judged, whom you fought, whom you kept. Capped in the scene, not here —
+ * the scene knows how much room it has.
+ */
+export function epilogueLines(state: GameState): string[] {
+  const lines: string[] = [];
+
+  // The dead do not go unmentioned, and neither does a clean record.
+  if (state.deathsOnHands === 0 && state.totalTreated >= 20) {
+    lines.push('epilogue_no_deaths');
+  } else if (state.deathsOnHands >= 6) {
+    lines.push('epilogue_many_deaths');
+  }
+
+  if ((state.almsGiven ?? 0) >= 5) lines.push('epilogue_alms');
+
+  const saves = Number(state.storyFlags['epidemic_saves'] ?? 0);
+  if (saves >= 3) lines.push('epilogue_plague_service');
+
+  if ((state.lepraRight ?? 0) >= 2 && (state.lepraWrong ?? 0) === 0) {
+    lines.push('epilogue_lepra_sound');
+  } else if ((state.lepraWrong ?? 0) >= 2) {
+    lines.push('epilogue_lepra_doubted');
+  }
+
+  if (state.storyFlags['rival_exposed']) lines.push('epilogue_rival_exposed');
+  else if (state.storyFlags['rival_truce']) lines.push('epilogue_rival_truce');
+  else if (state.storyFlags['rival_mud']) lines.push('epilogue_rival_mud');
+
+  if (state.spouse && state.heir) lines.push('epilogue_family_line');
+  else if (state.spouse) lines.push('epilogue_married');
+
+  if (honour(state) >= 70) lines.push('epilogue_honour_high');
+  else if (honour(state) < 25) lines.push('epilogue_honour_low');
+
+  return lines;
 }

@@ -357,6 +357,7 @@ export function applyTreatment(
     addHonour(state, 0.5);
   } else if (stance === 'alms') {
     stanceNoteKey = 'stance_alms_done';
+    state.almsGiven = (state.almsGiven ?? 0) + 1;
     // Alms to the poor were what actually counted toward respectability;
     // treating a merchant free of charge merely puzzled him.
     honourFromCharity(state, poor);

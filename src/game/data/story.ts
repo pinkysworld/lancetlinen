@@ -116,6 +116,55 @@ export const QUESTS: QuestDef[] = [
 ];
 
 export const DIALOGUES: DialogueNode[] = [
+  /* ── Krafft's last word, one node per outcome ─────────────────────── */
+  {
+    id: 'krafft_after_exposed',
+    speakerKey: 'npc.krafft',
+    textKey: 'story.krafft_after_exposed',
+    choices: [
+      // He is leaving; there is nothing to negotiate. The one choice is how
+      // you watch him go.
+      { textKey: 'choice.krafft_watch_go', setFlag: 'krafft_after_done' },
+      {
+        textKey: 'choice.krafft_wish_well',
+        setFlag: 'krafft_after_done',
+        effects: { ethics: 2 },
+      },
+    ],
+  },
+  {
+    id: 'krafft_after_truce',
+    speakerKey: 'npc.krafft',
+    textKey: 'story.krafft_after_truce',
+    choices: [
+      {
+        // He sends a paying customer across — the truce is worth something.
+        textKey: 'choice.krafft_take_patient',
+        setFlag: 'krafft_after_done',
+        effects: { coin: 14 },
+      },
+    ],
+  },
+  {
+    id: 'krafft_after_mud',
+    speakerKey: 'npc.krafft',
+    textKey: 'story.krafft_after_mud',
+    choices: [
+      {
+        // Let it lie: the dignified answer, and the cheaper one.
+        textKey: 'choice.krafft_ignore',
+        setFlag: 'krafft_after_done',
+        effects: { ethics: 1 },
+      },
+      {
+        // Answer in kind: it works, and it costs standing with the church.
+        textKey: 'choice.krafft_answer_mud',
+        setFlag: 'krafft_after_done',
+        effects: { councilFavor: 2, churchHeat: 3, ethics: -2 },
+      },
+    ],
+  },
+
   {
     id: 'intro_1',
     speakerKey: 'npc.berthold',
