@@ -1,6 +1,7 @@
 import type { GameState } from '../types';
 import { MAP_NODE_MAP, neighbors } from '../data/map';
 import { applyArrivalFameSpillover, banditChanceMult } from './reputation';
+import { atLeast, firstUnmet, must, type Requirement } from './requirements';
 
 export type EncounterKind =
   | 'none'
@@ -135,9 +136,23 @@ export function travelTo(state: GameState, toId: string): TravelResult {
   };
 }
 
+export const CART_REPAIR_COST = 15;
+
+/**
+ * The iron-tool requirement is the one nobody could see: the button greyed on
+ * coin alone, so a player with 500 coin and no tools had no idea why.
+ */
+export function canRepairCart(state: GameState): Requirement {
+  return firstUnmet(
+    must(state.cart.cartCondition < 100, 'req_cart_sound'),
+    atLeast('req_iron_tools', state.inventory.ironTools, 1),
+    atLeast('req_coin', state.coin, CART_REPAIR_COST),
+  );
+}
+
 export function repairCart(state: GameState): boolean {
-  if (state.coin < 15 || state.inventory.ironTools < 1) return false;
-  state.coin -= 15;
+  if (!canRepairCart(state).ok) return false;
+  state.coin -= CART_REPAIR_COST;
   state.inventory.ironTools -= 1;
   state.cart.cartCondition = Math.min(100, state.cart.cartCondition + 40);
   return true;

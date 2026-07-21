@@ -170,6 +170,8 @@ describe('scenes are actually wired to it', () => {
   });
 
   it('drops the +5 buy button in the market, keeping the essential two', () => {
-    expect(MARKET).toContain('if (!compact()) makeButton(');
+    // `gatedButton` since the buy buttons learned to say "you need 20 coin
+    // and have 9" instead of silently doing nothing.
+    expect(MARKET).toContain('if (!compact()) gatedButton(');
   });
 });

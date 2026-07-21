@@ -4,13 +4,15 @@ import { getState, mutate, saveGame } from '../state';
 import {
   buySupplies,
   sellSupplies,
+  canBuySupplies,
+  canSellSupplies,
   sellPrice,
   craftSalve,
   marketPrices,
   unlockTechnique,
   upgradeBath,
 } from '../systems/economy';
-import { repairCart, restHorse } from '../systems/travel';
+import { canRepairCart, repairCart, restHorse } from '../systems/travel';
 import { buyProperty, canUpgradeProperty, getLocalBath, buyPropertyRequirement } from '../systems/property';
 import { TECHNIQUES } from '../data/techniques';
 import { mentorCitiesFor, isMentorOnly, SELF_TAUGHT_MULTIPLIER } from '../data/mentors';
@@ -63,11 +65,12 @@ export class MarketScene extends Phaser.Scene {
         `${t(`inv_${item}`)}: ${inv}  —  ${t('buy')} ${prices[item]} · ${t('sell')} ${sellPrice(prices[item]!)}`,
         { fontSize: compact() ? fontFor('small') : '15px' },
       );
-      makeButton(
+      gatedButton(
         this,
         compact() ? 880 : 806,
         y + 10,
         `${t('buy')} +1`,
+        canBuySupplies(s, 1, prices[item]!),
         () => {
           mutate((st) => {
             buySupplies(st, item as keyof typeof st.inventory, 1, prices[item]!);
@@ -77,11 +80,12 @@ export class MarketScene extends Phaser.Scene {
         },
         { width: compact() ? 150 : 132, height: compact() ? 56 : 32, fontSize: compact() ? fontFor('button') : '14px', noHotkey: true },
       );
-      if (!compact()) makeButton(
+      if (!compact()) gatedButton(
         this,
         946,
         y + 10,
         `${t('buy')} +5`,
+        canBuySupplies(s, 5, prices[item]!),
         () => {
           mutate((st) => {
             buySupplies(st, item as keyof typeof st.inventory, 5, prices[item]!);
@@ -94,11 +98,12 @@ export class MarketScene extends Phaser.Scene {
       // Selling was never implemented, yet `cannot_afford_day` told the player
       // to do exactly this when they ran out of coin. Disabled rather than
       // hidden when the shelf is empty, so the option is visibly there.
-      makeButton(
+      gatedButton(
         this,
         compact() ? 1060 : 1086,
         y + 10,
         `${t('sell')} +1`,
+        canSellSupplies(s, item as keyof typeof s.inventory, 1),
         () => {
           mutate((st) => {
             sellSupplies(st, item as keyof typeof st.inventory, 1, prices[item]!);
@@ -106,7 +111,7 @@ export class MarketScene extends Phaser.Scene {
           saveGame();
           this.scene.restart();
         },
-        { width: compact() ? 150 : 132, height: compact() ? 56 : 32, fontSize: compact() ? fontFor('button') : '14px', disabled: inv < 1, fill: 0x5a4a2f, noHotkey: true },
+        { width: compact() ? 150 : 132, height: compact() ? 56 : 32, fontSize: compact() ? fontFor('button') : '14px', fill: 0x5a4a2f, noHotkey: true },
       );
     });
 
@@ -141,7 +146,9 @@ export class StudyScene extends Phaser.Scene {
       this.scene.restart();
     }, { width: 280 });
 
-    makeButton(this, 1000, 130, t('repair_cart'), () => {
+    // Repairing needs an iron tool as well as coin, and the button greyed on
+    // coin alone — so a player with a full purse and no tools saw no reason.
+    gatedButton(this, 1000, 130, t('repair_cart'), canRepairCart(s), () => {
       mutate((st) => repairCart(st));
       saveGame();
       this.scene.restart();
@@ -245,7 +252,7 @@ export class UpgradesScene extends Phaser.Scene {
         wordWrap: { width: 700 },
         align: 'center',
       }).setOrigin(0.5);
-      makeButton(this, GAME_WIDTH / 2, 300, t('buy_stall'), () => {
+      gatedButton(this, GAME_WIDTH / 2, 300, t('buy_stall'), buyPropertyRequirement(s, 'stall'), () => {
         mutate((st) => buyProperty(st, 'stall'));
         audio.sfx('coin');
         saveGame();

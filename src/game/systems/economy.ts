@@ -4,6 +4,8 @@ import { TECHNIQUE_MAP } from '../data/techniques';
 import {
   applyRemoteIncome,
   buyProperty,
+  buyPropertyRequirement,
+  canUpgradeProperty,
   getLocalBath,
   syncLegacyBathhouse,
   upgradeProperty,
@@ -19,7 +21,7 @@ import { festivalPatientMult } from './events';
 import { addJournal } from './journal';
 import { tickReputation } from './reputation';
 import { localGoodsMult, type PricedItem } from '../data/prices';
-import { atLeast, firstUnmet, must, type Requirement } from './requirements';
+import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
 
 export function dailyOperatingCost(state: GameState): number {
   const local = getLocalBath(state);
@@ -164,17 +166,32 @@ export function sellPrice(unitPrice: number): number {
  * built, and travelling costs coin too. Reported from play as "I have plenty
  * of supplies but cannot open".
  */
+export function canSellSupplies(
+  state: GameState,
+  item: keyof GameState['inventory'],
+  amount: number,
+): Requirement {
+  return atLeast('req_stock', state.inventory[item], amount);
+}
+
 export function sellSupplies(
   state: GameState,
   item: keyof GameState['inventory'],
   amount: number,
   unitPrice: number,
 ): boolean {
-  const have = state.inventory[item];
-  if (have < amount) return false;
+  if (!canSellSupplies(state, item, amount).ok) return false;
   state.inventory[item] -= amount;
   state.coin += amount * sellPrice(unitPrice);
   return true;
+}
+
+export function canBuySupplies(
+  state: GameState,
+  amount: number,
+  unitPrice: number,
+): Requirement {
+  return atLeast('req_coin', state.coin, amount * unitPrice);
 }
 
 export function buySupplies(
@@ -184,7 +201,7 @@ export function buySupplies(
   unitPrice: number,
 ): boolean {
   const total = amount * unitPrice;
-  if (state.coin < total) return false;
+  if (!canBuySupplies(state, amount, unitPrice).ok) return false;
   state.coin -= total;
   state.inventory[item] += amount;
   return true;
@@ -216,8 +233,26 @@ export function unlockTechnique(state: GameState, id: string, costOverride?: num
   return true;
 }
 
-export function tryBuyBathhouse(state: GameState): boolean {
-  return buyProperty(state, 'bathhouse');
+/*
+ * Thin wrappers over the property system, kept because the bathhouse screens
+ * speak in terms of "the bath I am standing in" rather than a property id.
+ * Their `can*` companions delegate the same way, so the reason the UI shows
+ * is the one the underlying check produced.
+ */
+
+/*
+ * `tryBuyBathhouse` stood here — a one-line wrapper over
+ * `buyProperty(state, 'bathhouse')` that nothing in the game called. The
+ * structural test below flagged it as an action with no `can*` companion,
+ * which is how it came to light. Giving dead code a gate would have been the
+ * wrong repair; both screens that buy a bathhouse go through `buyProperty`
+ * directly.
+ */
+
+export function canUpgradeBath(state: GameState, upgradeId: string): Requirement {
+  const local = getLocalBath(state);
+  if (!local) return refuse('req_no_premises');
+  return canUpgradeProperty(state, local.id, upgradeId);
 }
 
 export function upgradeBath(state: GameState, upgradeId: string): boolean {

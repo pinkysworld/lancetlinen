@@ -134,26 +134,52 @@ export function buyProperty(state: GameState, kind: PropertyKind): boolean {
   return true;
 }
 
-export function buyCityLicense(state: GameState): boolean {
+/** What the bath right costs here. Nürnberg's is dearer, as it would be. */
+export function licenseCost(cityId: string): number {
+  return cityId === 'nurnberg' ? 100 : 70;
+}
+
+export function canBuyCityLicense(state: GameState): Requirement {
   const cityId = state.locationId;
   const node = MAP_NODE_MAP[cityId];
-  if (!node?.hasBathLicenseShop) return false;
   const key = `license_${cityId}`;
-  if (state.storyFlags[key] || (cityId === 'nurnberg' && state.storyFlags['bath_license'])) return false;
-  const cost = cityId === 'nurnberg' ? 100 : 70;
-  if (state.coin < cost) return false;
-  state.coin -= cost;
+  return firstUnmet(
+    must(!!node?.hasBathLicenseShop, 'req_no_shop'),
+    must(
+      !state.storyFlags[key] && !(cityId === 'nurnberg' && state.storyFlags['bath_license']),
+      'req_already_have',
+    ),
+    atLeast('req_coin', state.coin, licenseCost(cityId)),
+  );
+}
+
+export function buyCityLicense(state: GameState): boolean {
+  if (!canBuyCityLicense(state).ok) return false;
+  const cityId = state.locationId;
+  const key = `license_${cityId}`;
+  state.coin -= licenseCost(cityId);
   state.storyFlags[key] = true;
   if (cityId === 'nurnberg') state.storyFlags['bath_license'] = true;
   state.guildFavor += 5;
   return true;
 }
 
-export function hireManager(state: GameState, propertyId: string): boolean {
+export const MANAGER_COST = 50;
+
+export function canHireManager(state: GameState, propertyId: string): Requirement {
   const p = (state.properties ?? []).find((x) => x.id === propertyId);
-  if (!p || p.hasManager || state.coin < 50) return false;
-  if (p.kind !== 'bathhouse' && p.kind !== 'stall') return false;
-  state.coin -= 50;
+  if (!p) return refuse('req_no_premises');
+  return firstUnmet(
+    must(!p.hasManager, 'req_already_have'),
+    must(p.kind === 'bathhouse' || p.kind === 'stall', 'req_not_a_business'),
+    atLeast('req_coin', state.coin, MANAGER_COST),
+  );
+}
+
+export function hireManager(state: GameState, propertyId: string): boolean {
+  if (!canHireManager(state, propertyId).ok) return false;
+  const p = (state.properties ?? []).find((x) => x.id === propertyId)!;
+  state.coin -= MANAGER_COST;
   p.hasManager = true;
   return true;
 }
@@ -292,8 +318,8 @@ export function applyRemoteIncome(state: GameState): number {
 }
 
 export function restAtHome(state: GameState): boolean {
-  const home = getLocalHome(state);
-  if (!home) return false;
+  if (!canRestAtHome(state).ok) return false;
+  const home = getLocalHome(state)!;
   const boost = 1 + Math.floor(home.comfort / 25);
   state.stats.soul = Math.min(10, state.stats.soul + boost > state.stats.soul ? 1 : 0);
   // Always refresh a bit
@@ -305,10 +331,23 @@ export function restAtHome(state: GameState): boolean {
   return true;
 }
 
+export const GATHERING_COST = 20;
+
+export function canRestAtHome(state: GameState): Requirement {
+  return must(!!getLocalHome(state), 'req_no_home_here');
+}
+
+export function canHostGathering(state: GameState): Requirement {
+  return firstUnmet(
+    must(!!getLocalHome(state), 'req_no_home_here'),
+    atLeast('req_coin', state.coin, GATHERING_COST),
+  );
+}
+
 export function hostGathering(state: GameState): boolean {
-  const home = getLocalHome(state);
-  if (!home || state.coin < 20) return false;
-  state.coin -= 20;
+  if (!canHostGathering(state).ok) return false;
+  const home = getLocalHome(state)!;
+  state.coin -= GATHERING_COST;
   state.reputation[state.locationId] = Math.min(
     100,
     (state.reputation[state.locationId] ?? 0) + 4 + Math.floor(home.comfort / 30),

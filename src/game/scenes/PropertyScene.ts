@@ -5,6 +5,11 @@ import {
   buyCityLicense,
   buyProperty,
   buyPropertyRequirement,
+  canBuyCityLicense,
+  canHireManager,
+  canHostGathering,
+  canRestAtHome,
+  canUpgradeProperty,
   getLocalHome,
   hireManager,
   hostGathering,
@@ -91,11 +96,12 @@ export class PropertyScene extends Phaser.Scene {
     // License
     const node = MAP_NODE_MAP[s.locationId];
     if (node?.hasBathLicenseShop) {
-      makeButton(
+      gatedButton(
         this,
         280,
         420,
         t('buy_license'),
+        canBuyCityLicense(s),
         () => {
           mutate((st) => buyCityLicense(st));
           audio.sfx('coin');
@@ -117,18 +123,19 @@ export class PropertyScene extends Phaser.Scene {
           color: '#5a9a6e',
         });
       } else {
-        makeButton(
+        gatedButton(
           this,
           280,
           480 + i * 50,
           t('hire_manager'),
+          canHireManager(s, p.id),
           () => {
             mutate((st) => hireManager(st, p.id));
             audio.sfx('coin');
             saveGame();
             this.scene.restart();
           },
-          { width: 320, height: 40, fontSize: '15px', disabled: s.coin < 50 },
+          { width: 320, height: 40, fontSize: '15px' },
         );
       }
     });
@@ -141,11 +148,12 @@ export class PropertyScene extends Phaser.Scene {
         fontSize: '16px',
         color: '#e8c547',
       });
-      makeButton(
+      gatedButton(
         this,
         720,
         470,
         t('rest_home'),
+        canRestAtHome(s),
         () => {
           mutate((st) => restAtHome(st));
           audio.sfx('door');
@@ -154,30 +162,32 @@ export class PropertyScene extends Phaser.Scene {
         },
         { width: 200, height: 40, fontSize: '14px' },
       );
-      makeButton(
+      gatedButton(
         this,
         940,
         470,
         t('host_gathering'),
+        canHostGathering(s),
         () => {
           mutate((st) => hostGathering(st));
           audio.sfx('market');
           saveGame();
           this.scene.restart();
         },
-        { width: 220, height: 40, fontSize: '14px', disabled: s.coin < 20 },
+        { width: 220, height: 40, fontSize: '14px' },
       );
-      makeButton(
+      gatedButton(
         this,
         1160,
         470,
         t('upgrade_comfort'),
+        canUpgradeProperty(s, home.id, 'comfort'),
         () => {
           mutate((st) => upgradeProperty(st, home.id, 'comfort'));
           saveGame();
           this.scene.restart();
         },
-        { width: 160, height: 40, fontSize: '13px', disabled: s.coin < 30 },
+        { width: 160, height: 40, fontSize: '13px' },
       );
     }
 

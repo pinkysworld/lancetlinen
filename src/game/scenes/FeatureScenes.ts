@@ -6,6 +6,8 @@ import {
   fireStaff,
   giftStaff,
   trainStaff,
+  canGiftStaff,
+  canTrainStaff,
   ensureStaff,
 } from '../systems/staff';
 import type { StaffRole } from '../types';
@@ -17,6 +19,11 @@ import {
   marry,
   giftSpouse,
   moveSpouseHere,
+  canStartCourtship,
+  canCourtAction,
+  canMarryNow,
+  canGiftSpouse,
+  canMoveSpouseHere,
   SUITORS,
 } from '../systems/family';
 import {
@@ -177,11 +184,12 @@ export class StaffScene extends Phaser.Scene {
           `${m.name} · ${t(`role_${m.role}`)} · ${t('loyalty')}: ${m.loyalty} · ${t('skill')}: ${m.skill} · ${t('wage_per_day', { n: m.wage })}`,
           { fontSize: '13px', wordWrap: { width: 420 } },
         );
-        makeButton(
+        gatedButton(
           this,
           560,
           y + 10,
           t('gift'),
+          canGiftStaff(s, m.id),
           () => {
             mutate((st) => giftStaff(st, m.id));
             saveGame();
@@ -189,11 +197,12 @@ export class StaffScene extends Phaser.Scene {
           },
           { width: 70, height: 32, fontSize: '12px' },
         );
-        makeButton(
+        gatedButton(
           this,
           640,
           y + 10,
           t('train'),
+          canTrainStaff(s, m.id),
           () => {
             mutate((st) => trainStaff(st, m.id));
             saveGame();
@@ -260,12 +269,12 @@ export class FamilyScene extends Phaser.Scene {
         `${t('spouse')}: ${t(s.spouse.name)}\n${t('affection')}: ${s.spouse.affection}\n${t('location')}: ${locName(s.spouse.cityId)}`,
         { fontSize: '16px', wordWrap: { width: 500 } },
       );
-      makeButton(this, 200, 320, t('gift_spouse'), () => {
+      gatedButton(this, 200, 320, t('gift_spouse'), canGiftSpouse(s), () => {
         mutate((st) => giftSpouse(st));
         saveGame();
         this.scene.restart();
       }, { width: 200 });
-      makeButton(this, 420, 320, t('move_spouse'), () => {
+      gatedButton(this, 420, 320, t('move_spouse'), canMoveSpouseHere(s), () => {
         mutate((st) => moveSpouseHere(st));
         saveGame();
         this.scene.restart();
@@ -285,11 +294,12 @@ export class FamilyScene extends Phaser.Scene {
         { fontSize: '16px' },
       );
       (['gift', 'walk', 'feast', 'letter'] as const).forEach((a, i) => {
-        makeButton(
+        gatedButton(
           this,
           180 + (i % 2) * 220,
           280 + Math.floor(i / 2) * 55,
           t(`court_${a}`),
+          canCourtAction(s, a),
           () => {
             mutate((st) => courtAction(st, a));
             saveGame();
@@ -298,8 +308,8 @@ export class FamilyScene extends Phaser.Scene {
           { width: 200 },
         );
       });
-      if (s.courtshipProgress >= 80) {
-        makeButton(this, 300, 420, t('marry'), () => {
+      {
+        gatedButton(this, 300, 420, t('marry'), canMarryNow(s), () => {
           mutate((st) => marry(st));
           audio.sfx('marry');
           saveGame();
@@ -309,11 +319,12 @@ export class FamilyScene extends Phaser.Scene {
     } else {
       bodyText(this, 80, 140, t('family_intro'), { fontSize: '15px', wordWrap: { width: 500 } });
       SUITORS.forEach((su, i) => {
-        makeButton(
+        gatedButton(
           this,
           300,
           220 + i * 48,
           `${t(su.nameKey)} — ${t('coin_amount', { n: su.cost })}`,
+          canStartCourtship(s, su.id),
           () => {
             mutate((st) => startCourtship(st, su.id));
             saveGame();

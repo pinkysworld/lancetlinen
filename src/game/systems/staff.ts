@@ -1,6 +1,7 @@
 import type { GameState, StaffMember, StaffRole } from '../types';
 import { FIRST_NAMES_F, FIRST_NAMES_M, SURNAMES } from '../data/patients';
 import { folkLoyaltyBonus } from './reputation';
+import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
 
 let staffSeq = 0;
 
@@ -179,18 +180,39 @@ export function staffSabotageResist(state: GameState): number {
   return Math.min(0.85, total * 0.85);
 }
 
-export function giftStaff(state: GameState, staffId: string): boolean {
+export const GIFT_STAFF_COST = 10;
+export const TRAIN_STAFF_COST = 25;
+
+export function canGiftStaff(state: GameState, staffId: string): Requirement {
   const m = state.staff.find((s) => s.id === staffId);
-  if (!m || state.coin < 10) return false;
-  state.coin -= 10;
+  if (!m) return refuse('req_unknown');
+  return firstUnmet(
+    must(m.loyalty < 100, 'req_loyalty_full'),
+    atLeast('req_coin', state.coin, GIFT_STAFF_COST),
+  );
+}
+
+export function giftStaff(state: GameState, staffId: string): boolean {
+  if (!canGiftStaff(state, staffId).ok) return false;
+  const m = state.staff.find((s) => s.id === staffId)!;
+  state.coin -= GIFT_STAFF_COST;
   m.loyalty = Math.min(100, m.loyalty + 12);
   return true;
 }
 
-export function trainStaff(state: GameState, staffId: string): boolean {
+export function canTrainStaff(state: GameState, staffId: string): Requirement {
   const m = state.staff.find((s) => s.id === staffId);
-  if (!m || state.coin < 25 || m.skill >= 10) return false;
-  state.coin -= 25;
+  if (!m) return refuse('req_unknown');
+  return firstUnmet(
+    must(m.skill < 10, 'req_skill_full'),
+    atLeast('req_coin', state.coin, TRAIN_STAFF_COST),
+  );
+}
+
+export function trainStaff(state: GameState, staffId: string): boolean {
+  if (!canTrainStaff(state, staffId).ok) return false;
+  const m = state.staff.find((s) => s.id === staffId)!;
+  state.coin -= TRAIN_STAFF_COST;
   m.skill = Math.min(10, m.skill + 1);
   m.loyalty = Math.min(100, m.loyalty + 5);
   return true;

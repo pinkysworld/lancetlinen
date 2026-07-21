@@ -1,6 +1,7 @@
 import type { GameState } from '../types';
 import { addJournal } from './journal';
 import { canMarry } from './honour';
+import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
 import { FIRST_NAMES_F, FIRST_NAMES_M } from '../data/patients';
 
 export const SUITORS = [
@@ -18,11 +19,25 @@ export function ensureFamily(state: GameState): void {
   if (state.courtshipProgress === undefined) state.courtshipProgress = 0;
 }
 
-export function startCourtship(state: GameState, suitorId: string): boolean {
+export const COURT_COSTS = { gift: 15, walk: 5, feast: 30, letter: 8 } as const;
+export const MARRY_COST = 50;
+export const GIFT_SPOUSE_COST = 20;
+export const MOVE_SPOUSE_COST = 15;
+
+export function canStartCourtship(state: GameState, suitorId: string): Requirement {
   ensureFamily(state);
-  if (state.spouse) return false;
   const s = SUITORS.find((x) => x.id === suitorId);
-  if (!s || state.coin < s.cost) return false;
+  if (!s) return refuse('req_unknown');
+  return firstUnmet(
+    must(!state.spouse, 'req_already_wed'),
+    must(!state.courtshipTarget, 'req_already_courting'),
+    atLeast('req_coin', state.coin, s.cost),
+  );
+}
+
+export function startCourtship(state: GameState, suitorId: string): boolean {
+  if (!canStartCourtship(state, suitorId).ok) return false;
+  const s = SUITORS.find((x) => x.id === suitorId)!;
   state.coin -= s.cost;
   state.courtshipTarget = suitorId;
   state.courtshipProgress = 15;
@@ -30,14 +45,22 @@ export function startCourtship(state: GameState, suitorId: string): boolean {
   return true;
 }
 
-export function courtAction(state: GameState, action: 'gift' | 'walk' | 'feast' | 'letter'): boolean {
+export function canCourtAction(
+  state: GameState,
+  action: keyof typeof COURT_COSTS,
+): Requirement {
   ensureFamily(state);
-  if (!state.courtshipTarget || state.spouse) return false;
-  const costs = { gift: 15, walk: 5, feast: 30, letter: 8 };
+  return firstUnmet(
+    must(!state.spouse, 'req_already_wed'),
+    must(!!state.courtshipTarget, 'req_no_courtship'),
+    atLeast('req_coin', state.coin, COURT_COSTS[action]),
+  );
+}
+
+export function courtAction(state: GameState, action: keyof typeof COURT_COSTS): boolean {
+  if (!canCourtAction(state, action).ok) return false;
   const gains = { gift: 18, walk: 10, feast: 25, letter: 12 };
-  const cost = costs[action];
-  if (state.coin < cost) return false;
-  state.coin -= cost;
+  state.coin -= COURT_COSTS[action];
   state.courtshipProgress = Math.min(100, state.courtshipProgress + gains[action] + Math.floor(state.stats.tongue * 1.5));
   if (state.courtshipProgress >= 100) {
     // Can marry
@@ -46,17 +69,29 @@ export function courtAction(state: GameState, action: 'gift' | 'walk' | 'feast' 
   return true;
 }
 
-export function marry(state: GameState): boolean {
+/**
+ * May the player marry?
+ *
+ * The honour gate is the one that matters and the one that was invisible: an
+ * artisan family would not give a daughter to an *unehrlich* man, and the
+ * screen said nothing about it. Reported as "the marry button does nothing".
+ */
+export function canMarryNow(state: GameState): Requirement {
   ensureFamily(state);
-  if (state.spouse || !state.courtshipTarget || state.courtshipProgress < 80) return false;
-  if (state.coin < 50) return false;
-  // An artisan family would not give a daughter to an unehrlich man. Courtship
-  // previously could not fail at all — it was a progress bar with fixed costs
-  // and fixed gains. This is the refusal that makes the setting personal.
-  if (!canMarry(state).ok) return false;
+  return firstUnmet(
+    must(!state.spouse, 'req_already_wed'),
+    must(!!state.courtshipTarget, 'req_no_courtship'),
+    atLeast('req_courtship', Math.round(state.courtshipProgress), 80),
+    must(canMarry(state).ok, 'req_honour_marry'),
+    atLeast('req_coin', state.coin, MARRY_COST),
+  );
+}
+
+export function marry(state: GameState): boolean {
+  if (!canMarryNow(state).ok) return false;
   const s = SUITORS.find((x) => x.id === state.courtshipTarget);
   if (!s) return false;
-  state.coin -= 50;
+  state.coin -= MARRY_COST;
   state.spouse = {
     name: s.nameKey,
     affection: 70,
@@ -108,18 +143,33 @@ export function spouseDaily(state: GameState): void {
   }
 }
 
-export function giftSpouse(state: GameState): boolean {
+export function canGiftSpouse(state: GameState): Requirement {
   ensureFamily(state);
-  if (!state.spouse || state.coin < 20) return false;
-  state.coin -= 20;
-  state.spouse.affection = Math.min(100, state.spouse.affection + 15);
+  return firstUnmet(
+    must(!!state.spouse, 'req_no_spouse'),
+    atLeast('req_coin', state.coin, GIFT_SPOUSE_COST),
+  );
+}
+
+export function giftSpouse(state: GameState): boolean {
+  if (!canGiftSpouse(state).ok) return false;
+  state.coin -= GIFT_SPOUSE_COST;
+  state.spouse!.affection = Math.min(100, state.spouse!.affection + 15);
   return true;
 }
 
-export function moveSpouseHere(state: GameState): boolean {
+export function canMoveSpouseHere(state: GameState): Requirement {
   ensureFamily(state);
-  if (!state.spouse || state.coin < 15) return false;
-  state.coin -= 15;
-  state.spouse.cityId = state.locationId;
+  return firstUnmet(
+    must(!!state.spouse, 'req_no_spouse'),
+    must(state.spouse?.cityId !== state.locationId, 'req_spouse_here'),
+    atLeast('req_coin', state.coin, MOVE_SPOUSE_COST),
+  );
+}
+
+export function moveSpouseHere(state: GameState): boolean {
+  if (!canMoveSpouseHere(state).ok) return false;
+  state.coin -= MOVE_SPOUSE_COST;
+  state.spouse!.cityId = state.locationId;
   return true;
 }
