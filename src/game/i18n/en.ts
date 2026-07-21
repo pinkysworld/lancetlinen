@@ -591,7 +591,7 @@ export const en = {
   lex_towns: 'Town and country',
   lex_towns_body: 'Most people lived on the land. Towns were small by later standards — a few thousand souls was substantial, and Nürnberg with perhaps twenty thousand was among the largest in the Empire.\n\nBut the towns held the crafts, the markets, the courts and the money, and *Stadtluft macht frei* — a serf who lived in a town a year and a day was free. That pull is why the roads carried people at all.',
   coin_amount: '{{n}} coin',
-  touch_zoom_hint: 'Two fingers to zoom and pan.',
+  touch_zoom_hint: 'Two fingers to zoom and pan · double-tap with two to reset.',
   council: 'Council',
   level_n: 'Level {{n}}',
   wage_per_day: '{{n}} coin/day',

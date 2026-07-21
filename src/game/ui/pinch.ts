@@ -139,6 +139,26 @@ export function installPinchZoom(scene: Phaser.Scene): void {
     if (!twoPointers()) pinch = null;
   };
 
+  // Two-finger tap resets the view.
+  //
+  // Without this the player can zoom in and have no way back — `resetView`
+  // existed but nothing called it, which is exactly the defect this project
+  // keeps producing: correct code that is never reached.
+  let lastTwoTap = 0;
+  const onDown = () => {
+    if (!twoPointers()) return;
+    const now = performance.now();
+    // A pinch also puts two fingers down, so only a *quick repeat* counts.
+    if (now - lastTwoTap < 400) {
+      resetView(scene);
+      pinch = null;
+      lastTwoTap = 0;
+      return;
+    }
+    lastTwoTap = now;
+  };
+
+  scene.input.on(Phaser.Input.Events.POINTER_DOWN, onDown);
   scene.input.on(Phaser.Input.Events.POINTER_MOVE, onMove);
   scene.input.on(Phaser.Input.Events.POINTER_UP, onUp);
 
@@ -147,6 +167,7 @@ export function installPinchZoom(scene: Phaser.Scene): void {
   scene.input.addPointer(1);
 
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    scene.input.off(Phaser.Input.Events.POINTER_DOWN, onDown);
     scene.input.off(Phaser.Input.Events.POINTER_MOVE, onMove);
     scene.input.off(Phaser.Input.Events.POINTER_UP, onUp);
   });

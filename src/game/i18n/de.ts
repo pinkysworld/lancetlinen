@@ -587,7 +587,7 @@ export const de = {
   lex_towns: 'Stadt und Land',
   lex_towns_body: 'Die meisten Menschen lebten auf dem Land. Städte waren nach späterem Maß klein — einige tausend Seelen waren beträchtlich, und Nürnberg mit vielleicht zwanzigtausend gehörte zu den größten im Reich.\n\nDoch die Städte hielten die Handwerke, die Märkte, die Gerichte und das Geld, und *Stadtluft macht frei* — ein Höriger, der Jahr und Tag in einer Stadt lebte, war frei. Dieser Sog ist der Grund, warum auf den Straßen überhaupt Menschen unterwegs waren.',
   coin_amount: '{{n}} Münzen',
-  touch_zoom_hint: 'Zwei Finger zum Zoomen und Verschieben.',
+  touch_zoom_hint: 'Zwei Finger zum Zoomen und Verschieben · zweimal tippen setzt zurück.',
   council: 'Rat',
   level_n: 'Stufe {{n}}',
   wage_per_day: '{{n}} Münzen/Tag',
