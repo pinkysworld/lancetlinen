@@ -2,6 +2,7 @@ import type { GameState } from '../types';
 import { MAP_NODE_MAP, neighbors } from '../data/map';
 import { applyArrivalFameSpillover, banditChanceMult } from './reputation';
 import { atLeast, firstUnmet, must, type Requirement } from './requirements';
+import { seasonalTravelWear } from '../data/seasons';
 
 export type EncounterKind =
   | 'none'
@@ -47,8 +48,11 @@ export function travelTo(state: GameState, toId: string): TravelResult {
   const dist = Math.hypot(node.x - from.x, node.y - from.y);
   const days = Math.max(1, Math.round(dist / 180));
 
-  state.cart.horseHealth = Math.max(0, state.cart.horseHealth - 5 - days * 2);
-  state.cart.cartCondition = Math.max(0, state.cart.cartCondition - 3);
+  // Mud, short days and snow. Winter bites the cart and the horse rather than
+  // the purse — those are the things the player has to keep mended.
+  const wear = seasonalTravelWear(state);
+  state.cart.horseHealth = Math.max(0, state.cart.horseHealth - Math.round((5 + days * 2) * wear));
+  state.cart.cartCondition = Math.max(0, state.cart.cartCondition - Math.round(3 * wear));
   state.day += days;
   state.weekday = (state.weekday + days) % 7;
   state.locationId = toId;

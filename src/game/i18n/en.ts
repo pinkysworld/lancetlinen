@@ -173,6 +173,8 @@ export const en = {
   req_cart_sound: 'The cart is sound.',
   req_iron_tools: 'iron tools',
   req_stock: 'of that in stock',
+  demand_bath_day: 'Saturday — bathing day',
+  demand_sabbath: 'Sunday — the council forbids trading',
   req_eye: 'a keener eye',
   req_untaught_uroscopy: 'No one ever taught you to read urine.',
   req_untaught_palpate: 'No one ever taught you to feel for it.',

@@ -172,6 +172,8 @@ export const de = {
   req_cart_sound: 'Der Wagen ist heil.',
   req_iron_tools: 'Eisenwerkzeug',
   req_stock: 'Stück davon',
+  demand_bath_day: 'Samstag — Badetag',
+  demand_sabbath: 'Sonntag — der Rat verbietet den Handel',
   req_eye: 'Augenmaß',
   req_untaught_uroscopy: 'Die Harnschau hat Euch niemand gelehrt.',
   req_untaught_palpate: 'Das Betasten hat Euch niemand gelehrt.',

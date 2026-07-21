@@ -20,6 +20,7 @@ import {
 } from '../data/patients';
 import { bloodlettingDayModifier, seasonalHumorBias } from '../data/history';
 import { complaintRegion, judgeVein, type BodyRegion } from '../data/bloodletting';
+import { seasonalComplaintWeight } from '../data/seasons';
 import { classWeight, reputationPayMult, applyTreatmentReputation } from './reputation';
 import { staffSkillBonus, staffSupplySaveChance } from './staff';
 import {
@@ -142,7 +143,13 @@ export function generatePatient(state: GameState): PatientInstance {
 
   const template = weightedPick(
     pool,
-    (t) => classWeight(state, t.class) * templateWeight(t) * (DENTAL_TEMPLATE_IDS.has(t.id) && state.totalTreated < 25 ? 1.35 : 1),
+    (t) =>
+      classWeight(state, t.class) *
+      templateWeight(t) *
+      // Chilblains in winter, wounds in the heat, melancholy as the light
+      // goes. A weighting, not a filter — a broken arm happens in February too.
+      seasonalComplaintWeight(state, t) *
+      (DENTAL_TEMPLATE_IDS.has(t.id) && state.totalTreated < 25 ? 1.35 : 1),
   );
   uidCounter += 1;
 

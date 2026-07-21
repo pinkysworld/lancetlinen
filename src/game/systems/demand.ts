@@ -13,6 +13,7 @@ import type { GameState, SettlementType } from '../types';
 import { MAP_NODE_MAP } from '../data/map';
 import { getLocalBath } from './property';
 import { activeFestival, festivalPatientMult } from './events';
+import { weekdayDemand } from '../data/seasons';
 import { staffDemandBonus } from './staff';
 import { churchDemandPenalty } from './pressure';
 
@@ -112,6 +113,14 @@ export function computeDemand(state: GameState): Demand {
   if (state.season === 3) {
     add('demand_winter', 1);
     total += 1;
+  }
+
+  // Saturday was the bathing day; Sunday the council forbade trading. The
+  // week had a shape and the game did not show it.
+  const day = weekdayDemand(state);
+  if (day) {
+    add(day.key, day.delta);
+    total += day.delta;
   }
 
   // A rival's sabotage, or a reputation for killing people, thins the crowd.

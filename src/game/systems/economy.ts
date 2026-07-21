@@ -22,6 +22,7 @@ import { addJournal } from './journal';
 import { syncQuests } from './story';
 import { tickReputation } from './reputation';
 import { localGoodsMult, type PricedItem } from '../data/prices';
+import { seasonalGoodsMult } from '../data/seasons';
 import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
 
 export function dailyOperatingCost(state: GameState): number {
@@ -283,7 +284,10 @@ export function marketPrices(state: GameState): Record<string, number> {
   // list, so travelling had a cost and no commercial reason.
   const out: Record<string, number> = {};
   for (const [item, price] of Object.entries(base) as [PricedItem, number][]) {
-    out[item] = Math.max(1, Math.round(price * localGoodsMult(state.locationId, item)));
+    out[item] = Math.max(
+      1,
+      Math.round(price * localGoodsMult(state.locationId, item) * seasonalGoodsMult(state, item)),
+    );
   }
   return out;
 }
