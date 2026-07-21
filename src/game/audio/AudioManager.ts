@@ -4,6 +4,7 @@
  */
 
 import { THEMES, type MusicId } from './themes';
+import { trackFor, type Track } from './tracks';
 export type { MusicId } from './themes';
 import {
   MODES,
@@ -128,6 +129,10 @@ class AudioManager {
   private irCache = new Map<number, AudioBuffer>();
   /** Incremented per music() call; stale calls abort. See the guard there. */
   private musicGeneration = 0;
+  /** The streaming <audio> element for the current recorded track, if any. */
+  private trackEl: HTMLAudioElement | null = null;
+  /** Gain of the track currently playing, before volume settings. */
+  private trackGain = 1;
   private _visBound = false;
 
   get isMuted(): boolean {
@@ -173,6 +178,7 @@ class AudioManager {
   setMuted(m: boolean): void {
     this.muted = m;
     if (m) {
+      this.stopTrack();
       this.stopMusic();
       this.stopAmbience();
     } else if (this.currentContext) {
@@ -225,6 +231,12 @@ class AudioManager {
   /** Rebuild the currently playing music/ambience so new gains take effect. */
   private refreshBeds(): void {
     if (this.muted || !this.unlocked) return;
+    // A streaming track only needs its volume set; rebuilding it would restart
+    // the piece from the beginning on every slider nudge.
+    if (this.trackEl) {
+      this.refreshTrackVolume();
+      return;
+    }
     if (this.currentContext) {
       void this.setContext(this.currentContext, true);
     } else if (this.currentMusic !== 'none') {
@@ -522,6 +534,68 @@ class AudioManager {
   }
 
   /**
+   * Play a recorded track, crossfading out whatever was playing.
+   *
+   * Uses an `<audio>` element rather than Phaser's loader: Phaser decodes into
+   * memory, and fifteen megabytes of music decoded to PCM is roughly 150 MB,
+   * which is unreasonable on a phone. This streams and loops natively.
+   */
+  private playTrack(track: Track, vol: number): void {
+    this.stopTrack();
+    const el = new Audio(`assets/music/${track.file}.mp3`);
+    el.loop = true;
+    el.preload = 'auto';
+    el.volume = 0;
+    this.trackEl = el;
+    this.trackGain = track.gain;
+
+    // Autoplay is blocked until a gesture; that is expected and not an error.
+    void el.play().catch(() => {
+      /* Will start on the next call after the player has interacted. */
+    });
+
+    // Fade in by hand — <audio> has no ramp, and jumping to full volume on a
+    // scene change is jarring.
+    const target = vol * track.gain;
+    const steps = 12;
+    let i = 0;
+    const fade = window.setInterval(() => {
+      i++;
+      if (!this.trackEl || this.trackEl !== el) {
+        window.clearInterval(fade);
+        return;
+      }
+      el.volume = Math.min(1, Math.max(0, (target * i) / steps));
+      if (i >= steps) window.clearInterval(fade);
+    }, 40);
+  }
+
+  private stopTrack(): void {
+    const el = this.trackEl;
+    if (!el) return;
+    this.trackEl = null;
+    // Fade out then release, so a scene change does not cut the music dead.
+    let v = el.volume;
+    const fade = window.setInterval(() => {
+      v -= 0.12;
+      if (v <= 0) {
+        window.clearInterval(fade);
+        el.pause();
+        el.src = '';
+        return;
+      }
+      el.volume = Math.max(0, v);
+    }, 40);
+  }
+
+  /** Push a volume change into a track that is already playing. */
+  private refreshTrackVolume(): void {
+    if (this.trackEl) {
+      this.trackEl.volume = Math.min(1, Math.max(0, this.gMusic() * this.trackGain));
+    }
+  }
+
+  /**
    * Start a theme.
    *
    * The previous implementation drove the melody from `setTimeout` with a
@@ -552,6 +626,18 @@ class AudioManager {
 
     const vol = this.gMusic();
     if (vol <= 0) return;
+
+    // A recorded track wins where one exists. Contexts without one fall
+    // through to the procedural engine below — `dialogue` and `night` are
+    // deliberately left synthetic, because a sparse drone under dialogue is
+    // exactly what that wants.
+    const track = trackFor(id);
+    if (track) {
+      this.playTrack(track, vol);
+      this.musicNodes = { stop: () => this.stopTrack() };
+      return;
+    }
+    this.stopTrack();
 
     const spec = THEMES[id];
     const ctx = this.ctx;

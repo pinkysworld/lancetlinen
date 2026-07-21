@@ -866,7 +866,7 @@ export const de = {
   action_next: 'Nächste Option',
   action_prev: 'Vorherige Option',
   credits_title: 'Mitwirkende',
-  credits_body: 'Lanzett & Leinen — eine Lebens- und Wirtschaftssimulation eines Baders im Heiligen Römischen Reich, um 1382.\n\nEntwurf, Code und Leitung: Michél Nguyen.\nGrafik erzeugt mit xAI Grok Imagine und für dieses Projekt kuratiert.\nMusik und Klangeffekte werden zur Laufzeit prozedural über die Web-Audio-API erzeugt — es werden keine Samples verwendet.\n\nHistorische Beratung: keine. Das Spiel ist recherchiert, aber nicht maßgeblich; im Kodex steht, was belegt und was ausgeschmückt ist.',
+  credits_body: 'Lanzett & Leinen — eine Lebens- und Wirtschaftssimulation eines Baders im Heiligen Römischen Reich, um 1382.\n\nEntwurf, Code und Leitung: Michél Nguyen.\nGrafik erzeugt mit xAI Grok Imagine und für dieses Projekt kuratiert.\nMusik: Aufnahmen von RandomMind und Magdalen Kadel, sämtlich unter CC0 (gemeinfrei) — siehe AUDIO_CREDITS.md. Klangeffekte und die Musik der stilleren Szenen werden zur Laufzeit prozedural über die Web-Audio-API erzeugt.\n\nHistorische Beratung: keine. Das Spiel ist recherchiert, aber nicht maßgeblich; im Kodex steht, was belegt und was ausgeschmückt ist.',
   credits_thirdparty: 'Software Dritter\n\nPhaser 4 — © Phaser Studio Inc., MIT-Lizenz.\ni18next — © i18next-Mitwirkende, MIT-Lizenz.\nElectron — © OpenJS Foundation und Mitwirkende, MIT-Lizenz.\n\nDie vollständigen Lizenztexte liegen der Anwendung bei.',
   credits_save_path: 'Eure Spielstände liegen unter:\n{{path}}',
   credits_save_browser: 'Im Browser — Spielstände liegen im lokalen Speicher dieses Browsers und gehen beim Löschen der Websitedaten verloren. Nutzt „Spielstand exportieren“ für eine Sicherung.',
