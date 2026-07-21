@@ -28,6 +28,7 @@ import { SaveSlotScene } from './scenes/SaveSlotScene';
 import { CreditsScene } from './scenes/CreditsScene';
 import { ScenarioScene } from './scenes/ScenarioScene';
 import { isTouchDevice } from './mobile';
+import { targetAspect } from './ui/viewport';
 import { fadeInScene } from './ui/fx';
 import { installPinchZoom, requestFullscreenOnFirstTouch } from './ui/pinch';
 
@@ -36,9 +37,19 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
 
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
-    // Drawing buffer is 1920x1080; the world stays 1280x720 via camera zoom
-    // (see the CREATE hook below). Source art then lands 1:1 on pixels.
-    width: RENDER_WIDTH,
+    /*
+     * Buffer height is fixed at 1080; the width takes the *device's* shape.
+     *
+     * With a hard 1920x1080 buffer, Scale.FIT letterboxed everything that was
+     * not 16:9 — an iPad in Safari is nearer 2.8:1 once the tab strip and
+     * toolbar are off, and the game sat in a box in the middle of a dark
+     * field. Widening the canvas instead means FIT has nothing to bar off.
+     *
+     * The 1280x720 design band stays centred (see `applyRenderScale`), so no
+     * existing layout moves and nothing is cropped — the extra width is filled
+     * by the backgrounds, which cover `viewRect()` rather than the design rect.
+     */
+    width: Math.round(RENDER_HEIGHT * targetAspect()),
     height: RENDER_HEIGHT,
     parent,
     backgroundColor: '#1a120c',
@@ -146,9 +157,27 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
     }
   });
 
-  // Resize on orientation change (iOS sometimes needs a delayed refresh)
+  /*
+   * Re-shape on rotate, not merely re-fit.
+   *
+   * The canvas takes the device's aspect at boot; turning the device or
+   * opening a split view changes that aspect, and `scale.refresh()` alone
+   * would keep the old canvas shape and start letterboxing again. Resizing
+   * the game surface first is what keeps the screen filled.
+   */
+  let lastAspect = targetAspect();
   const refreshScale = () => {
     try {
+      const aspect = targetAspect();
+      // Only resize when the shape genuinely moved: `resize` rebuilds render
+      // targets, and Safari fires this handler on every toolbar slide.
+      if (Math.abs(aspect - lastAspect) > 0.01) {
+        lastAspect = aspect;
+        game.scale.resize(Math.round(RENDER_HEIGHT * aspect), RENDER_HEIGHT);
+        // Every scene's camera must be re-centred on the design band, or the
+        // world drifts to the left of the wider canvas.
+        for (const scene of game.scene.scenes) applyRenderScale(scene);
+      }
       game.scale.refresh();
     } catch {
       /* game may be destroying */

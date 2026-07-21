@@ -4,6 +4,7 @@ import { getState, mutate, saveGame } from '../state';
 import { canTravel, travelTo } from '../systems/travel';
 import { MAP_NODES, MAP_NODE_MAP } from '../data/map';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
+import { viewRect } from '../ui/viewport';
 import { drawBackground, makeButton, bodyText, panel, titleText, COLORS, addDecorImage } from '../ui/theme';
 import { audio } from '../audio/AudioManager';
 import { ads, ADS_ENABLED } from '../ads/AdService';
@@ -21,9 +22,12 @@ export class TravelMapScene extends Phaser.Scene {
     void audio.setContext('travel_map');
     drawBackground(this, 'map');
     if (this.textures.exists('art_map')) {
+      // Cover the visible rect: on a wide canvas a 1280-wide map left dark
+      // margins where the parchment should run to the edge.
+      const V = viewRect();
       this.add
-        .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'art_map')
-        .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
+        .image(V.x + V.width / 2, GAME_HEIGHT / 2, 'art_map')
+        .setDisplaySize(V.width, GAME_HEIGHT)
         .setAlpha(0.9)
         .disableInteractive();
     } else {

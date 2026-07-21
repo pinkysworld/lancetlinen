@@ -3,6 +3,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../types';
 import { audio } from '../audio/AudioManager';
 import { buttonHeight, buttonWidth, isTouchDevice, TOUCH_MIN } from '../mobile';
 import { scaleFont } from '../systems/settings';
+import { viewRect } from './viewport';
 
 export const COLORS = {
   bg: 0x1a120c,
@@ -28,24 +29,28 @@ export const COLORS = {
 export function drawBackground(scene: Phaser.Scene, variant: 'menu' | 'room' | 'map' | 'dark' = 'room'): void {
   const g = scene.add.graphics();
   g.setDepth(-20);
+  // Cover what is actually on screen, not the design rect. On a wide device
+  // the canvas is wider than 1280 and a 1280-wide fill left dark margins
+  // inside the canvas — the very bars this was meant to remove.
+  const V = viewRect();
   if (variant === 'menu') {
     g.fillGradientStyle(0x1a120c, 0x1a120c, 0x3d2010, 0x2a1810, 1);
-    g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    g.fillRect(V.x, V.y, V.width, V.height);
     for (let i = 0; i < 8; i++) {
       g.fillStyle(0xc9a227, 0.03);
       g.fillCircle(200 + i * 120, 100 + (i % 3) * 80, 40 + i * 10);
     }
   } else if (variant === 'map') {
     g.fillStyle(0x1e2a1c, 1);
-    g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    g.fillRect(V.x, V.y, V.width, V.height);
   } else if (variant === 'dark') {
     g.fillStyle(0x0e0a08, 1);
-    g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    g.fillRect(V.x, V.y, V.width, V.height);
   } else {
     g.fillGradientStyle(0x2a1a10, 0x2a1a10, 0x4a3020, 0x3a2418, 1);
-    g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    g.fillRect(V.x, V.y, V.width, V.height);
     g.fillStyle(0x5c3d24, 0.35);
-    g.fillRect(0, GAME_HEIGHT - 120, GAME_WIDTH, 120);
+    g.fillRect(V.x, GAME_HEIGHT - 120, V.width, 120);
   }
 }
 

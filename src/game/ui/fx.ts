@@ -11,6 +11,7 @@
  */
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../types';
+import { viewRect } from './viewport';
 import { getState } from '../state';
 import { goreLevel, showBloodEffects } from '../systems/settings';
 
@@ -124,14 +125,17 @@ export function sceneBackground(
   const depth = opts.depth ?? -20;
   const brightness = opts.brightness ?? 0.86;
 
-  const img = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, use).setDepth(depth);
+  // Centre on the *visible* rect, not the design rect, and cover its width —
+  // otherwise a wide canvas showed the painting inset with dark margins.
+  const V = viewRect();
+  const img = scene.add.image(V.x + V.width / 2, GAME_HEIGHT / 2, use).setDepth(depth);
   img.disableInteractive();
 
   // Cover-fit: fill the frame without distorting the painting's aspect ratio.
   const src = scene.textures.get(use).getSourceImage();
   const sw = (src as { width: number }).width || GAME_WIDTH;
   const sh = (src as { height: number }).height || GAME_HEIGHT;
-  const scale = Math.max(GAME_WIDTH / sw, GAME_HEIGHT / sh);
+  const scale = Math.max(V.width / sw, GAME_HEIGHT / sh);
   img.setScale(scale);
 
   if (brightness < 1) {
@@ -143,8 +147,8 @@ export function sceneBackground(
     const vk = ensureVignette(scene);
     if (vk) {
       scene.add
-        .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, vk)
-        .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
+        .image(V.x + V.width / 2, GAME_HEIGHT / 2, vk)
+        .setDisplaySize(V.width, GAME_HEIGHT)
         .setDepth(depth + 1)
         .disableInteractive();
     }
@@ -154,11 +158,11 @@ export function sceneBackground(
     const g = scene.add.graphics().setDepth(depth + 2);
     if (opts.topScrim) {
       g.fillGradientStyle(0x0a0705, 0x0a0705, 0x0a0705, 0x0a0705, 0.88, 0.88, 0, 0);
-      g.fillRect(0, 0, GAME_WIDTH, opts.topScrim);
+      g.fillRect(V.x, 0, V.width, opts.topScrim);
     }
     if (opts.bottomScrim) {
       g.fillGradientStyle(0x0a0705, 0x0a0705, 0x0a0705, 0x0a0705, 0, 0, 0.88, 0.88);
-      g.fillRect(0, GAME_HEIGHT - opts.bottomScrim, GAME_WIDTH, opts.bottomScrim);
+      g.fillRect(V.x, GAME_HEIGHT - opts.bottomScrim, V.width, opts.bottomScrim);
     }
   }
 
@@ -169,9 +173,10 @@ export function sceneBackground(
 export function addVignette(scene: Phaser.Scene, depth = -8): void {
   const vk = ensureVignette(scene);
   if (!vk) return;
+  const V = viewRect();
   scene.add
-    .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, vk)
-    .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
+    .image(V.x + V.width / 2, GAME_HEIGHT / 2, vk)
+    .setDisplaySize(V.width, GAME_HEIGHT)
     .setDepth(depth)
     .disableInteractive();
 }

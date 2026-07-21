@@ -20,6 +20,7 @@ import { transitionTo, sceneBackground } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
 import { isTouchDevice } from '../mobile';
 import { compact, fontFor, gridColumnsX, primarySize, secondarySize } from '../ui/responsive';
+import { viewRect } from '../ui/viewport';
 
 export class MainMenuScene extends Phaser.Scene {
   constructor() {
@@ -43,13 +44,18 @@ export class MainMenuScene extends Phaser.Scene {
       depth: -20,
     });
 
+    // Decorative edge posts. Anchored to the *visible* edges, not to 0 and
+    // 1280: on a wide canvas the design band no longer reaches the screen
+    // edge, and these drew two vertical seams across the middle of the
+    // painting instead of framing it.
+    const V = viewRect();
     const g = this.add.graphics();
     g.fillStyle(COLORS.panel, 0.25);
-    g.fillRect(0, 0, 24, GAME_HEIGHT);
-    g.fillRect(GAME_WIDTH - 24, 0, 24, GAME_HEIGHT);
+    g.fillRect(V.x, 0, 24, GAME_HEIGHT);
+    g.fillRect(V.x + V.width - 24, 0, 24, GAME_HEIGHT);
     g.fillStyle(COLORS.gold, 0.12);
-    g.fillRect(20, 0, 3, GAME_HEIGHT);
-    g.fillRect(GAME_WIDTH - 23, 0, 3, GAME_HEIGHT);
+    g.fillRect(V.x + 20, 0, 3, GAME_HEIGHT);
+    g.fillRect(V.x + V.width - 23, 0, 3, GAME_HEIGHT);
 
     // The logo is a wide painted wordmark. At 520x260 centred on y=108 its top
     // edge sat above the viewport and the initial "L" was clipped away.

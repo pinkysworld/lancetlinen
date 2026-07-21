@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../types';
+import { viewRect } from './viewport';
 import { installSceneKeys } from './input';
 import { makeButton, bodyText, titleText, COLORS, pushButtonLayer, popButtonLayer } from './theme';
 
@@ -44,7 +45,14 @@ export function showConfirm(scene: Phaser.Scene, opts: ConfirmOpts): void {
   pushButtonLayer(scene);
   const depth = 6000;
   const veil = scene.add
-    .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.65)
+    .rectangle(
+      viewRect().x + viewRect().width / 2,
+      GAME_HEIGHT / 2,
+      viewRect().width,
+      GAME_HEIGHT,
+      0x000000,
+      0.65,
+    )
     .setDepth(depth)
     .setInteractive(); // block clicks behind
   const box = scene.add.graphics().setDepth(depth + 1);
