@@ -37,6 +37,7 @@ import { addLocationBackground, addPortrait, portraitKeyForPatient } from '../ui
 import { getNextStep } from '../systems/guidance';
 import { nextStepCard, sectionLabel, primaryFill, helpBar, groupCard } from '../ui/help';
 import { pendingScenario } from '../systems/scenarios';
+import { canBeCalledToLepraschau } from '../systems/lepraschau';
 import { reputationSummaryKeys } from '../systems/reputation';
 import { emberParticles, sceneBackground, steamParticles, transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
@@ -92,6 +93,24 @@ export class HubScene extends Phaser.Scene {
         this.scene.start('Scenario', { scenarioId: sc.id });
         return;
       }
+    }
+
+    /*
+     * The council calls for a Lepraschau.
+     *
+     * Placed after the story and scenario interrupts and before street
+     * events: it is a summons, not an errand, and it should not be crowded
+     * out by a passing pedlar. Once a day at most, and only where there is a
+     * council to send for you.
+     */
+    if (
+      canBeCalledToLepraschau(s) &&
+      s.storyFlags['lepra_recent'] !== s.day &&
+      MAP_NODE_MAP[s.locationId]?.hasBathLicenseShop &&
+      Math.random() < 0.13
+    ) {
+      this.scene.start('Lepraschau');
+      return;
     }
 
     // Random city events — only after player knows the basics

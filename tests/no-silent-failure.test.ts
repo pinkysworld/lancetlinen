@@ -32,13 +32,10 @@ const sceneFiles = readdirSync(SCENE_DIR).filter((f) => f.endsWith('.ts'));
  * one is a deliberate act.
  */
 const NOT_ACTIONS = new Set([
-  'isGranted',
-  'isDestitute',
-  'hasKind',
-  'isPersistent',
+  // Predicates named `can…`/`is…`/`has…` are excluded by name in
+  // `gatedActions()`; only genuine actions that need no gate go here.
+  // A settings query that happens not to be named like one.
   'showBloodEffects',
-  'isMentorOnly',
-  'isMentorTaught',
   'consumeRemedy', // internal to applyTreatment, never a button
   'fireStaff', // dismissal always succeeds if the person exists
   'craftSalve', // RecipeScene has its own ingredient display
@@ -58,6 +55,9 @@ function gatedActions(): Array<{ file: string; name: string }> {
     for (const m of src.matchAll(/export function ([a-zA-Z]+)\([^)]*\)\s*:\s*boolean/gs)) {
       const name = m[1]!;
       if (NOT_ACTIONS.has(name)) continue;
+      // A function already named `can…` *is* a check. Demanding a
+      // `canCanBeCalledToLepraschau` for it is the rule misreading itself.
+      if (/^(can|is|has|should)[A-Z]/.test(name)) continue;
       out.push({ file: f, name });
     }
   }
