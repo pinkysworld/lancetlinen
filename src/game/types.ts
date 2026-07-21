@@ -79,6 +79,8 @@ export interface PatientInstance {
   basePay: number;
   diagnosed: boolean;
   pulseRead: boolean;
+  /** Whether the urine flask has been read — see `readUrine`. */
+  urineRead?: boolean;
   storyFlag?: string;
   portraitKey?: string;
   /**

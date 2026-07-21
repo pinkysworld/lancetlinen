@@ -370,7 +370,7 @@ export const PATIENT_TEMPLATES: PatientTemplate[] = [
     complaintKey: 'complaint.arrow',
     dominantHumor: 'blood',
     severity: 4,
-    bestTechniques: ['battlefield_pack', 'wound_dress', 'abscess_lance'],
+    bestTechniques: ['arrow_draw', 'battlefield_pack', 'wound_dress', 'abscess_lance'],
     basePay: 32,
     portraitKey: 'port_soldier',
     weight: 0.6,
@@ -583,7 +583,7 @@ export const PATIENT_TEMPLATES: PatientTemplate[] = [
     complaintKey: 'complaint.nosebleed',
     dominantHumor: 'blood',
     severity: 2,
-    bestTechniques: ['wound_dress', 'leeches', 'bloodletting'],
+    bestTechniques: ['staunch_nose', 'wound_dress', 'leeches', 'bloodletting'],
     basePay: 12,
     portraitKey: 'port_artisan',
     weight: 1.0,
@@ -682,6 +682,73 @@ export const PATIENT_TEMPLATES: PatientTemplate[] = [
     portraitKey: 'port_soldier',
     weight: 0.5,
   },
+  /* ── Round 6: complaints the new techniques answer ────────────────────
+   * Added alongside the wound-surgeon's craft. Without these the new
+   * techniques would be unlockable and never useful — a technique with no
+   * patient who needs it is a dead purchase.
+   */
+  {
+    id: 'gash_arm',
+    class: 'artisan',
+    complaintKey: 'complaint.gash_arm',
+    dominantHumor: 'blood',
+    severity: 3,
+    bestTechniques: ['suture', 'wound_dress', 'cauterize'],
+    basePay: 26,
+    weight: 1.8,
+  },
+  {
+    id: 'costive',
+    class: 'merchant',
+    complaintKey: 'complaint.costive',
+    dominantHumor: 'phlegm',
+    severity: 2,
+    bestTechniques: ['clyster', 'purge_draught', 'herbal_draught'],
+    basePay: 22,
+    weight: 1.7,
+  },
+  {
+    id: 'running_sore',
+    class: 'peasant',
+    complaintKey: 'complaint.running_sore',
+    dominantHumor: 'blackBile',
+    severity: 3,
+    bestTechniques: ['seton', 'wound_dress', 'poultice'],
+    basePay: 20,
+    weight: 1.4,
+  },
+  {
+    id: 'the_stone',
+    class: 'merchant',
+    complaintKey: 'complaint.the_stone',
+    dominantHumor: 'blackBile',
+    severity: 4,
+    bestTechniques: ['lithotomy', 'herbal_draught'],
+    basePay: 70,
+    weight: 0.6,
+  },
+  {
+    id: 'head_stove',
+    class: 'soldier',
+    complaintKey: 'complaint.head_stove',
+    dominantHumor: 'blood',
+    severity: 5,
+    bestTechniques: ['trepan', 'wound_dress'],
+    basePay: 65,
+    storyFlag: 'war_case',
+    weight: 0.5,
+  },
+  {
+    id: 'mortified_leg',
+    class: 'peasant',
+    complaintKey: 'complaint.mortified_leg',
+    dominantHumor: 'blackBile',
+    severity: 5,
+    bestTechniques: ['amputate', 'cauterize'],
+    basePay: 55,
+    weight: 0.5,
+  },
+
 ];
 
 const CLASS_PAY: Record<PatientClass, number> = {

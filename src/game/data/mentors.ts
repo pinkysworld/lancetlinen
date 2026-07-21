@@ -176,6 +176,76 @@ export const MENTOR_OFFERS: MentorOffer[] = [
     minRep: 0,
     descKey: 'mentor.village_herb',
   },
+  /* ── Round 6: the wound-surgeon's craft ─────────────────────────────
+   * The four in MENTOR_ONLY below appear here and nowhere else. A man who
+   * taught himself to cut for the stone from a book killed his patient, and
+   * the trade knew it — these were passed hand to hand or not at all.
+   */
+  {
+    cityId: 'nurnberg',
+    mentorKey: 'npc_krafft',
+    techniqueId: 'suture',
+    cost: 70,
+    minRep: 10,
+    descKey: 'mentor.suture',
+  },
+  {
+    cityId: 'monastery_ebrach',
+    mentorKey: 'npc_monk',
+    techniqueId: 'clyster',
+    cost: 35,
+    minRep: 0,
+    descKey: 'mentor.clyster',
+  },
+  {
+    cityId: 'bamberg',
+    mentorKey: 'npc_bath_master',
+    techniqueId: 'seton',
+    cost: 48,
+    minRep: 5,
+    descKey: 'mentor.seton',
+  },
+  {
+    cityId: 'rothenburg',
+    mentorKey: 'npc_wise_woman',
+    techniqueId: 'staunch_nose',
+    cost: 26,
+    minRep: 0,
+    descKey: 'mentor.staunch_nose',
+  },
+  {
+    cityId: 'war_camp',
+    mentorKey: 'npc_field_barber',
+    techniqueId: 'arrow_draw',
+    cost: 110,
+    minRep: 8,
+    descKey: 'mentor.arrow_draw',
+  },
+  {
+    cityId: 'war_camp',
+    mentorKey: 'npc_field_barber',
+    techniqueId: 'amputate',
+    cost: 200,
+    minRep: 20,
+    descKey: 'mentor.amputate',
+  },
+  {
+    cityId: 'augsburg',
+    mentorKey: 'npc_merchant_leech',
+    techniqueId: 'lithotomy',
+    cost: 190,
+    minRep: 22,
+    descKey: 'mentor.lithotomy',
+  },
+  {
+    cityId: 'wurzburg',
+    mentorKey: 'npc_clergy_surgeon',
+    techniqueId: 'trepan',
+    cost: 230,
+    minRep: 26,
+    descKey: 'mentor.trepan',
+  },
+
 ];
 
 export function mentorsInCity(cityId: string): MentorOffer[] {
@@ -208,6 +278,21 @@ export function mentorCitiesFor(techniqueId: string): string[] {
       MENTOR_OFFERS.filter((m) => m.techniqueId === techniqueId).map((m) => m.cityId),
     ),
   ];
+}
+
+/**
+ * Arts that cannot be had from a book at any price.
+ *
+ * The Study screen sold all 29 techniques for flat coin, which made 20 mentor
+ * offers across 7 cities pointless — there was never a reason to travel. These
+ * four are the answer: they are dangerous enough that the trade passed them
+ * hand to hand, and the game now requires the same.
+ */
+export const MENTOR_ONLY = new Set(['arrow_draw', 'lithotomy', 'trepan', 'amputate']);
+
+/** True when an art must be learned from a master rather than studied. */
+export function isMentorOnly(techniqueId: string): boolean {
+  return MENTOR_ONLY.has(techniqueId);
 }
 
 /** True when some master teaches this art — i.e. travelling would be cheaper. */

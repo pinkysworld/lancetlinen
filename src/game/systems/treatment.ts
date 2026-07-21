@@ -465,6 +465,23 @@ export function diagnosePatient(state: GameState, patient: PatientInstance): Dia
   return { humor, confidenceKey };
 }
 
+/**
+ * What the urine flask showed.
+ *
+ * Uroscopy was the single most recognisable act of learned medicine — so much
+ * so that the matula, the clear glass flask, became the physician's symbol in
+ * painting. The physician held it to the light and read colour, cloudiness,
+ * sediment and smell against a chart of twenty or more shades.
+ */
+export interface UrineReading {
+  /** i18n key describing what was seen in the flask. */
+  qualityKey: string;
+  /** Humours still consistent with it. */
+  candidates: Humor[];
+  /** True when the reading was misjudged — the player is not told. */
+  misread: boolean;
+}
+
 export interface PulseReading {
   /** i18n key describing the beat itself. */
   qualityKey: string;
@@ -484,7 +501,10 @@ export function readPulse(state: GameState, patient: PatientInstance): PulseRead
   patient.pulseRead = true;
 
   const actual = HUMOR_QUALITIES[patient.dominantHumor];
-  const readsMoisture = state.stats.eye >= 5;
+  // A very skilled reader can feel the moisture too, which alone narrows the
+  // humour to one. Below that the pulse gives the hot/cold axis and the urine
+  // gives the moist/dry axis — which is how the two were used together.
+  const readsMoisture = state.stats.eye >= 8;
 
   const candidates = (Object.keys(HUMOR_QUALITIES) as Humor[]).filter((h) => {
     const q = HUMOR_QUALITIES[h];
@@ -499,4 +519,45 @@ export function readPulse(state: GameState, patient: PatientInstance): PulseRead
     : `pulse_${temp}_${strength}`;
 
   return { qualityKey, candidates };
+}
+
+/**
+ * Read the urine.
+ *
+ * The complementary half of the pulse: where the beat gives hot against cold,
+ * the flask gives moist against dry. Used together they name the humour;
+ * either alone leaves two candidates. That is not a game contrivance — the two
+ * were the standard pair, and a physician who had only one was working blind
+ * on half the question.
+ *
+ * Unlike the pulse this can be **misread**. Uroscopy was interpreted against
+ * charts of twenty-odd shades under whatever light was available, and getting
+ * it wrong was ordinary. The player is not told when it happens; that is what
+ * the Eye stat is for.
+ */
+export function readUrine(state: GameState, patient: PatientInstance): UrineReading {
+  patient.urineRead = true;
+
+  const actual = HUMOR_QUALITIES[patient.dominantHumor];
+  // Judging colour by candlelight is genuinely hard. Even a sharp eye is
+  // wrong sometimes, which is what makes a second opinion worth having.
+  const accuracy = 0.55 + state.stats.eye * 0.045;
+  const misread = Math.random() > accuracy;
+  const seenMoist = misread ? !actual.moist : actual.moist;
+
+  const candidates = (Object.keys(HUMOR_QUALITIES) as Humor[]).filter(
+    (h) => HUMOR_QUALITIES[h].moist === seenMoist,
+  );
+
+  // Colour and sediment, described the way a period text would.
+  const severe = patient.severity >= 4;
+  const qualityKey = seenMoist
+    ? severe
+      ? 'urine_pale_thick'
+      : 'urine_pale_clear'
+    : severe
+      ? 'urine_high_troubled'
+      : 'urine_high_clear';
+
+  return { qualityKey, candidates, misread };
 }

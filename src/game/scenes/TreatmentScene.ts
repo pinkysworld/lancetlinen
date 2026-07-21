@@ -7,7 +7,9 @@ import {
   diagnosePatient,
   generatePatient,
   readPulse,
+  readUrine,
   type PulseReading,
+  type UrineReading,
 } from '../systems/treatment';
 import { TECHNIQUES, TECH_DISPLAY_ORDER, TECHNIQUE_MAP } from '../data/techniques';
 import type { Humor, PatientInstance, TreatmentResult } from '../types';
@@ -79,6 +81,7 @@ export class TreatmentScene extends Phaser.Scene {
   private diagnosedHumor: string | null = null;
   private diagnosisConfidenceKey: string | null = null;
   private pulse: PulseReading | null = null;
+  private urine: UrineReading | null = null;
   private finishing = false;
   private techPage = 0;
   /** Display-list objects that survive a `render()` — see `buildStatic`. */
@@ -100,6 +103,7 @@ export class TreatmentScene extends Phaser.Scene {
     this.diagnosedHumor = null;
     this.diagnosisConfidenceKey = null;
     this.pulse = null;
+    this.urine = null;
     this.finishing = false;
     this.techPage = 0;
     void audio.setContext('treatment');
@@ -153,7 +157,15 @@ export class TreatmentScene extends Phaser.Scene {
    * stat. Empty until the player examines or feels the pulse.
    */
   private beliefHumors(): Humor[] {
-    const pulseCandidates = this.pulse?.candidates ?? null;
+    // Pulse gives the hot/cold axis, urine the moist/dry one. Together they
+    // name a single humour; either alone leaves two. Intersect them first,
+    // then fold in the (fallible) diagnosis.
+    const pulseC = this.pulse?.candidates ?? null;
+    const urineC = this.urine?.candidates ?? null;
+    const pulseCandidates =
+      pulseC && urineC
+        ? pulseC.filter((h) => urineC.includes(h))
+        : (pulseC ?? urineC);
     const diagnosed = this.diagnosedHumor as Humor | null;
 
     if (diagnosed && pulseCandidates) {
@@ -170,7 +182,10 @@ export class TreatmentScene extends Phaser.Scene {
   /** True when the diagnosis names a humor the pulse has ruled out. */
   private diagnosisConflictsWithPulse(): boolean {
     const diagnosed = this.diagnosedHumor as Humor | null;
-    const candidates = this.pulse?.candidates;
+    const pulseC = this.pulse?.candidates ?? null;
+    const urineC = this.urine?.candidates ?? null;
+    const candidates =
+      pulseC && urineC ? pulseC.filter((h) => urineC.includes(h)) : (pulseC ?? urineC);
     return !!diagnosed && !!candidates && !candidates.includes(diagnosed);
   }
 
@@ -219,7 +234,7 @@ export class TreatmentScene extends Phaser.Scene {
       this,
       228,
       88,
-      `${t('class')}: ${className(p.class)}\n${t('complaint')}: ${t(p.complaintKey.replace('complaint.', 'complaint_'))}\n${t('severity')}: ${severityMarks(p.severity)}\n${t('humor')}: ${humorLine}\n${p.diagnosed ? '✓ ' + t('diagnosed') : '· ' + t('tip_examine')}\n${p.pulseRead ? '✓ ' + t('pulse_done') : '· ' + t('tip_pulse')}\n${t('astro_label')}: ${t(astro.key.replace(/\./g, '_'))}`,
+      `${t('class')}: ${className(p.class)}\n${t('complaint')}: ${t(p.complaintKey.replace('complaint.', 'complaint_'))}\n${t('severity')}: ${severityMarks(p.severity)}\n${t('humor')}: ${humorLine}\n${p.diagnosed ? '✓ ' + t('diagnosed') : '· ' + t('tip_examine')}\n${p.pulseRead ? '✓ ' + t('pulse_done') : '· ' + t('tip_pulse')}\n${p.urineRead ? '✓ ' + t('urine_done') : '· ' + t('tip_urine')}\n${t('astro_label')}: ${t(astro.key.replace(/\./g, '_'))}`,
       { fontSize: '14px', wordWrap: { width: 360 } },
     );
 
@@ -229,6 +244,15 @@ export class TreatmentScene extends Phaser.Scene {
       bodyText(this, 56, 296, `${t(this.pulse.qualityKey)} — ${t('pulse_suggests')}: ${narrowed}`, {
         fontSize: '13px',
         color: '#a8c0c4',
+        wordWrap: { width: 528 },
+      });
+    }
+
+    if (this.urine) {
+      const narrowed = this.urine.candidates.map((h) => humorName(h)).join(' / ');
+      bodyText(this, 56, 318, `${t(this.urine.qualityKey)} — ${t('urine_suggests')}: ${narrowed}`, {
+        fontSize: '13px',
+        color: '#c9b48a',
         wordWrap: { width: 528 },
       });
     }
@@ -262,7 +286,7 @@ export class TreatmentScene extends Phaser.Scene {
       );
     }
 
-    makeButton(this, 140, 450, t('diagnose'), () => {
+    makeButton(this, 112, 450, t('diagnose'), () => {
       mutate((st) => {
         const dx = diagnosePatient(st, this.patient);
         this.diagnosedHumor = dx.humor;
@@ -270,17 +294,27 @@ export class TreatmentScene extends Phaser.Scene {
       });
       audio.sfx('page');
       this.render();
-    }, { width: 150, height: 42, fontSize: '14px' });
+    }, { width: 124, height: 42, fontSize: '13px' });
 
-    makeButton(this, 300, 450, t('pulse'), () => {
+    makeButton(this, 244, 450, t('pulse'), () => {
       mutate((st) => {
         this.pulse = readPulse(st, this.patient);
       });
       audio.sfx('pulse');
       this.render();
-    }, { width: 150, height: 42, fontSize: '14px' });
+    }, { width: 124, height: 42, fontSize: '13px' });
 
-    makeButton(this, 460, 450, t('refuse'), () => {
+    // Uroscopy: the complementary axis. Cheap in coin, costly in the one
+    // resource the day is actually made of — there are only so many patients.
+    makeButton(this, 376, 450, t('uroscopy'), () => {
+      mutate((st) => {
+        this.urine = readUrine(st, this.patient);
+      });
+      audio.sfx('splash');
+      this.render();
+    }, { width: 124, height: 42, fontSize: '13px', disabled: !!this.urine });
+
+    makeButton(this, 508, 450, t('refuse'), () => {
       mutate((st) => {
         if (p.class === 'beggar') st.ethics = Math.max(0, st.ethics - 3);
         else st.reputation[st.locationId] = (st.reputation[st.locationId] ?? 0) - 1;

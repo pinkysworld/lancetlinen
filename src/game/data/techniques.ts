@@ -372,6 +372,126 @@ export const TECHNIQUES: Technique[] = [
     payMult: 1.9,
     xp: 20,
   },
+  /* ── Round 6: the wound-surgeon's craft ──────────────────────────────
+   * Everything below is attested practice in the Latin West before 1400.
+   * The riskiest four are deliberately late-game: a Bader who attempted
+   * lithotomy or trepanation without the hand for it killed people, and the
+   * `risk` values say so.
+   */
+  {
+    // Clysters were everywhere in medieval practice — the standard way to
+    // move the bowel and, in humoral terms, to evacuate an excess.
+    id: 'clyster',
+    category: 'herb',
+    humorTargets: ['phlegm', 'blackBile'],
+    baseSuccess: 0.74,
+    risk: 0.06,
+    costItems: { herbs: 2, linen: 1 },
+    minHand: 2,
+    unlockCost: 45,
+    payMult: 1.1,
+    xp: 10,
+  },
+  {
+    // Stitching a wound closed. The core of the wound-surgeon's craft, and
+    // the thing that separated him from a barber who only shaved.
+    id: 'suture',
+    category: 'wound',
+    humorTargets: [],
+    baseSuccess: 0.66,
+    risk: 0.18,
+    costItems: { linen: 2, salve: 1 },
+    minHand: 4,
+    unlockCost: 90,
+    payMult: 1.8,
+    xp: 20,
+  },
+  {
+    // A seton: a thread drawn through a fold of skin and left, to keep an
+    // issue running. Counter-irritation, and a mainstay of the period.
+    id: 'seton',
+    category: 'wound',
+    humorTargets: ['phlegm', 'blackBile'],
+    baseSuccess: 0.7,
+    risk: 0.12,
+    costItems: { linen: 2, herbs: 1 },
+    minHand: 3,
+    unlockCost: 60,
+    payMult: 1.3,
+    xp: 14,
+  },
+  {
+    // Packing and plugging a bleeding nose. Small, common, and useful.
+    id: 'staunch_nose',
+    category: 'wound',
+    humorTargets: ['blood'],
+    baseSuccess: 0.8,
+    risk: 0.05,
+    costItems: { linen: 1, herbs: 1 },
+    minHand: 2,
+    unlockCost: 35,
+    payMult: 0.9,
+    xp: 8,
+  },
+  {
+    // Drawing an arrowhead. A Feldscher's speciality, and the reason armies
+    // carried surgeons at all. Barbed heads were the nightmare.
+    id: 'arrow_draw',
+    category: 'advanced',
+    humorTargets: [],
+    baseSuccess: 0.58,
+    risk: 0.3,
+    costItems: { ironTools: 1, linen: 3, salve: 1 },
+    minHand: 5,
+    unlockCost: 130,
+    payMult: 2.4,
+    xp: 28,
+  },
+  {
+    // Cutting for the stone. The most notorious operation of the age,
+    // usually done by travelling specialists — and survivable often enough
+    // that people submitted to it.
+    id: 'lithotomy',
+    category: 'advanced',
+    humorTargets: ['blackBile'],
+    baseSuccess: 0.44,
+    risk: 0.46,
+    costItems: { ironTools: 1, linen: 4, salve: 2 },
+    minHand: 7,
+    unlockCost: 220,
+    payMult: 3.4,
+    xp: 40,
+  },
+  {
+    // Opening the skull to relieve pressure after a head wound. Attested
+    // from antiquity onward, and skulls with healed trepanations show it
+    // was survived.
+    id: 'trepan',
+    category: 'advanced',
+    humorTargets: [],
+    baseSuccess: 0.4,
+    risk: 0.5,
+    costItems: { ironTools: 1, linen: 3, salve: 2 },
+    minHand: 8,
+    unlockCost: 260,
+    payMult: 3.8,
+    xp: 45,
+  },
+  {
+    // Taking a limb. The last resort, and the operation whose survival rate
+    // turned entirely on how fast it was done.
+    id: 'amputate',
+    category: 'advanced',
+    humorTargets: [],
+    baseSuccess: 0.5,
+    risk: 0.44,
+    costItems: { ironTools: 1, linen: 5, salve: 2, wood: 1 },
+    minHand: 7,
+    unlockCost: 240,
+    payMult: 3.0,
+    xp: 42,
+  },
+
 ];
 
 export const TECHNIQUE_MAP = Object.fromEntries(TECHNIQUES.map((t) => [t.id, t]));
@@ -407,6 +527,9 @@ export const TECH_DISPLAY_ORDER = [
   'cupping',
   'scarify',
   'wound_dress',
+  'staunch_nose',
+  'suture',
+  'seton',
   'abscess_lance',
   'wart_cut',
   'ear_clean',
@@ -415,9 +538,14 @@ export const TECH_DISPLAY_ORDER = [
   'poultice',
   'herbal_draught',
   'purge_draught',
+  'clyster',
   'fracture_set',
   'cataract_couch',
   'hygiene_clean',
   'battlefield_pack',
   'truss_hernia',
+  'arrow_draw',
+  'amputate',
+  'lithotomy',
+  'trepan',
 ];

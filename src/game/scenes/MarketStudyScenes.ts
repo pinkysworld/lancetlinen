@@ -13,7 +13,7 @@ import {
 import { repairCart, restHorse } from '../systems/travel';
 import { buyProperty, getLocalBath } from '../systems/property';
 import { TECHNIQUES } from '../data/techniques';
-import { mentorCitiesFor, SELF_TAUGHT_MULTIPLIER } from '../data/mentors';
+import { mentorCitiesFor, isMentorOnly, SELF_TAUGHT_MULTIPLIER } from '../data/mentors';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
 import { drawBackground, makeButton, bodyText, panel, titleText, hudText, addHudIcon } from '../ui/theme';
 import { audio } from '../audio/AudioManager';
@@ -156,8 +156,15 @@ export class StudyScene extends Phaser.Scene {
       const where = cities.length ? t('study_taught_at', { cities: cities.join(', ') }) : '';
       const canAfford = s.coin >= price;
       const hasHand = s.stats.hand >= tech.minHand;
+      // Four arts cannot be had from a book at any price — see MENTOR_ONLY.
+      // Without this the Study screen sold everything and the mentors across
+      // seven cities were decoration.
+      const bookProof = isMentorOnly(tech.id);
 
-      bodyText(this, 60, y, `${techName(tech.id)} — ${t('coin_amount', { n: price })} · ${techDesc(tech.id)}`, {
+      const priceLabel = bookProof
+        ? t('master_only_note')
+        : t('coin_amount', { n: price });
+      bodyText(this, 60, y, `${techName(tech.id)} — ${priceLabel} · ${techDesc(tech.id)}`, {
         fontSize: '14px',
         wordWrap: { width: 700 },
       });
@@ -174,7 +181,7 @@ export class StudyScene extends Phaser.Scene {
         y + 8,
         // Short form: the full sentence wraps to three lines in a 120px
         // button and pushed into the rows above and below.
-        hasHand ? t('unlock') : t('need_skill_short'),
+        bookProof ? t('master_only') : hasHand ? t('unlock') : t('need_skill_short'),
         () => {
           mutate((st) => unlockTechnique(st, tech.id, price));
           audio.sfx('page');
@@ -185,7 +192,7 @@ export class StudyScene extends Phaser.Scene {
           width: 120,
           height: 28,
           fontSize: '12px',
-          disabled: !canAfford || !hasHand,
+          disabled: bookProof || !canAfford || !hasHand,
           noHotkey: true,
         },
       );
