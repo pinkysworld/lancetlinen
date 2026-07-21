@@ -110,3 +110,26 @@ describe('templates that pin a portrait', () => {
     expect(ART_SRC).toContain('patient.female ?? false');
   });
 });
+
+describe('generation, not just the tables', () => {
+  /**
+   * The earlier fix checked the pool tables and the call site in `ui/art.ts`,
+   * and missed the one in `generatePatient` — which pins a portrait onto the
+   * instance and was calling `pickPortraitKey` without the sex, taking the
+   * default `false`. So a woman's name could still be handed a man's face,
+   * reported from play as "Niklas Binder" over a woman's portrait.
+   *
+   * Source-level, because `treatment.ts` imports Phaser and will not load
+   * under Node.
+   */
+  it('passes the sex through when pinning a portrait at generation', () => {
+    expect(TREATMENT_SRC).toMatch(
+      /pickPortraitKey\(\s*template\.class,[\s\S]{0,140}?\bfemale\s*\)/,
+    );
+  });
+
+  it('has exactly one place that pins a portrait, so there is one thing to keep right', () => {
+    const calls = TREATMENT_SRC.match(/pickPortraitKey\(/g) ?? [];
+    expect(calls.length).toBe(1);
+  });
+});

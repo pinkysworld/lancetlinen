@@ -220,7 +220,12 @@ export class TreatmentScene extends Phaser.Scene {
     const stepActive: 1 | 2 | 3 = !this.patient.diagnosed && !this.patient.pulseRead ? 1 : 2;
     flowSteps(this, 40, 8, stepActive);
 
-    woodPanel(this, 40, 42, 560, 290, 0.94);
+    // The panel is drawn *after* its contents and pushed behind them, because
+    // its height depends on how far the text runs. Adding uroscopy took the
+    // status block from seven lines to eight and pushed the pulse and flask
+    // readings out through the frame and under the parchment below — every
+    // position here used to be a fixed number.
+    const panelTop = 42;
     addPortrait(this, 130, 165, portraitKeyForPatient(p), { size: 118, seed: p.uid });
     titleText(this, 380, 58, p.name, '22px').setOrigin(0.5);
 
@@ -230,7 +235,7 @@ export class TreatmentScene extends Phaser.Scene {
       ? `${humorName(this.diagnosedHumor)} (${t(this.diagnosisConfidenceKey ?? 'confidence_guess')})`
       : t('humor_unknown');
 
-    bodyText(
+    const statusText = bodyText(
       this,
       228,
       88,
@@ -238,27 +243,41 @@ export class TreatmentScene extends Phaser.Scene {
       { fontSize: '14px', wordWrap: { width: 360 } },
     );
 
-    // What the pulse actually told us.
+    // Findings flow below the portrait and the status block, whichever runs
+    // longer, and each pushes the next down by its own measured height.
+    let findY = Math.max(228, statusText.y + statusText.height + 10);
+
     if (this.pulse) {
       const narrowed = this.pulse.candidates.map((h) => humorName(h)).join(' / ');
-      bodyText(this, 56, 296, `${t(this.pulse.qualityKey)} — ${t('pulse_suggests')}: ${narrowed}`, {
-        fontSize: '13px',
-        color: '#a8c0c4',
-        wordWrap: { width: 528 },
-      });
+      const line = bodyText(
+        this,
+        56,
+        findY,
+        `${t(this.pulse.qualityKey)} — ${t('pulse_suggests')}: ${narrowed}`,
+        { fontSize: '13px', color: '#a8c0c4', wordWrap: { width: 528 } },
+      );
+      findY += line.height + 6;
     }
 
     if (this.urine) {
       const narrowed = this.urine.candidates.map((h) => humorName(h)).join(' / ');
-      bodyText(this, 56, 318, `${t(this.urine.qualityKey)} — ${t('urine_suggests')}: ${narrowed}`, {
-        fontSize: '13px',
-        color: '#c9b48a',
-        wordWrap: { width: 528 },
-      });
+      const line = bodyText(
+        this,
+        56,
+        findY,
+        `${t(this.urine.qualityKey)} — ${t('urine_suggests')}: ${narrowed}`,
+        { fontSize: '13px', color: '#c9b48a', wordWrap: { width: 528 } },
+      );
+      findY += line.height + 6;
     }
 
-    parchmentPanel(this, 40, 344, 560, 84);
-    bodyText(this, 56, 355, t('treat_hint'), {
+    // Now the frame can be sized to what it actually contains.
+    const panelBottom = Math.max(332, findY + 6);
+    woodPanel(this, 40, panelTop, 560, panelBottom - panelTop, 0.94).setDepth(-2);
+
+    const hintTop = panelBottom + 12;
+    parchmentPanel(this, 40, hintTop, 560, 84).setDepth(-2);
+    bodyText(this, 56, hintTop + 11, t('treat_hint'), {
       fontSize: '14px',
       color: '#1f140c',
       wordWrap: { width: 528 },
@@ -274,7 +293,7 @@ export class TreatmentScene extends Phaser.Scene {
       bodyText(
         this,
         56,
-        392,
+        hintTop + 48,
         conflict
           ? t('belief_conflict')
           : t('belief_humors', { list: belief.map((h) => humorName(h)).join(' / ') }),
@@ -286,7 +305,10 @@ export class TreatmentScene extends Phaser.Scene {
       );
     }
 
-    makeButton(this, 112, 450, t('diagnose'), () => {
+    // Below the parchment, never above 450 — a short hint must not pull the
+    // controls up into the body text.
+    const examRowY = Math.max(450, hintTop + 106);
+    makeButton(this, 112, examRowY, t('diagnose'), () => {
       mutate((st) => {
         const dx = diagnosePatient(st, this.patient);
         this.diagnosedHumor = dx.humor;
@@ -296,7 +318,7 @@ export class TreatmentScene extends Phaser.Scene {
       this.render();
     }, { width: 124, height: 42, fontSize: '13px' });
 
-    makeButton(this, 244, 450, t('pulse'), () => {
+    makeButton(this, 244, examRowY, t('pulse'), () => {
       mutate((st) => {
         this.pulse = readPulse(st, this.patient);
       });
@@ -306,7 +328,7 @@ export class TreatmentScene extends Phaser.Scene {
 
     // Uroscopy: the complementary axis. Cheap in coin, costly in the one
     // resource the day is actually made of — there are only so many patients.
-    makeButton(this, 376, 450, t('uroscopy'), () => {
+    makeButton(this, 376, examRowY, t('uroscopy'), () => {
       mutate((st) => {
         this.urine = readUrine(st, this.patient);
       });
@@ -314,7 +336,7 @@ export class TreatmentScene extends Phaser.Scene {
       this.render();
     }, { width: 124, height: 42, fontSize: '13px', disabled: !!this.urine });
 
-    makeButton(this, 508, 450, t('refuse'), () => {
+    makeButton(this, 508, examRowY, t('refuse'), () => {
       mutate((st) => {
         if (p.class === 'beggar') st.ethics = Math.max(0, st.ethics - 3);
         else st.reputation[st.locationId] = (st.reputation[st.locationId] ?? 0) - 1;

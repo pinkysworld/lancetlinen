@@ -173,9 +173,13 @@ export function generatePatient(state: GameState): PatientInstance {
     diagnosed: false,
     pulseRead: false,
     storyFlag: template.storyFlag,
+    // The sex decided above must reach the portrait pool. Omitting it here
+    // let the default `false` through, so a woman's name could still be
+    // pinned to a man's face at generation time — the same bug as before,
+    // surviving in the one call site the earlier fix did not cover.
     portraitKey:
       template.portraitKey ??
-      pickPortraitKey(template.class, `p-${uidCounter}-${template.id}`),
+      pickPortraitKey(template.class, `p-${uidCounter}-${template.id}`, female),
   };
 }
 
