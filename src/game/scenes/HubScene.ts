@@ -33,6 +33,7 @@ import { getQueue, clearQueue } from '../systems/queue';
 import { severityMarks } from '../systems/settings';
 import { honour, honourRankKey } from '../systems/honour';
 import { chipRow } from '../ui/icons';
+import { compact, fontFor, gridColumnsX, primarySize, secondarySize } from '../ui/responsive';
 
 export class HubScene extends Phaser.Scene {
   constructor() {
@@ -96,6 +97,15 @@ export class HubScene extends Phaser.Scene {
     drawBackground(this, 'room');
     addLocationBackground(this);
     emberParticles(this, 70, GAME_HEIGHT - 60);
+
+    // Phone layout takes over here, before any of the desktop furniture is
+    // built. Placing this check further down drew both layouts on top of one
+    // another — the compact branch ran, but the HUD, advisor card, quest strip
+    // and stat legend had already been added above it.
+    if (compact()) {
+      this.renderCompact(s, getNextStep(s), GAME_WIDTH / 2);
+      return;
+    }
 
     woodPanel(this, 30, 20, GAME_WIDTH - 60, 90, 0.94);
     const rankKey = `rank_${s.guildRank}`;
@@ -328,6 +338,80 @@ export class HubScene extends Phaser.Scene {
     }
 
     // The Hub is the root screen — Esc opens Help rather than backing out.
+    installSceneKeys(this, { onBack: () => transitionTo(this, 'Help') });
+  }
+
+  /**
+   * Phone layout.
+   *
+   * Deliberately fewer things: the advisor card, the stat legend and the
+   * group framing are all dropped. What survives is the one action the day
+   * turns on and a list of places to go — which is what the Hub is for.
+   */
+  private renderCompact(
+    s: ReturnType<typeof getState>,
+    step: ReturnType<typeof getNextStep>,
+    cx: number,
+  ): void {
+    const prim = primarySize();
+    const sec = secondarySize();
+    const COL = gridColumnsX();
+    const secOpts = { ...sec, fontSize: fontFor('button'), noHotkey: true };
+
+    bodyText(this, cx, 96, `${t('coin')}: ${s.coin} · ${t('day', { n: s.day })}`, {
+      fontSize: fontFor('heading'),
+      color: '#e8d5a8',
+      align: 'center',
+    }).setOrigin(0.5);
+
+    // The advisor's one-line nudge, since the full card is gone.
+    bodyText(this, cx, 132, t(step.bodyKey), {
+      fontSize: fontFor('small'),
+      color: '#a8c0c4',
+      align: 'center',
+      wordWrap: { width: 900 },
+    }).setOrigin(0.5);
+
+    const broke = isDestitute(s);
+    makeButton(this, broke ? cx - 170 : cx, 190, t('open_bath'), () => this.openBusiness(), {
+      ...prim,
+      width: broke ? 380 : prim.width,
+      fill: primaryFill(step.action === 'open'),
+      primary: true,
+    });
+    if (broke) {
+      makeButton(this, cx + 230, 190, t('take_loan'), () => this.borrow(), {
+        ...sec,
+        width: 240,
+        height: prim.height,
+        fontSize: fontFor('button'),
+        fill: 0x6b4a2f,
+      });
+    }
+
+    // Ordered by how often a player actually needs them.
+    const dests: Array<[string, () => void]> = [
+      [t('market'), () => transitionTo(this, 'Market')],
+      [t('travel'), () => transitionTo(this, 'TravelMap')],
+      [t('study'), () => transitionTo(this, 'Study')],
+      [t('upgrades'), () => transitionTo(this, 'Upgrades')],
+      [t('nav_journal'), () => transitionTo(this, 'Journal')],
+      [t('property'), () => transitionTo(this, 'Property')],
+      [t('seek_master'), () => transitionTo(this, 'Mentors')],
+      [t('nav_staff'), () => transitionTo(this, 'Staff')],
+      [t('nav_family'), () => transitionTo(this, 'Family')],
+      [t('nav_politics'), () => transitionTo(this, 'Politics')],
+      [t('save'), () => this.manualSave()],
+      [t('nav_settings'), () => transitionTo(this, 'Settings')],
+    ];
+
+    const rowTop = 268;
+    dests.forEach(([label, onClick], i) => {
+      const col = i % COL.length;
+      const line = Math.floor(i / COL.length);
+      makeButton(this, COL[col]!, rowTop + line * (sec.height + 8), label, onClick, secOpts);
+    });
+
     installSceneKeys(this, { onBack: () => transitionTo(this, 'Help') });
   }
 

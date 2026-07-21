@@ -45,6 +45,7 @@ import {
   shake,
   transitionTo,
 } from '../ui/fx';
+import { compact, fontFor } from '../ui/responsive';
 
 /**
  * Top of the technique list and the space it may occupy.
@@ -65,7 +66,9 @@ const TECH_LIST_BOTTOM = 600;
  * every row overlapped its neighbours by 14px and mis-taps were constant.
  */
 function techRowPitch(): number {
-  return buttonRow(30, 6);
+  // Taller rows on a phone: fewer techniques per page, but each one hittable.
+  // Paging through six readable rows beats missing one of twelve.
+  return compact() ? buttonRow(52, 8) : buttonRow(30, 6);
 }
 
 function techsPerPage(top: number = TECH_LIST_TOP): number {
@@ -235,13 +238,34 @@ export class TreatmentScene extends Phaser.Scene {
       ? `${humorName(this.diagnosedHumor)} (${t(this.diagnosisConfidenceKey ?? 'confidence_guess')})`
       : t('humor_unknown');
 
-    const statusText = bodyText(
-      this,
-      228,
-      88,
-      `${t('class')}: ${className(p.class)}\n${t('complaint')}: ${t(p.complaintKey.replace('complaint.', 'complaint_'))}\n${t('severity')}: ${severityMarks(p.severity)}\n${t('humor')}: ${humorLine}\n${p.diagnosed ? '✓ ' + t('diagnosed') : '· ' + t('tip_examine')}\n${p.pulseRead ? '✓ ' + t('pulse_done') : '· ' + t('tip_pulse')}\n${p.urineRead ? '✓ ' + t('urine_done') : '· ' + t('tip_urine')}\n${t('astro_label')}: ${t(astro.key.replace(/\./g, '_'))}`,
-      { fontSize: '14px', wordWrap: { width: 360 } },
-    );
+    // On a phone the three "· do this next" prompts are dropped: the buttons
+    // that do them sit directly below, and at compact type the eight-line block
+    // was 258px tall and ran off the top of the panel.
+    const done = compact()
+      ? [p.diagnosed ? '✓' : '·', p.pulseRead ? '✓' : '·', p.urineRead ? '✓' : '·'].join(' ')
+      : null;
+    const statusLines = compact()
+      ? [
+          `${t('class')}: ${className(p.class)}`,
+          t(p.complaintKey.replace('complaint.', 'complaint_')),
+          `${t('severity')}: ${severityMarks(p.severity)}`,
+          `${t('humor')}: ${humorLine}`,
+          `${t('examined_marks')}: ${done}`,
+        ]
+      : [
+          `${t('class')}: ${className(p.class)}`,
+          `${t('complaint')}: ${t(p.complaintKey.replace('complaint.', 'complaint_'))}`,
+          `${t('severity')}: ${severityMarks(p.severity)}`,
+          `${t('humor')}: ${humorLine}`,
+          p.diagnosed ? '✓ ' + t('diagnosed') : '· ' + t('tip_examine'),
+          p.pulseRead ? '✓ ' + t('pulse_done') : '· ' + t('tip_pulse'),
+          p.urineRead ? '✓ ' + t('urine_done') : '· ' + t('tip_urine'),
+          `${t('astro_label')}: ${t(astro.key.replace(/\./g, '_'))}`,
+        ];
+    const statusText = bodyText(this, compact() ? 250 : 228, 88, statusLines.join('\n'), {
+      fontSize: compact() ? fontFor('small') : fontFor('body'),
+      wordWrap: { width: compact() ? 330 : 360 },
+    });
 
     // Findings flow below the portrait and the status block, whichever runs
     // longer, and each pushes the next down by its own measured height.
@@ -254,7 +278,7 @@ export class TreatmentScene extends Phaser.Scene {
         56,
         findY,
         `${t(this.pulse.qualityKey)} — ${t('pulse_suggests')}: ${narrowed}`,
-        { fontSize: '13px', color: '#a8c0c4', wordWrap: { width: 528 } },
+        { fontSize: fontFor('small'), color: '#a8c0c4', wordWrap: { width: 528 } },
       );
       findY += line.height + 6;
     }
@@ -266,7 +290,7 @@ export class TreatmentScene extends Phaser.Scene {
         56,
         findY,
         `${t(this.urine.qualityKey)} — ${t('urine_suggests')}: ${narrowed}`,
-        { fontSize: '13px', color: '#c9b48a', wordWrap: { width: 528 } },
+        { fontSize: fontFor('small'), color: '#c9b48a', wordWrap: { width: 528 } },
       );
       findY += line.height + 6;
     }
@@ -308,7 +332,16 @@ export class TreatmentScene extends Phaser.Scene {
     // Below the parchment, never above 450 — a short hint must not pull the
     // controls up into the body text.
     const examRowY = Math.max(450, hintTop + 106);
-    makeButton(this, 112, examRowY, t('diagnose'), () => {
+    // Four 124px buttons in a row are 67 real pixels wide on a phone. Two rows
+    // of two at nearly double the width are reachable with a thumb.
+    const exW = compact() ? 258 : 124;
+    const exH = compact() ? 62 : 42;
+    const exFont = compact() ? fontFor('button') : '13px';
+    const exX = compact() ? [176, 452, 176, 452] : [112, 244, 376, 508];
+    const exY = compact()
+      ? [examRowY, examRowY, examRowY + exH + 10, examRowY + exH + 10]
+      : [examRowY, examRowY, examRowY, examRowY];
+    makeButton(this, exX[0]!, exY[0]!, t('diagnose'), () => {
       mutate((st) => {
         const dx = diagnosePatient(st, this.patient);
         this.diagnosedHumor = dx.humor;
@@ -316,27 +349,27 @@ export class TreatmentScene extends Phaser.Scene {
       });
       audio.sfx('page');
       this.render();
-    }, { width: 124, height: 42, fontSize: '13px' });
+    }, { width: exW, height: exH, fontSize: exFont });
 
-    makeButton(this, 244, examRowY, t('pulse'), () => {
+    makeButton(this, exX[1]!, exY[1]!, t('pulse'), () => {
       mutate((st) => {
         this.pulse = readPulse(st, this.patient);
       });
       audio.sfx('pulse');
       this.render();
-    }, { width: 124, height: 42, fontSize: '13px' });
+    }, { width: exW, height: exH, fontSize: exFont });
 
     // Uroscopy: the complementary axis. Cheap in coin, costly in the one
     // resource the day is actually made of — there are only so many patients.
-    makeButton(this, 376, examRowY, t('uroscopy'), () => {
+    makeButton(this, exX[2]!, exY[2]!, t('uroscopy'), () => {
       mutate((st) => {
         this.urine = readUrine(st, this.patient);
       });
       audio.sfx('splash');
       this.render();
-    }, { width: 124, height: 42, fontSize: '13px', disabled: !!this.urine });
+    }, { width: exW, height: exH, fontSize: exFont, disabled: !!this.urine });
 
-    makeButton(this, 508, examRowY, t('refuse'), () => {
+    makeButton(this, exX[3]!, exY[3]!, t('refuse'), () => {
       mutate((st) => {
         if (p.class === 'beggar') st.ethics = Math.max(0, st.ethics - 3);
         else st.reputation[st.locationId] = (st.reputation[st.locationId] ?? 0) - 1;
@@ -348,7 +381,7 @@ export class TreatmentScene extends Phaser.Scene {
       // Turned away for good — they must not reappear in the waiting room.
       removeFromQueue(p.uid);
       transitionTo(this, 'Bathhouse');
-    }, { width: 120, height: 42, fontSize: '13px', fill: COLORS.blood });
+    }, { width: exW, height: exH, fontSize: exFont, fill: COLORS.blood });
 
     // Techniques list
     panel(this, 580, 42, 660, 620);

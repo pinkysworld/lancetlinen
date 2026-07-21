@@ -30,6 +30,14 @@ export type GoreLevel = 'low' | 'medium' | 'high';
  * `merciful` is for players here for the history and the writing.
  */
 export type Difficulty = 'merciful' | 'fair' | 'harsh';
+/**
+ * Compact (phone) layout.
+ *
+ * `auto` measures the viewport, which is right almost always — but detection
+ * can be wrong on an unusual device or an embedded browser, and being stuck
+ * with an unreadable layout and no way out is worse than an extra setting.
+ */
+export type CompactMode = 'auto' | 'on' | 'off';
 
 export interface Stats {
   hand: number;
@@ -221,6 +229,7 @@ export interface GameSettings {
   /** Key overrides: action id -> KeyboardEvent.key. */
   keyBinds: Record<string, string>;
   difficulty: Difficulty;
+  compactMode: CompactMode;
 }
 
 export interface GameState {
@@ -318,6 +327,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   fullscreen: false,
   keyBinds: {},
   difficulty: 'fair',
+  compactMode: 'auto',
 };
 
 export const SAVE_KEY = 'lancet-linen-save-v2';

@@ -20,6 +20,7 @@ import { audio } from '../audio/AudioManager';
 import { sceneBackground, transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
 import { addManagementBackground } from '../ui/art';
+import { compact, fontFor } from '../ui/responsive';
 // audio contexts: market / study / property
 
 export class MarketScene extends Phaser.Scene {
@@ -38,10 +39,10 @@ export class MarketScene extends Phaser.Scene {
     addHudIcon(this, 40, 100, 'icon_coin', 28);
     hudText(this, 60, 90, `${t('coin')}: ${s.coin}`);
 
-    panel(this, 80, 130, GAME_WIDTH - 160, 480);
+    panel(this, 80, 130, GAME_WIDTH - 160, compact() ? 540 : 480);
     const items = Object.keys(prices) as (keyof typeof prices)[];
     items.forEach((item, i) => {
-      const y = 160 + i * 48;
+      const y = 160 + i * (compact() ? 66 : 48);
       const inv = s.inventory[item as keyof typeof s.inventory] ?? 0;
       addHudIcon(this, 105, y + 10, `icon_${item}`, 26);
       bodyText(
@@ -49,11 +50,11 @@ export class MarketScene extends Phaser.Scene {
         130,
         y,
         `${t(`inv_${item}`)}: ${inv}  —  ${t('buy')} ${prices[item]} · ${t('sell')} ${sellPrice(prices[item]!)}`,
-        { fontSize: '15px' },
+        { fontSize: compact() ? fontFor('small') : '15px' },
       );
       makeButton(
         this,
-        806,
+        compact() ? 880 : 806,
         y + 10,
         `${t('buy')} +1`,
         () => {
@@ -63,9 +64,9 @@ export class MarketScene extends Phaser.Scene {
           saveGame();
           this.scene.restart();
         },
-        { width: 132, height: 32, fontSize: '14px', noHotkey: true },
+        { width: compact() ? 150 : 132, height: compact() ? 56 : 32, fontSize: compact() ? fontFor('button') : '14px', noHotkey: true },
       );
-      makeButton(
+      if (!compact()) makeButton(
         this,
         946,
         y + 10,
@@ -77,14 +78,14 @@ export class MarketScene extends Phaser.Scene {
           saveGame();
           this.scene.restart();
         },
-        { width: 132, height: 32, fontSize: '14px', noHotkey: true },
+        { width: compact() ? 150 : 132, height: compact() ? 56 : 32, fontSize: compact() ? fontFor('button') : '14px', noHotkey: true },
       );
       // Selling was never implemented, yet `cannot_afford_day` told the player
       // to do exactly this when they ran out of coin. Disabled rather than
       // hidden when the shelf is empty, so the option is visibly there.
       makeButton(
         this,
-        1086,
+        compact() ? 1060 : 1086,
         y + 10,
         `${t('sell')} +1`,
         () => {
@@ -94,11 +95,11 @@ export class MarketScene extends Phaser.Scene {
           saveGame();
           this.scene.restart();
         },
-        { width: 132, height: 32, fontSize: '14px', disabled: inv < 1, fill: 0x5a4a2f, noHotkey: true },
+        { width: compact() ? 150 : 132, height: compact() ? 56 : 32, fontSize: compact() ? fontFor('button') : '14px', disabled: inv < 1, fill: 0x5a4a2f, noHotkey: true },
       );
     });
 
-    makeButton(this, GAME_WIDTH / 2, 660, t('back'), () => transitionTo(this, 'Hub'));
+    makeButton(this, GAME_WIDTH / 2, compact() ? 690 : 660, t('back'), () => transitionTo(this, 'Hub'), compact() ? { width: 320, height: 56, fontSize: fontFor('button') } : {});
     installSceneKeys(this, { onBack: () => transitionTo(this, 'Hub') });
   }
 }

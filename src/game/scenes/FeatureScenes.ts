@@ -479,6 +479,17 @@ export class SettingsScene extends Phaser.Scene {
       cfg.reduceParticles ? t('particles_off') : t('particles_on'),
       () => { updateSettings({ reduceParticles: !cfg.reduceParticles }); this.scene.restart(); },
       { width: 300, height: 42, fontSize: '15px' });
+    // Compact layout. Auto measures the viewport; the explicit settings exist
+    // because detection cannot be right on every device, and being stuck with
+    // an unreadable layout is worse than an extra option.
+    makeButton(this, lc + 150, disp.next(42),
+      `${t('compact_mode')}: ${t(`compact_${cfg.compactMode}`)}`,
+      () => {
+        const order = ['auto', 'on', 'off'] as const;
+        const i = order.indexOf(cfg.compactMode);
+        updateSettings({ compactMode: order[(i + 1) % order.length]! });
+        this.scene.restart();
+      }, { width: 300, height: 42, fontSize: '15px' });
     makeButton(this, lc + 150, disp.next(42),
       `${t('difficulty')}: ${t(`difficulty_${cfg.difficulty}`)}`,
       () => {
