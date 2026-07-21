@@ -46,6 +46,16 @@ import {
   transitionTo,
 } from '../ui/fx';
 import { compact, fontFor } from '../ui/responsive';
+import { gatedButton } from '../ui/gated';
+import { canExamine } from '../data/examinations';
+import {
+  VEINS,
+  complaintRegion,
+  daysInSign,
+  isEgyptianDay,
+  judgeVein,
+  moonSign,
+} from '../data/bloodletting';
 
 /**
  * Top of the technique list and the space it may occupy.
@@ -379,13 +389,19 @@ export class TreatmentScene extends Phaser.Scene {
 
     // Uroscopy: the complementary axis. Cheap in coin, costly in the one
     // resource the day is actually made of — there are only so many patients.
-    makeButton(this, exX[2]!, exY[2]!, t('uroscopy'), () => {
+    // Uroscopy was the signature act of *learned* medicine — a bath-house
+    // apprentice was not taught to read a flask. Greyed with the reason rather
+    // than hidden, so the player learns the art exists and can be taught.
+    const uroReq = this.urine
+      ? ({ ok: false, reasonKey: 'req_already_have' } as const)
+      : canExamine(s, 'uroscopy');
+    gatedButton(this, exX[2]!, exY[2]!, t('uroscopy'), uroReq, () => {
       mutate((st) => {
         this.urine = readUrine(st, this.patient);
       });
       audio.sfx('splash');
       this.render();
-    }, { width: exW, height: exH, fontSize: exFont, disabled: !!this.urine });
+    }, { width: exW, height: exH, fontSize: exFont });
 
     makeButton(this, exX[3]!, exY[3]!, t('refuse'), () => {
       mutate((st) => {
@@ -450,6 +466,68 @@ export class TreatmentScene extends Phaser.Scene {
         fill: intensity === 'bold' ? 0x5a3020 : COLORS.panelLight,
       },
     );
+
+    /* ── The Aderlaßmännchen ──────────────────────────────────────────
+     * Which vein, judged against the moon's sign and the seat of the
+     * complaint. The codex has claimed this mechanic exists since long before
+     * it did. Shown whenever the player knows any blood art, because the
+     * choice has to be made *before* picking the technique.
+     */
+    const knowsBloodArt = TECHNIQUES.some(
+      (tc) => tc.category === 'blood' && s.unlockedTechniques.includes(tc.id),
+    );
+    if (knowsBloodArt && !compact()) {
+      const sign = moonSign(s);
+      const region = complaintRegion(p.templateId);
+      bodyText(
+        this,
+        56,
+        cycY + 34,
+        `${t('moon_in', { sign: t(`zodiac_${sign}`), n: daysInSign(s) })}${
+          isEgyptianDay(s.day) ? ` · ${t('egyptian_day_warn')}` : ''
+        }`,
+        {
+          fontSize: '12px',
+          color: isEgyptianDay(s.day) ? '#b33a3a' : '#a8c0c4',
+          wordWrap: { width: 520 },
+        },
+      );
+      const veins = VEINS.filter((v) => s.stats.hand >= v.minHand);
+      const current = p.vein ?? veins[0]?.id ?? null;
+      if (current) {
+        const verdict = judgeVein(s, current, region);
+        makeButton(
+          this,
+          176,
+          cycY + 68,
+          `${t('vein_label')}: ${t(`vein_${current}`)} ▸`,
+          () => {
+            const i = veins.findIndex((v) => v.id === current);
+            p.vein = veins[(i + 1) % veins.length]!.id;
+            audio.sfx('click');
+            this.render();
+          },
+          {
+            width: 258,
+            height: 36,
+            fontSize: '13px',
+            noHotkey: true,
+            fill:
+              verdict.tone === 'good'
+                ? COLORS.green
+                : verdict.tone === 'bad'
+                  ? COLORS.blood
+                  : COLORS.panelLight,
+          },
+        );
+        bodyText(this, 320, cycY + 60, t(verdict.key), {
+          fontSize: '12px',
+          color:
+            verdict.tone === 'good' ? '#5a9a6e' : verdict.tone === 'bad' ? '#c9a227' : '#a88',
+          wordWrap: { width: 270 },
+        });
+      }
+    }
 
     // Techniques list
     panel(this, 580, 42, 660, 620);
@@ -679,6 +757,14 @@ export class TreatmentScene extends Phaser.Scene {
     // Whether the fee posture held — "they paid the higher fee", "they haggled
     // you down", "treated as alms". Without this line the Tongue check is a
     // hidden roll and demanding never becomes a readable gamble.
+    if (r.veinNoteKey) {
+      bodyText(this, GAME_WIDTH / 2, 430, t(r.veinNoteKey), {
+        fontSize: '13px',
+        color: '#a8c0c4',
+        wordWrap: { width: 560 },
+        align: 'center',
+      }).setOrigin(0.5);
+    }
     if (r.stanceNoteKey) {
       bodyText(this, GAME_WIDTH / 2, 408, t(r.stanceNoteKey), {
         fontSize: '14px',

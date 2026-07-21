@@ -119,6 +119,8 @@ export interface PatientInstance {
   feeStance?: FeeStance;
   /** How boldly to work — see `Intensity`. */
   intensity?: Intensity;
+  /** Vein chosen for a blood art — see `data/bloodletting.ts`. */
+  vein?: string;
 }
 
 export type TreatmentResultKind = 'success' | 'partial' | 'fail' | 'death';
@@ -137,6 +139,8 @@ export interface TreatmentResult {
    * demanding worked, which is what makes the Tongue stat legible.
    */
   stanceNoteKey?: string;
+  /** What the bloodletting tables made of the vein chosen. */
+  veinNoteKey?: string;
 }
 
 export interface Inventory {

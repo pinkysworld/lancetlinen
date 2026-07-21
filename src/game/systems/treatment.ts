@@ -19,6 +19,7 @@ import {
   templateWeight,
 } from '../data/patients';
 import { bloodlettingDayModifier, seasonalHumorBias } from '../data/history';
+import { complaintRegion, judgeVein } from '../data/bloodletting';
 import { classWeight, reputationPayMult, applyTreatmentReputation } from './reputation';
 import { staffSkillBonus, staffSupplySaveChance } from './staff';
 import {
@@ -275,12 +276,20 @@ export function applyTreatment(
 
   // Historical bloodletting calendar (zodiac / season)
   let astroNote: string | undefined;
+  let veinNote: string | undefined;
   if (tech.category === 'blood') {
     const astro = bloodlettingDayModifier(state);
     chance *= astro.mult;
     astroNote = astro.key;
     // Post-bleed rest was traditional — soul helps recovery outcomes
     chance += state.stats.soul * 0.008;
+    // The Aderlaßmännchen: which vein, against the moon's sign and the seat of
+    // the complaint. The codex claimed this mechanic existed long before it did.
+    if (patient.vein) {
+      const verdict = judgeVein(state, patient.vein, complaintRegion(patient.templateId));
+      chance *= verdict.mult;
+      veinNote = verdict.key;
+    }
   }
 
   // Staff help
@@ -484,6 +493,7 @@ export function applyTreatment(
       rep: reputationDelta,
       ...(astroNote ? { astro: astroNote } : {}),
     },
+    ...(veinNote ? { veinNoteKey: veinNote } : {}),
     ...(stanceNoteKey ? { stanceNoteKey } : {}),
   };
 }
