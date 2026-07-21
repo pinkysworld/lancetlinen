@@ -15,7 +15,14 @@ import {
   isDestitute,
   takeLoan,
 } from '../systems/economy';
-import { pendingStoryDialogue, activeQuests, tutorialTipKey, questTitleKey, questGuideKey } from '../systems/story';
+import {
+  pendingStoryDialogue,
+  activeQuests,
+  syncQuests,
+  tutorialTipKey,
+  questTitleKey,
+  questGuideKey,
+} from '../systems/story';
 import { getLocalBath } from '../systems/property';
 import { drawBackground, makeButton, bodyText, titleText, panel, woodPanel, hudText, COLORS, addDecorImage, addHudIcon } from '../ui/theme';
 import { showToast, showConfirm, downloadText } from '../ui/dialogs';
@@ -47,6 +54,13 @@ export class HubScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Close out anything finished since the last look. Without this the task
+    // strip kept showing "the bath right" after the licence was bought and
+    // "the gates of Nürnberg" while standing inside them — a quest only ever
+    // completed by picking a dialogue choice, never by doing the thing.
+    mutate((st) => {
+      syncQuests(st);
+    });
     const s = getState();
 
     // Story interrupts

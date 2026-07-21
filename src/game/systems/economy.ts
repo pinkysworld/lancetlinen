@@ -19,6 +19,7 @@ import { spouseDaily } from './family';
 import { officeIncomeBonus } from './politics';
 import { festivalPatientMult } from './events';
 import { addJournal } from './journal';
+import { syncQuests } from './story';
 import { tickReputation } from './reputation';
 import { localGoodsMult, type PricedItem } from '../data/prices';
 import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
@@ -88,6 +89,10 @@ export function endDay(state: GameState): void {
   applyDebtCollection(state);
 
   spouseDaily(state);
+  // Close out anything the player finished today. Without this a quest only
+  // ever completed through a dialogue choice, so the task strip filled with
+  // things already done.
+  syncQuests(state);
   festivalPatientMult(state);
   tickReputation(state);
   tickHonour(state);

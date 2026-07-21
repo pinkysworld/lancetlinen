@@ -312,6 +312,42 @@ export function learnTechniqueFromBook(state: GameState, id: string): boolean {
   return true;
 }
 
+/**
+ * Close out any quest whose goal has actually been met.
+ *
+ * Quests could previously only be completed by picking a dialogue choice that
+ * carried `questAdvance`. Everything the player did in the world — buying the
+ * bath right, walking through Nürnberg's gates, settling with Krafft — left
+ * the task sitting on the hub strip, so the list of things still to do slowly
+ * filled up with things already done. Reported from play.
+ *
+ * Idempotent, so it is safe to call from the day tick and from the hub. The
+ * quest chain still runs through `onQuestComplete`, which is why this marks
+ * the quest rather than merely hiding it: completing `bath_rights` is what
+ * opens the rival, family and politics threads.
+ */
+export function syncQuests(state: GameState): boolean {
+  let changed = false;
+  // Guarded loop: `onQuestComplete` can push new quests, and one of those may
+  // itself already be satisfied. Bounded so a mistaken predicate pair cannot
+  // spin forever.
+  for (let pass = 0; pass < 4; pass++) {
+    let passChanged = false;
+    for (const q of [...state.quests]) {
+      if (q.completed || q.failed) continue;
+      const def = QUESTS.find((d) => d.id === q.id);
+      if (!def?.done?.(state)) continue;
+      q.completed = true;
+      q.stage = Math.max(q.stage, def.stages);
+      onQuestComplete(state, q.id);
+      passChanged = true;
+      changed = true;
+    }
+    if (!passChanged) break;
+  }
+  return changed;
+}
+
 export function activeQuests(state: GameState) {
   return state.quests.filter((q) => !q.completed && !q.failed);
 }

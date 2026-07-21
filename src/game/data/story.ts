@@ -1,3 +1,4 @@
+import type { GameState } from '../types';
 export interface DialogueChoice {
   textKey: string;
   next?: string;
@@ -20,18 +21,98 @@ export interface QuestDef {
   titleKey: string;
   stages: number;
   autoStart?: boolean;
+  /**
+   * True once the goal is achieved *in the world*, whatever the dialogue did.
+   *
+   * A quest used to complete only when a dialogue choice carrying
+   * `questAdvance` was picked, so "the bath right" stayed on the task list
+   * after the player had bought the licence and opened the bathhouse, and
+   * "the gates of Nürnberg" stayed on it while standing in Nürnberg. The
+   * strip became a list of things already done.
+   *
+   * These predicates read only flags and state the game actually sets — see
+   * the note in `syncQuests`. Inventing a flag here would put the quest in
+   * the opposite trap: never completing at all.
+   */
+  done?: (state: GameState) => boolean;
 }
 
 export const QUESTS: QuestDef[] = [
-  { id: 'prologue', act: 1, titleKey: 'quest.prologue', stages: 3, autoStart: true },
-  { id: 'first_city', act: 1, titleKey: 'quest.first_city', stages: 2 },
-  { id: 'bath_rights', act: 2, titleKey: 'quest.bath_rights', stages: 3 },
-  { id: 'rival_krafft', act: 2, titleKey: 'quest.rival', stages: 3 },
-  { id: 'epidemic', act: 2, titleKey: 'quest.epidemic', stages: 2 },
-  { id: 'war_contract', act: 3, titleKey: 'quest.war', stages: 2 },
-  { id: 'meister', act: 3, titleKey: 'quest.meister', stages: 2 },
-  { id: 'family_line', act: 2, titleKey: 'quest.family', stages: 2 },
-  { id: 'politics', act: 2, titleKey: 'quest.politics', stages: 2 },
+  {
+    id: 'prologue',
+    act: 1,
+    titleKey: 'quest.prologue',
+    stages: 3,
+    autoStart: true,
+    // Berthold's cart: taken, and the road camp left behind.
+    done: (s) => !!s.storyFlags['has_cart'] && s.locationId !== 'road_camp',
+  },
+  {
+    id: 'first_city',
+    act: 1,
+    titleKey: 'quest.first_city',
+    stages: 2,
+    // The gates of Nürnberg: you are through them.
+    done: (s) => !!s.storyFlags['in_nurnberg'] || s.locationId === 'nurnberg',
+  },
+  {
+    id: 'bath_rights',
+    act: 2,
+    titleKey: 'quest.bath_rights',
+    stages: 3,
+    // The right to the stove: the licence bought, or the premises standing.
+    done: (s) =>
+      !!s.storyFlags['bath_license'] ||
+      !!s.storyFlags['own_bath'] ||
+      (s.properties ?? []).some((p) => p.kind === 'bathhouse'),
+  },
+  {
+    id: 'rival_krafft',
+    act: 2,
+    titleKey: 'quest.rival',
+    stages: 3,
+    // However it ended — exposed, shamed or settled with.
+    done: (s) =>
+      !!s.storyFlags['rival_exposed'] ||
+      !!s.storyFlags['rival_truce'] ||
+      !!s.storyFlags['rival_mud'],
+  },
+  {
+    id: 'epidemic',
+    act: 2,
+    titleKey: 'quest.epidemic',
+    stages: 2,
+    done: (s) => !!s.storyFlags['epidemic_done'],
+  },
+  {
+    id: 'war_contract',
+    act: 3,
+    titleKey: 'quest.war',
+    stages: 2,
+    done: (s) => !!s.storyFlags['war_done'] || !!s.storyFlags['war_refused'],
+  },
+  {
+    id: 'meister',
+    act: 3,
+    titleKey: 'quest.meister',
+    stages: 2,
+    // The master's examination is the campaign's end; the ending decides it.
+    done: (s) => !!s.ending,
+  },
+  {
+    id: 'family_line',
+    act: 2,
+    titleKey: 'quest.family',
+    stages: 2,
+    done: (s) => !!s.storyFlags['family_quest_done'] || !!s.spouse || !!s.storyFlags['refuse_match'],
+  },
+  {
+    id: 'politics',
+    act: 2,
+    titleKey: 'quest.politics',
+    stages: 2,
+    done: (s) => !!s.storyFlags['politics_quest_done'] || (s.office ?? 'none') !== 'none',
+  },
 ];
 
 export const DIALOGUES: DialogueNode[] = [
