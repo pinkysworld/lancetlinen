@@ -93,3 +93,10 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - "Living legend" moves from 75 to 90 local standing. A strong 35-patient main-story career remains below it, while the test curve reaches it only through a long, successful 140-patient career.
 - Stored technique XP now grants a small per-technique mastery benefit at 60 / 160 / 320 XP (maximum +4 percentage points). It is visible as `Übung` / `Practice` in the treatment list and cannot replace examination, supplies, risk, or the timing check.
 - Focused progression checks pass (11 tests); final `npm test` (554), `npx tsc --noEmit`, `npm run build` and `git diff --check` pass. The required skill-owned Playwright client was rerun and remains blocked before launch because it resolves `playwright` from the skill directory instead of the workspace. In-app browser review of the treatment preset shows a clear, non-overlapping treatment list and no console warnings.
+
+## 2026-07-22 — staff pacing and politics geometry
+
+- Staff gifts are now limited to one per named person and game day. Training costs 35 coins, requires three days of shared employment plus 40 loyalty, lasts three further days, suppresses the worker's role bonus while away, and grants its +1 skill only on the return morning. Active/ready status, cost and duration are visible in the Staff screen and journal.
+- Save schema 7 migrates existing staff without changing skill, loyalty or employment history; it only adds the new pacing fields deterministically.
+- The Nürnberg craft explanation now measures its own wrapped height before office buttons are placed. Politics panels reserve the repayment row, and the Lombard control is rendered after panel backgrounds so an active repayment face cannot appear disabled underneath them.
+- Focused pacing, migration, responsive and TypeScript checks pass (55 tests); final `npm test` (557), `npx tsc --noEmit`, `npm run build` and `git diff --check` pass. The skill-owned external Playwright client remains blocked by its package-resolution issue. In-app browser screenshots verified training start/status and the debt-payable Politics layout with no console warnings.

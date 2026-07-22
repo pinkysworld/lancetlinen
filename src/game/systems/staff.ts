@@ -35,6 +35,7 @@ export function ensureStaff(state: GameState): void {
   if (!state.staff) state.staff = [];
   for (const member of state.staff) {
     if (!member.trait) member.trait = traitFor(member.id || `${member.name}-${member.role}`);
+    if (member.lastGiftDay === undefined) member.lastGiftDay = 0;
   }
 }
 
@@ -144,7 +145,10 @@ function localStaff(state: GameState, role: StaffRole): StaffMember[] {
     (state.properties ?? []).filter((p) => p.cityId === state.locationId).map((p) => p.id),
   );
   return state.staff.filter(
-    (s) => s.role === role && (s.propertyId === null || localIds.has(s.propertyId)),
+    (s) =>
+      s.role === role &&
+      !s.trainingDueDay &&
+      (s.propertyId === null || localIds.has(s.propertyId)),
   );
 }
 
@@ -215,13 +219,17 @@ export function resolveStaffEvent(state: GameState): void {
 }
 
 export const GIFT_STAFF_COST = 10;
-export const TRAIN_STAFF_COST = 25;
+export const TRAIN_STAFF_COST = 35;
+export const STAFF_TRAINING_DAYS = 3;
+export const STAFF_MIN_DAYS_BEFORE_TRAINING = 3;
+export const STAFF_MIN_LOYALTY_FOR_TRAINING = 40;
 
 export function canGiftStaff(state: GameState, staffId: string): Requirement {
   const m = state.staff.find((s) => s.id === staffId);
   if (!m) return refuse('req_unknown');
   return firstUnmet(
     must(m.loyalty < 100, 'req_loyalty_full'),
+    must(m.lastGiftDay !== state.day, 'req_staff_gift_wait'),
     atLeast('req_coin', state.coin, GIFT_STAFF_COST),
   );
 }
@@ -231,6 +239,7 @@ export function giftStaff(state: GameState, staffId: string): boolean {
   const m = state.staff.find((s) => s.id === staffId)!;
   state.coin -= GIFT_STAFF_COST;
   m.loyalty = Math.min(100, m.loyalty + 12);
+  m.lastGiftDay = state.day;
   return true;
 }
 
@@ -239,6 +248,9 @@ export function canTrainStaff(state: GameState, staffId: string): Requirement {
   if (!m) return refuse('req_unknown');
   return firstUnmet(
     must(m.skill < 10, 'req_skill_full'),
+    must(!m.trainingDueDay, 'req_staff_training_active'),
+    atLeast('req_staff_employment', m.daysEmployed, STAFF_MIN_DAYS_BEFORE_TRAINING),
+    atLeast('req_staff_training_loyalty', m.loyalty, STAFF_MIN_LOYALTY_FOR_TRAINING),
     atLeast('req_coin', state.coin, TRAIN_STAFF_COST),
   );
 }
@@ -247,7 +259,34 @@ export function trainStaff(state: GameState, staffId: string): boolean {
   if (!canTrainStaff(state, staffId).ok) return false;
   const m = state.staff.find((s) => s.id === staffId)!;
   state.coin -= TRAIN_STAFF_COST;
-  m.skill = Math.min(10, m.skill + 1);
-  m.loyalty = Math.min(100, m.loyalty + 5);
+  m.trainingDueDay = state.day + STAFF_TRAINING_DAYS;
+  addJournal(state, 'journal_staff_training_started', 'business', {
+    name: m.name,
+    day: m.trainingDueDay,
+  });
   return true;
+}
+
+/** Days still remaining before a paid course ends; zero means no course. */
+export function staffTrainingDaysRemaining(state: GameState, member: StaffMember): number {
+  return member.trainingDueDay ? Math.max(0, member.trainingDueDay - state.day) : 0;
+}
+
+/**
+ * Training completes with the morning opening, after the promised full days
+ * have passed. A trainee remains on wages but does not provide their normal
+ * role bonus while away under supervision.
+ */
+export function resolveDueStaffTraining(state: GameState): number {
+  ensureStaff(state);
+  let completed = 0;
+  for (const member of state.staff) {
+    if (!member.trainingDueDay || state.day < member.trainingDueDay) continue;
+    member.trainingDueDay = undefined;
+    member.skill = Math.min(10, member.skill + 1);
+    member.loyalty = Math.min(100, member.loyalty + 3);
+    completed += 1;
+    addJournal(state, 'journal_staff_training_done', 'business', { name: member.name });
+  }
+  return completed;
 }

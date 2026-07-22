@@ -9,6 +9,10 @@ import {
   canGiftStaff,
   canTrainStaff,
   ensureStaff,
+  staffTrainingDaysRemaining,
+  GIFT_STAFF_COST,
+  TRAIN_STAFF_COST,
+  STAFF_TRAINING_DAYS,
 } from '../systems/staff';
 import type { HouseholdFocus, StaffRole } from '../types';
 import { canRepayDebt, repayDebt } from '../systems/economy';
@@ -185,8 +189,12 @@ export class StaffScene extends Phaser.Scene {
     if (!s.staff.length) {
       bodyText(this, 60, 130, t('staff_none'), { fontSize: '16px' });
     } else {
-      s.staff.slice(0, 7).forEach((m, i) => {
-        const y = 120 + i * 60;
+      s.staff.slice(0, 6).forEach((m, i) => {
+        const y = 116 + i * 72;
+        const trainingDays = staffTrainingDaysRemaining(s, m);
+        const trainingLine = trainingDays > 0
+          ? t('staff_training_active', { day: m.trainingDueDay ?? s.day, days: trainingDays })
+          : t('staff_training_offer', { coin: TRAIN_STAFF_COST, days: STAFF_TRAINING_DAYS });
         addPortrait(this, 78, y + 18, portraitKeyForStaffRole(m.role), {
           size: 40,
           seed: m.id,
@@ -198,31 +206,36 @@ export class StaffScene extends Phaser.Scene {
           `${m.name} · ${t(`role_${m.role}`)} · ${t(`trait_${m.trait ?? 'careful'}`)}\n${t(`trait_${m.trait ?? 'careful'}_help`)} · ${t('loyalty')}: ${m.loyalty} · ${t('skill')}: ${m.skill} · ${t('wage_per_day', { n: m.wage })}`,
           { fontSize: '12px', wordWrap: { width: 380 } },
         );
+        bodyText(this, 108, y + 43, trainingLine, {
+          fontSize: '11px',
+          color: trainingDays > 0 ? '#e8c547' : '#a8c0c4',
+          wordWrap: { width: 380 },
+        });
         gatedButton(
           this,
           560,
           y + 10,
-          t('gift'),
+          `${t('gift')} (${GIFT_STAFF_COST})`,
           canGiftStaff(s, m.id),
           () => {
             mutate((st) => giftStaff(st, m.id));
             saveGame();
             this.scene.restart();
           },
-          { width: 70, height: 32, fontSize: '12px' },
+          { width: 92, height: 32, fontSize: '11px' },
         );
         gatedButton(
           this,
-          640,
+          656,
           y + 10,
-          t('train'),
+          `${t('train')} (${TRAIN_STAFF_COST})`,
           canTrainStaff(s, m.id),
           () => {
             mutate((st) => trainStaff(st, m.id));
             saveGame();
             this.scene.restart();
           },
-          { width: 70, height: 32, fontSize: '12px' },
+          { width: 92, height: 32, fontSize: '11px' },
         );
       });
     }
@@ -415,68 +428,36 @@ export class PoliticsScene extends Phaser.Scene {
       90,
       `${t('rep_elite')}: ${rs.elite} · ${t('rep_fame')}: ${(s.repFame ?? 0).toFixed(1)} · ${t('rep_local')}: ${rs.local} (${t(rs.localKey)})`,
     );
-    // The Lombard. Borrowing existed with no way back out — see `repayDebt`.
-    if ((s.debt ?? 0) > 0) {
-      hudText(this, 640, 70, `${t('debt_owed', { n: Math.round(s.debt) })}`);
-      bodyText(this, 640, 92, t('debt_warning', { n: DEBT_CALL_IN }), {
-        fontSize: '12px',
-        color: s.debt > DEBT_CALL_IN * 0.7 ? '#b33a3a' : '#a88',
-        wordWrap: { width: 560 },
-      });
-      /*
-       * The offer and the gate must be the same number.
-       *
-       * `chunk` is what the button offers to pay; `canRepayDebt` decides
-       * whether the button works. Computing them separately let them
-       * disagree — a purse of 0 offered "Repay (0)" and refused, which reads
-       * as a button that is broken rather than one that has nothing to do.
-       * One value, used for both, and the label carries it.
-       */
-      const chunk = Math.max(0, Math.min(s.coin, Math.ceil(s.debt)));
-      const repayReq = chunk > 0
+    // Keep the Lombard's state here, but draw its control only after the
+    // panel backgrounds. Otherwise the later panel Graphics object covers an
+    // active hit target and makes a working repayment button look disabled.
+    const debt = s.debt ?? 0;
+    const repaymentChunk = Math.max(0, Math.min(s.coin, Math.ceil(debt)));
+    const repaymentReq = debt > 0
+      ? repaymentChunk > 0
         ? canRepayDebt(s)
-        : { ok: false as const, reasonKey: 'req_coin', need: 1, have: s.coin };
-      gatedButton(
-        this,
-        1100,
-        545,
-        t('repay_debt_some', { n: chunk }),
-        repayReq,
-        () => {
-          let paid = 0;
-          mutate((st) => {
-            paid = repayDebt(st, chunk);
-          });
-          audio.sfx('coin');
-          showToast(
-            this,
-            t('repay_done', { n: paid, rest: Math.round(getState().debt ?? 0) }),
-            '#c9a06a',
-            2600,
-          );
-          saveGame();
-          this.scene.restart();
-        },
-        { width: 240 },
-      );
-      if (!repayReq.ok) {
-        bodyText(this, 1100, 578, explain(repayReq), {
-          fontSize: '12px', color: '#c4a574', align: 'center', wordWrap: { width: 260 },
-        }).setOrigin(0.5, 0);
-      }
-    }
+        : { ok: false as const, reasonKey: 'req_coin', need: 1, have: s.coin }
+      : null;
 
-    panel(this, 40, 120, 600, 470);
+    panel(this, 40, 120, 600, 500);
     bodyText(this, 60, 135, t('offices'), { fontSize: '18px', color: '#e8c547' });
     bodyText(this, 60, 168, `${t('current')}: ${t(`office_${s.office ?? 'none'}`)}`, {
       fontSize: '15px',
     });
-    bodyText(this, 60, 192, t('politics_need_elite'), { fontSize: '12px', color: '#a88' });
+    const officeNeed = bodyText(this, 60, 192, t('politics_need_elite'), {
+      fontSize: '12px', color: '#a88', wordWrap: { width: 520 },
+    });
+    let officeCopyBottom = officeNeed.getBounds().bottom;
     if (craftAuthority(s) === 'council') {
-      bodyText(this, 60, 212, t('nurnberg_craft_rule'), {
+      const nurnbergRule = bodyText(this, 60, officeCopyBottom + 8, t('nurnberg_craft_rule'), {
         fontSize: '12px', color: '#c9b48a', wordWrap: { width: 520 },
       });
+      officeCopyBottom = nurnbergRule.getBounds().bottom;
     }
+    // The Nürnberg explanation is localised and can be two lines.  Place the
+    // first office below its measured bottom rather than assuming one fixed
+    // line height; otherwise the first disabled action sits over the rule.
+    const actionY = Math.max(240, officeCopyBottom + 30);
     const offices = (Object.keys(OFFICE_COST) as Exclude<OfficeId, 'none'>[]).filter(
       (off) => !(craftAuthority(s) === 'council' && off === 'guild_elder'),
     );
@@ -489,7 +470,7 @@ export class PoliticsScene extends Phaser.Scene {
       gatedButton(
         this,
         300,
-        240 + i * 55,
+        actionY + i * 55,
         `${t(`office_${off}`)} — ${t('coin_amount', { n: c.coin })} · ${t('rep_elite')} ab ${needE}`,
         canApplyForOffice(s, off),
         () => {
@@ -503,19 +484,20 @@ export class PoliticsScene extends Phaser.Scene {
       );
     });
 
-    panel(this, 660, 120, 580, 470);
+    panel(this, 660, 120, 580, 500);
     bodyText(this, 680, 135, t('titles'), { fontSize: '18px', color: '#e8c547' });
     bodyText(this, 680, 168, `${t('current')}: ${t(`title_${s.title ?? 'citizen'}`)}`, {
       fontSize: '15px',
     });
     bodyText(this, 680, 192, t('politics_need_fame'), { fontSize: '12px', color: '#a88' });
+    const titleStartY = actionY;
     (Object.keys(TITLE_COST) as Exclude<TitleId, 'citizen'>[]).forEach((title, i) => {
       const c = TITLE_COST[title];
       const needF = fameForTitle(title);
       gatedButton(
         this,
         940,
-        240 + i * 55,
+        titleStartY + i * 55,
         `${t(`title_${title}`)} — ${t('coin_amount', { n: c.coin })} · ${t('rep_fame')} ab ${needF}`,
         canBuyTitle(s, title),
         () => {
@@ -528,24 +510,64 @@ export class PoliticsScene extends Phaser.Scene {
         { width: 360, height: 44, fontSize: '13px' },
       );
     });
-    gatedButton(this, 850, 480, t('bribe_council'), canBribeCouncil(s), () => {
+    const civicActionY = titleStartY + Object.keys(TITLE_COST).length * 55 + 22;
+    gatedButton(this, 850, civicActionY, t('bribe_council'), canBribeCouncil(s), () => {
       mutate((st) => bribeCouncil(st));
       audio.sfx('coin');
       saveGame();
       this.scene.restart();
     }, { width: 240 });
-    gatedButton(this, 1100, 480, t('donate_church'), canDonateChurch(s), () => {
+    gatedButton(this, 1100, civicActionY, t('donate_church'), canDonateChurch(s), () => {
       mutate((st) => donateChurch(st));
       audio.sfx('church');
       saveGame();
       this.scene.restart();
     }, { width: 240 });
+    // The Lombard occupies a deliberately separate row below the civic
+    // actions. It is rendered after panel backgrounds, so its state, label,
+    // keyboard binding and tap face are always visible together.
+    if (repaymentReq) {
+      hudText(this, 640, 70, `${t('debt_owed', { n: Math.round(debt) })}`);
+      bodyText(this, 640, 92, t('debt_warning', { n: DEBT_CALL_IN }), {
+        fontSize: '12px',
+        color: debt > DEBT_CALL_IN * 0.7 ? '#b33a3a' : '#a88',
+        wordWrap: { width: 560 },
+      });
+      gatedButton(
+        this,
+        1100,
+        570,
+        t('repay_debt_some', { n: repaymentChunk }),
+        repaymentReq,
+        () => {
+          let paid = 0;
+          mutate((st) => {
+            paid = repayDebt(st, repaymentChunk);
+          });
+          audio.sfx('coin');
+          showToast(
+            this,
+            t('repay_done', { n: paid, rest: Math.round(getState().debt ?? 0) }),
+            '#c9a06a',
+            2600,
+          );
+          saveGame();
+          this.scene.restart();
+        },
+        { width: 240 },
+      );
+      if (!repaymentReq.ok) {
+        bodyText(this, 1100, 603, explain(repaymentReq), {
+          fontSize: '12px', color: '#c4a574', align: 'center', wordWrap: { width: 260 },
+        }).setOrigin(0.5, 0);
+      }
+    }
 
-    makeButton(this, 1100, 640, t('nav_city_consequences'), () => transitionTo(this, 'Civic'), {
+    makeButton(this, 1100, 660, t('nav_city_consequences'), () => transitionTo(this, 'Civic'), {
       width: 260, height: 42, noHotkey: true,
     });
 
-    makeButton(this, GAME_WIDTH / 2, 640, t('back'), () => transitionTo(this, 'Hub'));
+    makeButton(this, GAME_WIDTH / 2, 660, t('back'), () => transitionTo(this, 'Hub'));
     installSceneKeys(this, { onBack: () => transitionTo(this, 'Hub') });
   }
 }

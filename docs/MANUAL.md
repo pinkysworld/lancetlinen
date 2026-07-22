@@ -53,8 +53,11 @@ Lexicon records the evidence marker and source reference for every term.
 Property brings daily cost as well as income. Staff roles provide apprenticeship
 help, bathhouse demand, supply saving or sabotage resistance. Each person has a
 trait — careful, sociable, thrifty or steadfast — whose concrete effect is
-explained in the Staff screen. One staff event may occur at most every seven
-game days and is journalled.
+explained in the Staff screen. Gifts are limited to one per person and day.
+Training costs coin, needs three shared workdays and sufficient loyalty, takes
+three further in-game days, and removes that person’s role contribution until
+the morning they return. One staff event may occur at most every seven game
+days and is journalled.
 
 ## 8. Town and craft / Stadt und Handwerk
 

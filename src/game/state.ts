@@ -48,7 +48,7 @@ export function createNewGame(
   // a technique or two. Previously every run started identical.
   const origin = originById(originId);
   return {
-    version: 6,
+    version: 7,
     playerName: playerName || 'Bader',
     originId: origin.id,
     locale,
@@ -169,7 +169,7 @@ export function ensureFullState(s: GameState): void {
   if (!s.carePlans) s.carePlans = [];
   // The release number belongs in SaveMeta. This schema number only controls
   // state migration, so a presentation-only release never breaks old saves.
-  if (s.version < 6) s.version = 6;
+  if (s.version < 7) s.version = 7;
 }
 
 let state: GameState = createNewGame('Bader');

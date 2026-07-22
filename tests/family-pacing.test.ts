@@ -58,7 +58,7 @@ describe('family pacing', () => {
     delete legacy.courtshipLastActionDay;
     delete legacy.spouseLastGiftDay;
     ensureFullState(legacy);
-    expect(legacy.version).toBe(6);
+    expect(legacy.version).toBe(7);
     expect(legacy.courtshipLastActionDay).toBe(0);
     expect(legacy.spouseLastGiftDay).toBe(0);
     expect(MARRIAGE_HONOUR_REQUIRED).toBeLessThan(OFFICE_HONOUR_REQUIRED);

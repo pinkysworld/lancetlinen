@@ -17,7 +17,7 @@ describe('city-bound consequences', () => {
     legacy.coin = 63;
     delete legacy.cityConsequences;
     ensureFullState(legacy);
-    expect(legacy.version).toBe(6);
+    expect(legacy.version).toBe(7);
     expect(legacy.coin).toBe(63);
     expect(legacy.cityConsequences).toEqual([]);
   });

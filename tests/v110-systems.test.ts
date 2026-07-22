@@ -21,7 +21,7 @@ describe('v1.3 save migration', () => {
     legacy.staff = [{ id: 'old-1', name: 'Klara', role: 'bathmaid', propertyId: null, loyalty: 66, skill: 4, wage: 7, daysEmployed: 9 }];
     legacy.spouse = { name: 'suitor_anna', affection: 70, cityId: 'nurnberg', marriedDay: 2 };
     ensureFullState(legacy);
-    expect(legacy.version).toBe(6);
+    expect(legacy.version).toBe(7);
     expect(legacy.coin).toBe(73);
     expect(legacy.carePlans).toEqual([]);
     expect(legacy.act3Consequences).toEqual([]);

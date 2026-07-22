@@ -48,6 +48,7 @@ if (ENABLE_DEV_TEST_BRIDGE) {
     | 'debt-empty'
     | 'debt-payable'
     | 'act3-household'
+    | 'staff-training'
     | 'regimen-follow-up'
     | 'correspondence-active'
     | 'city-agreement';
@@ -108,6 +109,14 @@ if (ENABLE_DEV_TEST_BRIDGE) {
       cityConsequences: state.cityConsequences ?? [],
       treated: state.totalTreated,
       ending: state.ending,
+      staff: state.staff.map((member) => ({
+        name: member.name,
+        role: member.role,
+        skill: member.skill,
+        loyalty: member.loyalty,
+        trainingDueDay: member.trainingDueDay ?? null,
+        lastGiftDay: member.lastGiftDay ?? 0,
+      })),
       controls: scene ? sceneButtons(scene).map((button) => ({
         label: button.label, x: button.x, y: button.y, width: button.w, height: button.h, disabled: button.disabled,
       })) : [],
@@ -152,6 +161,21 @@ if (ENABLE_DEV_TEST_BRIDGE) {
         state.staff = [{ id: 'test-staff', name: 'Elsa Weber', role: 'bathmaid', propertyId: null, loyalty: 70, skill: 4, wage: 7, daysEmployed: 8, trait: 'sociable' }];
         scene = 'Family';
         break;
+      case 'staff-training':
+        state.coin = 140;
+        state.staff = [{
+          id: 'training-staff',
+          name: 'Elsa Weber',
+          role: 'apprentice',
+          propertyId: null,
+          loyalty: 70,
+          skill: 4,
+          wage: 5,
+          daysEmployed: 6,
+          trait: 'careful',
+        }];
+        scene = 'Staff';
+        break;
       case 'regimen-follow-up': {
         state.unlockedTechniques.push('hygiene_clean');
         const patient = fixedPatient('plague_like', 'complaint.plague');
@@ -188,7 +212,7 @@ if (ENABLE_DEV_TEST_BRIDGE) {
   const presetFromUrl = new URLSearchParams(window.location.search).get('testPreset');
   const allowedPresets: TestPreset[] = [
     'hub-broke', 'treatment-max-findings', 'debt-empty', 'debt-payable',
-    'act3-household', 'regimen-follow-up', 'correspondence-active', 'city-agreement',
+    'act3-household', 'staff-training', 'regimen-follow-up', 'correspondence-active', 'city-agreement',
   ];
   if (presetFromUrl && allowedPresets.includes(presetFromUrl as TestPreset)) {
     const loadAfterMenu = () => {

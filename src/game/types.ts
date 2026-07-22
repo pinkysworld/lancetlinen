@@ -215,6 +215,10 @@ export interface StaffMember {
   daysEmployed: number;
   /** Added in save schema 3; legacy staff receive a deterministic default. */
   trait?: StaffTrait;
+  /** Last day on which a personal gift was given; prevents loyalty spam. */
+  lastGiftDay?: number;
+  /** A paid, supervised course is underway until this in-game morning. */
+  trainingDueDay?: number;
 }
 
 /** A deferred, non-invasive course of care. It records a game outcome, never a diagnosis. */

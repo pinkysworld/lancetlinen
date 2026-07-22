@@ -15,7 +15,7 @@ describe('houses and correspondence', () => {
     delete legacy.houseRelations;
     delete legacy.correspondence;
     ensureFullState(legacy);
-    expect(legacy.version).toBe(6);
+    expect(legacy.version).toBe(7);
     expect(legacy.coin).toBe(71);
     expect(legacy.houseRelations).toMatchObject({
       fugger_weavers: 0,

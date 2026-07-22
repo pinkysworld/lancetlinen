@@ -10,7 +10,12 @@ import {
   syncLegacyBathhouse,
   upgradeProperty,
 } from './property';
-import { payStaffWages, resolveStaffEvent, staffSabotageResist } from './staff';
+import {
+  payStaffWages,
+  resolveDueStaffTraining,
+  resolveStaffEvent,
+  staffSabotageResist,
+} from './staff';
 import { applyChurchPressure, applyDebtCollection } from './pressure';
 import { tickHonour, honourFromWorkingHolyDay, addHonour } from './honour';
 import { checkAchievements } from './achievements';
@@ -55,6 +60,7 @@ export function applyMorningCosts(state: GameState): { cost: number; wood: numbe
   // Follow-ups resolve when a new day's doors open, not on the previous
   // evening. The journal makes the consequence visible before new patients.
   resolveDueRegimens(state);
+  resolveDueStaffTraining(state);
   const cost = dailyOperatingCost(state);
   const local = getLocalBath(state);
   const wood = local && local.kind === 'bathhouse' ? WOOD_PER_DAY : 1;
