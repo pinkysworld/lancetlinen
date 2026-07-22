@@ -373,6 +373,55 @@ export function steamParticles(
 }
 
 /**
+ * Four-frame ambient still loop (hearth / steam / fumigation).
+ *
+ * Plays at 3 fps only when `reduceParticles` is off. Missing frames or reduced
+ * motion → frame 01 as a static image (or nothing if that is missing too).
+ * See ART_WORK_V1.1.md. Uses Image + timer (not Sprite.anims) so each frame
+ * can be a separate texture file.
+ */
+export function playAmbientLoop(
+  scene: Phaser.Scene,
+  loopId: 'hearth' | 'bath_steam' | 'fumigation',
+  x: number,
+  y: number,
+  displayW = 280,
+  displayH = 158,
+  depth = -4,
+): Phaser.GameObjects.Image | null {
+  const prefix = `loop_${loopId}_`;
+  const frameKeys = [1, 2, 3, 4].map((n) => `${prefix}${String(n).padStart(2, '0')}`);
+  const present = frameKeys.filter((k) => scene.textures.exists(k));
+  if (!present.length) return null;
+
+  const img = scene.add
+    .image(x, y, present[0]!)
+    .setDisplaySize(displayW, displayH)
+    .setAlpha(0.55)
+    .setDepth(depth)
+    .disableInteractive();
+
+  if (reduceMotion() || present.length < 2) return img;
+
+  let idx = 0;
+  const timer = scene.time.addEvent({
+    delay: Math.round(1000 / 3),
+    loop: true,
+    callback: () => {
+      if (!img.active) {
+        timer.remove(false);
+        return;
+      }
+      idx = (idx + 1) % present.length;
+      img.setTexture(present[idx]!);
+      img.setDisplaySize(displayW, displayH);
+    },
+  });
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => timer.remove(false));
+  return img;
+}
+
+/**
  * Blood spatter on a bad outcome.
  *
  * Gated on the Gore setting, which until now was toggleable in the options

@@ -9,6 +9,7 @@ import { addLocationBackground, addPortrait, portraitKeyForNpc } from '../ui/art
 import { transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
 import { textRevealMs } from '../systems/settings';
+import { compact, fontFor, touchTargetHeight } from '../ui/responsive';
 
 export class DialogueScene extends Phaser.Scene {
   private dialogueId = 'intro_1';
@@ -88,6 +89,11 @@ export class DialogueScene extends Phaser.Scene {
       return;
     }
 
+    if (compact()) {
+      this.showCompactNode(id, node);
+      return;
+    }
+
     panel(this, 80, 80, GAME_WIDTH - 160, 200);
     // Portrait sits in its own left column; the speech block starts clear of it
     // so the opening words are not hidden behind the frame.
@@ -111,37 +117,52 @@ export class DialogueScene extends Phaser.Scene {
         GAME_WIDTH / 2,
         380 + i * 60,
         t(choice.textKey.replace('choice.', 'choice_')),
-        () => {
-          let next: string | null = null;
-          mutate((s) => {
-            next = applyChoice(s, choice);
-            if (id === 'intro_1' || id.startsWith('intro')) {
-              s.storyFlags['intro_started'] = true;
-            }
-            if (id === 'epidemic_start') {
-              delete s.storyFlags['epidemic_pending_dialogue'];
-            }
-          });
-          saveGame();
-          if (next) {
-            this.showNode(next);
-          } else {
-            // Mark intro done path ends at hub
-            if (id === 'intro_3' || getState().storyFlags['intro_done']) {
-              setFlag('intro_done', true);
-            }
-            if (getState().ending && !getState().freePlay) {
-              transitionTo(this, 'Ending');
-            } else {
-              transitionTo(this, 'Hub');
-            }
-          }
-        },
+        () => this.choose(id, choice),
         { width: 520, height: 48, fontSize: '16px' },
       );
     });
 
     // Number keys pick a reply; no Esc, since a dialogue must be answered.
+    installSceneKeys(this);
+  }
+
+  /** The same dialogue state change serves both desktop and compact views. */
+  private choose(id: string, choice: Parameters<typeof applyChoice>[1]): void {
+    let next: string | null = null;
+    mutate((s) => {
+      next = applyChoice(s, choice);
+      if (id === 'intro_1' || id.startsWith('intro')) s.storyFlags['intro_started'] = true;
+      if (id === 'epidemic_start') delete s.storyFlags['epidemic_pending_dialogue'];
+    });
+    saveGame();
+    if (next) {
+      this.showNode(next);
+    } else {
+      if (id === 'intro_3' || getState().storyFlags['intro_done']) setFlag('intro_done', true);
+      transitionTo(this, getState().ending && !getState().freePlay ? 'Ending' : 'Hub');
+    }
+  }
+
+  /** A single readable speaker card and roomy answer targets for phones. */
+  private showCompactNode(id: string, node: NonNullable<ReturnType<typeof getDialogue>>): void {
+    const h = touchTargetHeight();
+    panel(this, 56, 36, GAME_WIDTH - 112, 286);
+    addPortrait(this, 156, 178, portraitKeyForNpc(node.speakerKey), { size: 164 });
+    const textX = 280;
+    titleText(this, textX, 76, t(node.speakerKey.replace('npc.', 'npc_')), fontFor('heading')).setOrigin(0);
+    const speech = t(node.textKey.replace('story.', 'story_'));
+    const speechText = bodyText(this, textX, 126, speech, {
+      fontSize: fontFor('body'), wordWrap: { width: GAME_WIDTH - textX - 104 }, color: '#f5ecd7',
+    });
+    this.revealText(speechText, speech);
+
+    panel(this, 56, 348, GAME_WIDTH - 112, 330);
+    node.choices.forEach((choice, i) => {
+      makeButton(this, GAME_WIDTH / 2, 388 + i * (h + 16), t(choice.textKey.replace('choice.', 'choice_')),
+        () => this.choose(id, choice), {
+          width: GAME_WIDTH - 220, height: h, fontSize: fontFor('button'),
+        });
+    });
     installSceneKeys(this);
   }
 }

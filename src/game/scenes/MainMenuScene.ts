@@ -21,10 +21,17 @@ import { installSceneKeys } from '../ui/input';
 import { isTouchDevice } from '../mobile';
 import { compact, fontFor, gridColumnsX, primarySize, secondarySize } from '../ui/responsive';
 import { viewRect } from '../ui/viewport';
+import { APP_RELEASE_LABEL } from '../appInfo';
 
 export class MainMenuScene extends Phaser.Scene {
+  private compactPage: 'main' | 'more' = 'main';
+
   constructor() {
     super('MainMenu');
+  }
+
+  init(data?: { compactPage?: 'main' | 'more' }): void {
+    this.compactPage = data?.compactPage ?? 'main';
   }
 
   create(): void {
@@ -57,6 +64,11 @@ export class MainMenuScene extends Phaser.Scene {
     g.fillRect(V.x + 20, 0, 3, GAME_HEIGHT);
     g.fillRect(V.x + V.width - 23, 0, 3, GAME_HEIGHT);
 
+    if (compact()) {
+      this.renderCompact();
+      return;
+    }
+
     // The logo is a wide painted wordmark. At 520x260 centred on y=108 its top
     // edge sat above the viewport and the initial "L" was clipped away.
     if (this.textures.exists('logo_title')) {
@@ -88,7 +100,7 @@ export class MainMenuScene extends Phaser.Scene {
      * a session are full width; everything else drops to a secondary grid.
      */
     const prim = primarySize();
-    const isCompact = compact();
+    const isCompact = false;
     // On a phone the logo and subtitle are given less room so the three
     // session buttons — the only ones that matter on a small screen — can be
     // large enough to hit without aiming.
@@ -128,7 +140,7 @@ export class MainMenuScene extends Phaser.Scene {
     // same line in the two-column layout, stacked on top of each other.
     const secondary: Array<[string, () => void, number?]> = [
       [t('help_btn'), () => transitionTo(this, 'Help'), 0x3d5a4a],
-      [t('lexicon_title'), () => transitionTo(this, 'Lexicon', { from: 'MainMenu' })],
+      [t('manual_lexicon_title'), () => transitionTo(this, 'Codex')],
       [
         t('menu_language_toggle', { lang: getLocale() === 'de' ? 'Deutsch' : 'English' }),
         () => this.toggleLang(),
@@ -180,12 +192,73 @@ export class MainMenuScene extends Phaser.Scene {
       isTouchDevice() ? t('touch_zoom_hint') : t('menu_quit_hint'),
       { fontSize: '12px', color: '#7a6a58' },
     ).setOrigin(0.5);
-    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 8, '© Michél Nguyen · minh.systems', {
+    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 8, `© Michél Nguyen · minh.systems · ${APP_RELEASE_LABEL}`, {
       fontSize: '11px',
       color: '#6b5d4d',
     }).setOrigin(0.5);
 
     // No Esc target on the root menu; number keys and arrows still apply.
+    installSceneKeys(this);
+  }
+
+  /** Phone menus trade density for real, finger-sized actions. */
+  private renderCompact(): void {
+    const primary = primarySize();
+    const primaryOpts = { ...primary, fontSize: fontFor('button') };
+
+    if (this.compactPage === 'more') {
+      titleText(this, GAME_WIDTH / 2, 54, t('title'), fontFor('title'));
+      bodyText(this, GAME_WIDTH / 2, 98, t('subtitle'), {
+        fontSize: fontFor('small'), color: '#c9b48a', align: 'center', wordWrap: { width: 980 },
+      }).setOrigin(0.5);
+
+      const secondary = secondarySize();
+      const opts = { ...secondary, fontSize: fontFor('button') };
+      const x = [340, 940];
+      const choices: Array<[string, () => void, number?]> = [
+        [t('help_btn'), () => transitionTo(this, 'Help'), 0x3d5a4a],
+        [t('manual_lexicon_title'), () => transitionTo(this, 'Codex')],
+        [t('menu_language_toggle', { lang: getLocale() === 'de' ? 'Deutsch' : 'English' }), () => this.toggleLang()],
+        [audio.isMuted ? t('menu_unmute') : t('menu_mute'), () => {
+          void audio.unlock().then(() => {
+            const muted = audio.toggleMute();
+            mutate((s) => { s.audioMuted = muted; });
+            this.scene.restart({ compactPage: 'more' });
+          });
+        }],
+        [t('menu_import'), () => this.doImport()],
+        [t('credits_title'), () => transitionTo(this, 'Credits')],
+      ];
+      choices.forEach(([label, onClick, fill], i) => {
+        makeButton(this, x[i % 2]!, 184 + Math.floor(i / 2) * (secondary.height + 16), label, onClick, {
+          ...opts, ...(fill ? { fill } : {}),
+        });
+      });
+      makeButton(this, GAME_WIDTH / 2, 610, t('back'), () => this.scene.restart({ compactPage: 'main' }), {
+        ...primaryOpts, back: true,
+      });
+      installSceneKeys(this, { onBack: () => this.scene.restart({ compactPage: 'main' }) });
+      return;
+    }
+
+    titleText(this, GAME_WIDTH / 2, 48, t('title'), fontFor('title'));
+    bodyText(this, GAME_WIDTH / 2, 98, t('subtitle'), {
+      fontSize: fontFor('small'), color: '#c9b48a', align: 'center', wordWrap: { width: 980 },
+    }).setOrigin(0.5);
+
+    let y = 184;
+    makeButton(this, GAME_WIDTH / 2, y, t('menu_new'), () => void this.startNew(), primaryOpts);
+    y += primary.height + 16;
+    makeButton(this, GAME_WIDTH / 2, y, t('menu_continue'), () => void this.continueGame(), {
+      ...primaryOpts, disabled: !hasSave(),
+    });
+    y += primary.height + 16;
+    makeButton(this, GAME_WIDTH / 2, y, t('menu_load_slot'), () =>
+      transitionTo(this, 'SaveSlots', { mode: 'load', from: 'MainMenu' }), primaryOpts);
+    makeButton(this, GAME_WIDTH / 2, 610, t('menu_more'), () => this.scene.restart({ compactPage: 'more' }), primaryOpts);
+    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 26, t('touch_zoom_hint'), {
+      fontSize: fontFor('small'), color: '#7a6a58', align: 'center', wordWrap: { width: 1040 },
+    }).setOrigin(0.5);
     installSceneKeys(this);
   }
 

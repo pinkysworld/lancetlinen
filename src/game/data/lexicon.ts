@@ -25,6 +25,7 @@
  * practice varied by town, the entry says that rather than picking one and
  * sounding certain.
  */
+import type { HistoricalSourceId } from './historicalSources';
 
 export type LexiconCategory =
   | 'trade'
@@ -52,6 +53,10 @@ export interface LexiconEntry {
    * reconstruction.
    */
   simplified?: boolean;
+  /** What kind of historical claim the small article makes. */
+  evidence: 'attested' | 'regional' | 'game_simplification';
+  /** At least one bibliography entry supporting or delimiting the article. */
+  sourceIds: HistoricalSourceId[];
 }
 
 export const LEXICON_CATEGORIES: LexiconCategory[] = [
@@ -63,7 +68,9 @@ export const LEXICON_CATEGORIES: LexiconCategory[] = [
   'world',
 ];
 
-export const LEXICON: LexiconEntry[] = [
+type RawLexiconEntry = Omit<LexiconEntry, 'evidence' | 'sourceIds'>;
+
+const BASE_LEXICON: RawLexiconEntry[] = [
   /* ── The trade ─────────────────────────────────────────────────── */
   {
     id: 'bader',
@@ -299,6 +306,50 @@ export const LEXICON: LexiconEntry[] = [
     bodyKey: 'lex_towns_body',
   },
 ];
+
+const ADDITIONS: RawLexiconEntry[] = [
+  { id: 'barber_surgeon', category: 'trade', titleKey: 'lex_barber_surgeon', bodyKey: 'lex_barber_surgeon_body' },
+  { id: 'sworn_craft', category: 'trade', titleKey: 'lex_sworn_craft', bodyKey: 'lex_sworn_craft_body', simplified: true },
+  { id: 'rugsherr', category: 'trade', titleKey: 'lex_rugsherr', bodyKey: 'lex_rugsherr_body', simplified: true },
+  { id: 'journeyman', category: 'trade', titleKey: 'lex_journeyman', bodyKey: 'lex_journeyman_body' },
+  { id: 'regimen', category: 'medicine', titleKey: 'lex_regimen', bodyKey: 'lex_regimen_body' },
+  { id: 'miasma', category: 'faith', titleKey: 'lex_miasma', bodyKey: 'lex_miasma_body' },
+  { id: 'lepraschau', category: 'medicine', titleKey: 'lex_lepraschau', bodyKey: 'lex_lepraschau_body' },
+  { id: 'council', category: 'city', titleKey: 'lex_council', bodyKey: 'lex_council_body' },
+  { id: 'craft_oath', category: 'city', titleKey: 'lex_craft_oath', bodyKey: 'lex_craft_oath_body', simplified: true },
+  { id: 'pfennig_heller', category: 'city', titleKey: 'lex_pfennig_heller', bodyKey: 'lex_pfennig_heller_body', simplified: true },
+  { id: 'bathmaid', category: 'city', titleKey: 'lex_bathmaid', bodyKey: 'lex_bathmaid_body' },
+  { id: 'lender', category: 'city', titleKey: 'lex_lender', bodyKey: 'lex_lender_body', simplified: true },
+  { id: 'hospital', category: 'faith', titleKey: 'lex_hospital', bodyKey: 'lex_hospital_body' },
+  { id: 'alms', category: 'faith', titleKey: 'lex_alms', bodyKey: 'lex_alms_body' },
+  { id: 'feast_ordinance', category: 'faith', titleKey: 'lex_feast_ordinance', bodyKey: 'lex_feast_ordinance_body' },
+  { id: 'pilgrimage', category: 'faith', titleKey: 'lex_pilgrimage', bodyKey: 'lex_pilgrimage_body' },
+  { id: 'linen', category: 'daily', titleKey: 'lex_linen', bodyKey: 'lex_linen_body' },
+  { id: 'steam_bath', category: 'daily', titleKey: 'lex_steam_bath', bodyKey: 'lex_steam_bath_body' },
+  { id: 'fumigation', category: 'daily', titleKey: 'lex_fumigation', bodyKey: 'lex_fumigation_body' },
+  { id: 'household', category: 'daily', titleKey: 'lex_household', bodyKey: 'lex_household_body' },
+  { id: 'midwife', category: 'daily', titleKey: 'lex_midwife', bodyKey: 'lex_midwife_body' },
+  { id: 'imperial_roads', category: 'world', titleKey: 'lex_imperial_roads', bodyKey: 'lex_imperial_roads_body' },
+  { id: 'fourteenth_century', category: 'world', titleKey: 'lex_fourteenth_century', bodyKey: 'lex_fourteenth_century_body' },
+  { id: 'plague_memory', category: 'world', titleKey: 'lex_plague_memory', bodyKey: 'lex_plague_memory_body' },
+  { id: 'source_limits', category: 'world', titleKey: 'lex_source_limits', bodyKey: 'lex_source_limits_body', simplified: true },
+];
+
+const SOURCE_BY_CATEGORY: Record<LexiconCategory, HistoricalSourceId> = {
+  trade: 'wellcome_blood',
+  medicine: 'wellcome_blood',
+  city: 'gnm_daily_life',
+  faith: 'wellcome_church',
+  daily: 'gnm_daily_life',
+  world: 'game_simplification',
+};
+
+/** All articles carry a marker and citation, including pre-v1.1 entries. */
+export const LEXICON: LexiconEntry[] = [...BASE_LEXICON, ...ADDITIONS].map((entry) => ({
+  ...entry,
+  evidence: entry.simplified ? 'game_simplification' : 'attested',
+  sourceIds: [SOURCE_BY_CATEGORY[entry.category]],
+}));
 
 export function lexiconByCategory(cat: LexiconCategory): LexiconEntry[] {
   return LEXICON.filter((e) => e.category === cat);

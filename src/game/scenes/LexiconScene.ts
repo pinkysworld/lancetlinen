@@ -15,6 +15,8 @@ import { bodyText, drawBackground, makeButton, panel, titleText } from '../ui/th
 import { transitionTo, sceneBackground } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
 import { audio } from '../audio/AudioManager';
+import { compact, fontFor, touchTargetHeight } from '../ui/responsive';
+import { sourceById } from '../data/historicalSources';
 import {
   LEXICON,
   LEXICON_CATEGORIES,
@@ -58,17 +60,19 @@ export class LexiconScene extends Phaser.Scene {
       color: '#a8967c',
     }).setOrigin(0.5);
 
-    this.drawCategories();
-    this.drawList();
-    this.drawEntry();
+    if (compact()) this.drawCompact();
+    else {
+      this.drawCategories();
+      this.drawList();
+      this.drawEntry();
+    }
 
-    makeButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 30, t('back'), () =>
-      transitionTo(this, this.from), {
-      width: 200,
-      height: 36,
-      fontSize: '15px',
-      back: true,
-    });
+    if (!compact()) {
+      makeButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 30, t('back'), () =>
+        transitionTo(this, this.from), {
+        width: 200, height: 36, fontSize: '15px', back: true,
+      });
+    }
     installSceneKeys(this, { onBack: () => transitionTo(this, this.from) });
   }
 
@@ -176,5 +180,75 @@ export class LexiconScene extends Phaser.Scene {
         wordWrap: { width: GAME_WIDTH - 680 },
       });
     }
+    this.drawEvidence(entry, 610, entry.simplified ? 522 : 548, GAME_WIDTH - 680);
+  }
+
+  /** Phone view: cycle categories, page a short list, then read one full-width article. */
+  private drawCompact(): void {
+    const entries = lexiconByCategory(this.category);
+    const pages = Math.max(1, Math.ceil(entries.length / 3));
+    if (this.page >= pages) this.page = 0;
+    const entry = LEXICON.find((item) => item.id === this.entryId);
+    const target = touchTargetHeight();
+    const returnToParent = () => transitionTo(this, this.from);
+    makeButton(this, GAME_WIDTH - 110, 56, t('back'), returnToParent, {
+      width: 190, height: Math.min(target, 86), fontSize: fontFor('small'), back: true,
+    });
+
+    if (entry) {
+      panel(this, 50, 86, GAME_WIDTH - 100, 470);
+      titleText(this, 82, 122, t(entry.titleKey), fontFor('heading')).setOrigin(0, 0.5);
+      const article = bodyText(this, 82, 162, t(entry.bodyKey), {
+        fontSize: fontFor('body'), color: '#e2d3b4', lineSpacing: 8,
+        wordWrap: { width: GAME_WIDTH - 164 },
+      });
+      this.drawEvidence(entry, 82, Math.min(518, article.y + article.height + 14), GAME_WIDTH - 164);
+      makeButton(this, GAME_WIDTH / 2, 650, t('back'), () =>
+        this.scene.restart({ category: this.category, entryId: null, page: this.page, from: this.from }), {
+        width: 460, height: target, fontSize: fontFor('button'), back: true,
+      });
+      return;
+    }
+
+    panel(this, 50, 86, GAME_WIDTH - 100, 470);
+    const categoryIndex = LEXICON_CATEGORIES.indexOf(this.category);
+    const selectCategory = (delta: number) => {
+      const next = LEXICON_CATEGORIES[(categoryIndex + delta + LEXICON_CATEGORIES.length) % LEXICON_CATEGORIES.length]!;
+      this.scene.restart({ category: next, entryId: null, page: 0, from: this.from });
+    };
+    makeButton(this, 170, 140, '◀', () => selectCategory(-1), {
+      width: 180, height: target, fontSize: fontFor('button'), noHotkey: true,
+    });
+    makeButton(this, GAME_WIDTH / 2, 140, `${t(`lex_cat_${this.category}`)} (${entries.length})`, () => selectCategory(1), {
+      width: 670, height: target, fontSize: fontFor('button'), noHotkey: true,
+    });
+    makeButton(this, GAME_WIDTH - 170, 140, '▶', () => selectCategory(1), {
+      width: 180, height: target, fontSize: fontFor('button'), noHotkey: true,
+    });
+    entries.slice(this.page * 3, this.page * 3 + 3).forEach((item, index) => {
+      makeButton(this, GAME_WIDTH / 2, 280 + index * (target + 14), t(item.titleKey), () =>
+        this.scene.restart({ category: this.category, entryId: item.id, page: this.page, from: this.from }), {
+          width: 920, height: target, fontSize: fontFor('button'), noHotkey: true,
+        });
+    });
+    if (pages > 1) {
+      makeButton(this, GAME_WIDTH / 2, 650, `${this.page + 1}/${pages} · ${t('codex_next')}`, () =>
+        this.scene.restart({ category: this.category, entryId: null, page: (this.page + 1) % pages, from: this.from }), {
+          width: 460, height: target, fontSize: fontFor('button'), noHotkey: true,
+        });
+    }
+  }
+
+  private drawEvidence(
+    entry: (typeof LEXICON)[number],
+    x: number,
+    y: number,
+    width: number,
+  ): void {
+    const source = sourceById(entry.sourceIds[0]!);
+    bodyText(this, x, y, `${t(`lex_evidence_${entry.evidence}`)} · ${t('lex_source')}: ${source.title}`, {
+      fontSize: '11px', color: entry.evidence === 'game_simplification' ? '#c9a06a' : '#92b99b',
+      wordWrap: { width },
+    });
   }
 }

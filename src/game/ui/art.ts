@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../types';
 import { getState } from '../state';
 import { sceneBackground, type BackgroundOpts } from './fx';
-import type { PatientClass } from '../types';
+import type { HouseholdFocus, PatientClass, StaffRole } from '../types';
 
 /** Location → painted background key */
 export function bgKeyForLocation(locationId: string): string {
@@ -117,6 +117,39 @@ export function addManagementBackground(scene: Phaser.Scene, key: string): void 
     depth: -12,
     topScrim: 70,
   });
+}
+
+/** Staff role → v1.1 portrait key (falls back via `addPortrait`). */
+export function portraitKeyForStaffRole(role: StaffRole): string {
+  switch (role) {
+    case 'apprentice':
+      return 'portrait_staff_apprentice_v11';
+    case 'bathmaid':
+      return 'portrait_staff_bathmaid_v11';
+    case 'manager':
+      return 'portrait_staff_manager_v11';
+    case 'herb_boy':
+      return 'portrait_staff_herbboy_v11';
+    case 'nightwatch':
+      return 'portrait_staff_nightwatch_v11';
+    default:
+      return 'portrait_staff_apprentice_v11';
+  }
+}
+
+/** Household focus / elder → v1.1 family portrait. */
+export function portraitKeyForHouseholdFocus(focus: HouseholdFocus | 'elder'): string {
+  switch (focus) {
+    case 'trade':
+      return 'portrait_family_trade_v11';
+    case 'kin':
+      return 'portrait_family_kin_v11';
+    case 'elder':
+      return 'portrait_family_elder_v11';
+    case 'home':
+    default:
+      return 'portrait_family_home_v11';
+  }
 }
 
 /**

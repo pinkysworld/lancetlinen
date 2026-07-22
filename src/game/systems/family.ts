@@ -1,4 +1,4 @@
-import type { GameState } from '../types';
+import type { GameState, HouseholdFocus } from '../types';
 import { addJournal } from './journal';
 import { canMarry } from './honour';
 import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
@@ -17,6 +17,7 @@ export function ensureFamily(state: GameState): void {
   if (state.heir === undefined) state.heir = null;
   if (state.courtshipTarget === undefined) state.courtshipTarget = null;
   if (state.courtshipProgress === undefined) state.courtshipProgress = 0;
+  if (state.spouse && !state.spouse.householdFocus) state.spouse.householdFocus = 'home';
 }
 
 export const COURT_COSTS = { gift: 15, walk: 5, feast: 30, letter: 8 } as const;
@@ -97,6 +98,7 @@ export function marry(state: GameState): boolean {
     affection: 70,
     cityId: state.locationId,
     marriedDay: state.day,
+    householdFocus: 'home',
   };
   state.courtshipTarget = null;
   state.courtshipProgress = 0;
@@ -120,6 +122,16 @@ export function spouseDaily(state: GameState): void {
   const home = state.properties?.find((p) => p.kind === 'home' && p.cityId === state.locationId);
   if (home && state.locationId === state.spouse.cityId) {
     home.comfort = Math.min(100, home.comfort + 0.5);
+  }
+  // A focus is small, persistent and visible rather than a hidden cure-all:
+  // household eases costs, trade notes prices, and kin opens civic access.
+  if (state.locationId === state.spouse.cityId) {
+    if (state.spouse.householdFocus === 'trade') {
+      state.storyFlags['household_market_tip'] = state.day;
+    } else if (state.spouse.householdFocus === 'kin' && state.day % 7 === 0) {
+      state.councilFavor += 1;
+      addJournal(state, 'journal_family_kin_help', 'family');
+    }
   }
   // Heir chance after marriage
   // Was 40 days at 4%/day — on a campaign that ends around day 20 the dynasty
@@ -172,4 +184,24 @@ export function moveSpouseHere(state: GameState): boolean {
   state.coin -= MOVE_SPOUSE_COST;
   state.spouse!.cityId = state.locationId;
   return true;
+}
+
+export function canSetHouseholdFocus(state: GameState, _focus: HouseholdFocus): Requirement {
+  ensureFamily(state);
+  return must(!!state.spouse, 'req_no_spouse');
+}
+
+export function setHouseholdFocus(state: GameState, focus: HouseholdFocus): boolean {
+  if (!canSetHouseholdFocus(state, focus).ok) return false;
+  ensureFamily(state);
+  const spouse = state.spouse;
+  if (!spouse) return false;
+  spouse.householdFocus = focus;
+  addJournal(state, 'journal_family_focus', 'family', { focus });
+  return true;
+}
+
+/** One coin of lodging relief, only while the household is together. */
+export function householdCostRelief(state: GameState): number {
+  return state.spouse?.householdFocus === 'home' && state.spouse.cityId === state.locationId ? 1 : 0;
 }

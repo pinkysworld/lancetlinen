@@ -18,13 +18,14 @@ import {
   lexiconByCategory,
   lexiconEntry,
 } from '../src/game/data/lexicon';
+import { HISTORICAL_SOURCES } from '../src/game/data/historicalSources';
 
 const EN = readFileSync(join(process.cwd(), 'src/game/i18n/en.ts'), 'utf8');
 const DE = readFileSync(join(process.cwd(), 'src/game/i18n/de.ts'), 'utf8');
 
 describe('structure', () => {
   it('has a substantial number of entries', () => {
-    expect(LEXICON.length).toBeGreaterThanOrEqual(30);
+    expect(LEXICON.length).toBeGreaterThanOrEqual(60);
   });
 
   it('gives every entry a unique id', () => {
@@ -103,6 +104,15 @@ describe('honesty about the history', () => {
     // The game does simplify — coinage most obviously. Saying so in the
     // lexicon is the point of having one in a game that claims accuracy.
     expect(LEXICON.some((e) => e.simplified)).toBe(true);
+  });
+
+  it('gives every article an evidence marker and a valid bibliography reference', () => {
+    const sourceIds = new Set(HISTORICAL_SOURCES.map((source) => source.id));
+    for (const entry of LEXICON) {
+      expect(['attested', 'regional', 'game_simplification']).toContain(entry.evidence);
+      expect(entry.sourceIds.length, `${entry.id} has no source`).toBeGreaterThan(0);
+      for (const sourceId of entry.sourceIds) expect(sourceIds, entry.id).toContain(sourceId);
+    }
   });
 
   it('covers the subject the game is actually about', () => {

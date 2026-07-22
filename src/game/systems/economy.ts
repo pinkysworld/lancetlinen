@@ -10,17 +10,19 @@ import {
   syncLegacyBathhouse,
   upgradeProperty,
 } from './property';
-import { payStaffWages, staffSabotageResist } from './staff';
+import { payStaffWages, resolveStaffEvent, staffSabotageResist } from './staff';
 import { applyChurchPressure, applyDebtCollection } from './pressure';
 import { tickHonour, honourFromWorkingHolyDay, addHonour } from './honour';
 import { checkAchievements } from './achievements';
 import { incomeMult, pressureMult } from './settings';
-import { spouseDaily } from './family';
+import { householdCostRelief, spouseDaily } from './family';
+import { resolveAct3Consequences } from './act3';
 import { officeIncomeBonus } from './politics';
 import { festivalPatientMult } from './events';
 import { addJournal } from './journal';
 import { syncQuests } from './story';
 import { tickReputation } from './reputation';
+import { resolveDueRegimens } from './regimen';
 import { localGoodsMult, type PricedItem } from '../data/prices';
 import { seasonalGoodsMult } from '../data/seasons';
 import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
@@ -44,10 +46,13 @@ export function dailyOperatingCost(state: GameState): number {
   cost += otherBaths.length * 4;
   // Scaled here rather than at the deduction site so every caller — the morning
   // charge and any UI that previews the day's costs — quotes the same figure.
-  return Math.round(cost * pressureMult());
+  return Math.max(1, Math.round(cost * pressureMult()) - householdCostRelief(state));
 }
 
 export function applyMorningCosts(state: GameState): { cost: number; wood: number; ok: boolean } {
+  // Follow-ups resolve when a new day's doors open, not on the previous
+  // evening. The journal makes the consequence visible before new patients.
+  resolveDueRegimens(state);
   const cost = dailyOperatingCost(state);
   const local = getLocalBath(state);
   const wood = local && local.kind === 'bathhouse' ? WOOD_PER_DAY : 1;
@@ -90,6 +95,8 @@ export function endDay(state: GameState): void {
   applyDebtCollection(state);
 
   spouseDaily(state);
+  resolveStaffEvent(state);
+  resolveAct3Consequences(state);
   // Close out anything the player finished today. Without this a quest only
   // ever completed through a dialogue choice, so the task strip filled with
   // things already done.
@@ -286,7 +293,14 @@ export function marketPrices(state: GameState): Record<string, number> {
   for (const [item, price] of Object.entries(base) as [PricedItem, number][]) {
     out[item] = Math.max(
       1,
-      Math.round(price * localGoodsMult(state.locationId, item) * seasonalGoodsMult(state, item)),
+      Math.round(
+        price *
+          localGoodsMult(state.locationId, item) *
+          seasonalGoodsMult(state, item) *
+          (state.spouse?.householdFocus === 'trade' && state.spouse.cityId === state.locationId
+            ? 0.95
+            : 1),
+      ),
     );
   }
   return out;

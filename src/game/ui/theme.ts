@@ -277,6 +277,10 @@ export function makeButton(
 
   const g = scene.add.graphics();
   const paint = (hover: boolean) => {
+    // A click may transition/restart the scene synchronously. Phaser still
+    // completes the pointer event afterwards, so hover cleanup must never try
+    // to redraw a Graphics object the transition already destroyed.
+    if (!g.active) return;
     g.clear();
     if (hover && !disabled) {
       g.fillStyle(COLORS.gold, 0.45);
@@ -308,6 +312,10 @@ export function makeButton(
       wordWrap: { width: w - 16 },
     })
     .setOrigin(0.5);
+
+  const setLabelColor = (color: string): void => {
+    if (text.active) text.setColor(color);
+  };
 
   const startPx = parseFloat(fontSize) || 18;
   /** Assigned below; `fitLabel` may be called again once it exists. */
@@ -371,11 +379,11 @@ export function makeButton(
     let pressed = false;
     hit.on('pointerover', () => {
       paint(true);
-      text.setColor('#fff8e0');
+      setLabelColor('#fff8e0');
     });
     hit.on('pointerout', () => {
       paint(false);
-      text.setColor(opts.textColor ?? '#f5ecd7');
+      setLabelColor(opts.textColor ?? '#f5ecd7');
       pressed = false;
     });
     // pointerdown is more reliable on iOS than pointerup alone
@@ -388,7 +396,7 @@ export function makeButton(
     hit.on('pointerup', (pointer: Phaser.Input.Pointer) => {
       if (!pressed) {
         paint(false);
-        text.setColor(opts.textColor ?? '#f5ecd7');
+        setLabelColor(opts.textColor ?? '#f5ecd7');
         return;
       }
       pressed = false;
@@ -413,11 +421,14 @@ export function makeButton(
         onClick();
       }
       paint(false);
-      text.setColor(opts.textColor ?? '#f5ecd7');
+      setLabelColor(opts.textColor ?? '#f5ecd7');
     });
   }
 
   const activate = () => {
+    // Registry callbacks may be invoked by a modal or a future keyboard path.
+    // A disabled face must remain a hard semantic gate, not just muted paint.
+    if (disabled) return;
     void audio.unlock();
     audio.sfx('click');
     onClick();
@@ -436,7 +447,7 @@ export function makeButton(
     activate,
     setHover: (on: boolean) => {
       paint(on);
-      text.setColor(on ? '#fff8e0' : (opts.textColor ?? '#f5ecd7'));
+      setLabelColor(on ? '#fff8e0' : (opts.textColor ?? '#f5ecd7'));
     },
     reserveChipGutter: (px: number) => fitLabel(px),
   });

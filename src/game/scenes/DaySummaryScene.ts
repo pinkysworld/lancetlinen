@@ -14,6 +14,7 @@ import { installSceneKeys } from '../ui/input';
 import { audio } from '../audio/AudioManager';
 import { getState } from '../state';
 import { tomorrowNotes } from '../data/seasons';
+import { compact, fontFor, touchTargetHeight } from '../ui/responsive';
 
 export interface DaySummaryData {
   day: number;
@@ -40,6 +41,11 @@ export class DaySummaryScene extends Phaser.Scene {
       brightness: 0.5,
       topScrim: 60,
     });
+
+    if (compact()) {
+      this.renderCompact(data);
+      return;
+    }
 
     const boxW = 640;
     const boxX = GAME_WIDTH / 2 - boxW / 2;
@@ -116,19 +122,15 @@ export class DaySummaryScene extends Phaser.Scene {
      * decides what to do next.
      */
     const notes = tomorrowNotes(getState());
-    if (notes.length) {
-      const line = notes
-        .map((n) =>
-          t(n.key, n.params ? { sign: t(String(n.params.sign)) } : undefined),
-        )
-        .join('  ·  ');
-      bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 158, `${t('tomorrow_label')} ${line}`, {
-        fontSize: '14px',
-        color: '#c9b48a',
-        wordWrap: { width: boxW - 60 },
-        align: 'center',
-      }).setOrigin(0.5);
-    }
+    const line = notes.length
+      ? notes.map((n) => t(n.key, n.params ? { sign: t(String(n.params.sign)) } : undefined)).join('  ·  ')
+      : t('tomorrow_quiet');
+    bodyText(this, GAME_WIDTH / 2, GAME_HEIGHT - 158, `${t('tomorrow_label')} ${line}`, {
+      fontSize: '14px',
+      color: '#c9b48a',
+      wordWrap: { width: boxW - 60 },
+      align: 'center',
+    }).setOrigin(0.5);
 
     makeButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 110, t('continue'), () => transitionTo(this, 'Hub'), {
       width: 260,
@@ -136,6 +138,58 @@ export class DaySummaryScene extends Phaser.Scene {
       primary: true,
     });
 
+    installSceneKeys(this, { onBack: () => transitionTo(this, 'Hub') });
+  }
+
+  /** Large two-column ledger for a phone held in landscape. */
+  private renderCompact(data: DaySummaryData): void {
+    const h = touchTargetHeight();
+    const overnight = data.coinAfter - data.coinBefore;
+    const costs = data.morningCost - Math.min(0, overnight);
+    const net = data.earned - data.morningCost + overnight;
+    const rows: [string, string, string][] = [
+      [t('day_summary_treated'), String(data.treated), '#e8d5a8'],
+      [t('day_summary_earned'), `+${data.earned}`, '#5a9a6e'],
+      [t('day_summary_costs'), `-${costs}`, costs > 0 ? '#b33a3a' : '#c4a574'],
+      [t('day_summary_net'), `${net >= 0 ? '+' : ''}${net}`, net >= 0 ? '#5a9a6e' : '#b33a3a'],
+      [t('day_summary_reputation'), `${data.reputation >= 0 ? '+' : ''}${data.reputation}`, data.reputation >= 0 ? '#5a9a6e' : '#b33a3a'],
+      [t('day_summary_purse'), String(data.coinAfter), '#e8c547'],
+    ];
+
+    const box = woodPanel(this, 80, 54, GAME_WIDTH - 160, 456, 0.96);
+    const heading = titleText(this, GAME_WIDTH / 2, 96, t('day_summary_title', { n: data.day }), fontFor('title'));
+    panelIn(this, [box, heading]);
+    rows.forEach(([label, value, color], i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const left = 130 + col * 560;
+      const y = 160 + row * 104;
+      bodyText(this, left, y, label, {
+        fontSize: fontFor('small'), color: '#c4a574', wordWrap: { width: 430 },
+      }).setOrigin(0, 0.5);
+      bodyText(this, left + 440, y + 42, value, {
+        fontSize: fontFor('heading'), color, align: 'right',
+      }).setOrigin(1, 0.5);
+    });
+
+    if (data.treated === 0) {
+      panel(this, 140, 424, GAME_WIDTH - 280, 52, 0.72);
+      bodyText(this, GAME_WIDTH / 2, 450, t('day_summary_idle'), {
+        fontSize: fontFor('small'), color: '#a8c0c4', wordWrap: { width: GAME_WIDTH - 340 }, align: 'center',
+      }).setOrigin(0.5);
+    }
+
+    const notes = tomorrowNotes(getState());
+    const line = notes.length
+      ? notes.map((n) => t(n.key, n.params ? { sign: t(String(n.params.sign)) } : undefined)).join('  ·  ')
+      : t('tomorrow_quiet');
+    bodyText(this, GAME_WIDTH / 2, 548, `${t('tomorrow_label')} ${line}`, {
+      fontSize: fontFor('small'), color: '#c9b48a', wordWrap: { width: GAME_WIDTH - 180 }, align: 'center',
+    }).setOrigin(0.5);
+
+    makeButton(this, GAME_WIDTH / 2, 670, t('continue'), () => transitionTo(this, 'Hub'), {
+      width: 560, height: h, fontSize: fontFor('button'), primary: true,
+    });
     installSceneKeys(this, { onBack: () => transitionTo(this, 'Hub') });
   }
 }

@@ -1,7 +1,8 @@
-import type { GameState, StaffMember, StaffRole } from '../types';
+import type { GameState, StaffMember, StaffRole, StaffTrait } from '../types';
 import { FIRST_NAMES_F, FIRST_NAMES_M, SURNAMES } from '../data/patients';
 import { folkLoyaltyBonus } from './reputation';
 import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
+import { addJournal } from './journal';
 
 let staffSeq = 0;
 
@@ -22,8 +23,19 @@ const ROLE_WAGE: Record<StaffRole, number> = {
   nightwatch: 6,
 };
 
+export const STAFF_TRAITS: StaffTrait[] = ['careful', 'sociable', 'thrifty', 'steadfast'];
+
+function traitFor(seed: string): StaffTrait {
+  let total = 0;
+  for (const char of seed) total += char.charCodeAt(0);
+  return STAFF_TRAITS[total % STAFF_TRAITS.length]!;
+}
+
 export function ensureStaff(state: GameState): void {
   if (!state.staff) state.staff = [];
+  for (const member of state.staff) {
+    if (!member.trait) member.trait = traitFor(member.id || `${member.name}-${member.role}`);
+  }
 }
 
 export function hireStaff(
@@ -53,6 +65,7 @@ export function hireStaff(
     skill: 2 + Math.floor(Math.random() * 3),
     wage: ROLE_WAGE[role],
     daysEmployed: 0,
+    trait: STAFF_TRAITS[(staffSeq - 1) % STAFF_TRAITS.length]!,
   };
   state.staff.push(member);
 
@@ -159,25 +172,46 @@ function contribution(m: StaffMember): number {
  */
 export function staffSkillBonus(state: GameState): number {
   const total = localStaff(state, 'apprentice').reduce((sum, m) => sum + contribution(m), 0);
-  return Math.min(0.12, total * 0.05);
+  const careful = localStaff(state, 'apprentice').filter((m) => m.trait === 'careful').length;
+  return Math.min(0.14, total * 0.05 + careful * 0.01);
 }
 
 /** Bathmaids draw custom — the Reiberin was the Stube's public face. */
 export function staffDemandBonus(state: GameState): number {
   const total = localStaff(state, 'bathmaid').reduce((sum, m) => sum + contribution(m), 0);
-  return Math.round(total * 1.5);
+  const sociable = localStaff(state, 'bathmaid').filter((m) => m.trait === 'sociable').length;
+  return Math.round(total * 1.5) + sociable;
 }
 
 /** A herb boy gathers and stretches stores: chance to not consume an item. */
 export function staffSupplySaveChance(state: GameState): number {
   const total = localStaff(state, 'herb_boy').reduce((sum, m) => sum + contribution(m), 0);
-  return Math.min(0.4, total * 0.4);
+  const thrifty = localStaff(state, 'herb_boy').filter((m) => m.trait === 'thrifty').length;
+  return Math.min(0.45, total * 0.4 + thrifty * 0.08);
 }
 
 /** A nightwatch deters the rival's sabotage. */
 export function staffSabotageResist(state: GameState): number {
   const total = localStaff(state, 'nightwatch').reduce((sum, m) => sum + contribution(m), 0);
-  return Math.min(0.85, total * 0.85);
+  const steadfast = localStaff(state, 'nightwatch').filter((m) => m.trait === 'steadfast').length;
+  return Math.min(0.9, total * 0.85 + steadfast * 0.12);
+}
+
+/** A staff event may happen no more than once in seven game days. */
+export function resolveStaffEvent(state: GameState): void {
+  ensureStaff(state);
+  if (!state.staff.length) return;
+  const last = Number(state.storyFlags['staff_event_day'] ?? -7);
+  if (state.day - last < 7) return;
+  const member = state.staff[state.day % state.staff.length]!;
+  state.storyFlags['staff_event_day'] = state.day;
+  if (member.loyalty >= 50) {
+    member.loyalty = Math.min(100, member.loyalty + 3);
+    addJournal(state, 'journal_staff_event_steady', 'business', { name: member.name });
+  } else {
+    member.loyalty = Math.min(100, member.loyalty + 6);
+    addJournal(state, 'journal_staff_event_need', 'business', { name: member.name });
+  }
 }
 
 export const GIFT_STAFF_COST = 10;

@@ -12,11 +12,11 @@ submission day.
 
 ## Required before Steam submission
 
-**Capsule art is done** — see `public/assets/steam/` and `ART_TODO_4.md`.
+**Capsule art is done** — see `store/steam/` and `ART_TODO_4.md`.
 Sizes below were verified against Steamworks docs on 2026-07-20 (older memory
 values 460×215 / 231×87 / 616×353 / 374×448 were wrong and must not be used).
 
-| Asset | Size | File under `public/assets/steam/` |
+| Asset | Size | File under `store/steam/` |
 |---|---|---|
 | Header capsule | 920×430 | `header_capsule` |
 | Small capsule | 462×174 | `small_capsule` (wordmark fills) |
@@ -57,9 +57,9 @@ Only worth doing if you have budget spare. None of these are blocking.
 - **More patient portraits.** Coverage is now peasant ×4, artisan ×3, soldier ×3,
   merchant/noble/clergy/beggar ×2. The thinnest are `clergy` and `noble`, which
   the player meets often in the late game. Two more of each would help; the
-  naming convention `port_<class><n>.jpg` picks them up automatically with no
+  naming convention `port_<class><n>.webp` picks them up automatically with no
   code change.
-- **`bg_crossroads.jpg`** — the only settlement type with no dedicated art.
+- **`bg_crossroads.webp`** — the only settlement type with no dedicated art.
   Currently falls back to `bg_road`, which is close enough that most players
   will never notice.
 - **Per-technique skill-check backdrops** beyond `art_pulse` and `art_dental` —

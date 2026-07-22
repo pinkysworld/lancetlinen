@@ -31,7 +31,7 @@ import { LepraschauScene } from './scenes/LepraschauScene';
 import { isTouchDevice } from './mobile';
 import { targetAspect } from './ui/viewport';
 import { fadeInScene } from './ui/fx';
-import { installPinchZoom, requestFullscreenOnFirstTouch } from './ui/pinch';
+import { installPinchZoom } from './ui/pinch';
 
 export function createGame(parent: string | HTMLElement): Phaser.Game {
   const touch = isTouchDevice();
@@ -131,6 +131,20 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
     cam.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
   };
 
+  /*
+   * `targetAspect()` is measured at boot, but iOS Safari can report a
+   * portrait-sized visual viewport during startup and only reveal the real
+   * landscape height after its bars settle. FIT then faithfully preserves the
+   * *old* 16:9 buffer and leaves a narrow game in a wide black field. Rebuild
+   * the backing width whenever the usable viewport changes; scenes still draw
+   * in their fixed 1280×720 design band and only their camera is re-centred.
+   */
+  const refitCanvasToViewport = () => {
+    const nextWidth = Math.round(RENDER_HEIGHT * targetAspect());
+    if (Math.round(game.scale.gameSize.width) === nextWidth) return;
+    game.scale.resize(nextWidth, RENDER_HEIGHT);
+    for (const scene of game.scene.getScenes(true)) applyRenderScale(scene);
+  };
   /**
    * Attach per-scene hooks once the game is READY.
    *
@@ -140,6 +154,7 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
    * which is why scene fade-ins never actually ran.
    */
   game.events.once(Phaser.Core.Events.READY, () => {
+    refitCanvasToViewport();
     for (const scene of game.scene.scenes) {
       // START fires before preload(), so anything drawn during loading is
       // already correctly scaled — applying only at CREATE left the Preload
@@ -171,13 +186,11 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
   const refreshScale = () => {
     try {
       const aspect = targetAspect();
-      // Only resize when the shape genuinely moved: `resize` rebuilds render
-      // targets, and Safari fires this handler on every toolbar slide.
+      // Safari fires resize on every toolbar slide. Rebuild render targets
+      // only when the shape itself changed; READY handles a bad initial read.
       if (Math.abs(aspect - lastAspect) > 0.01) {
         lastAspect = aspect;
         game.scale.resize(Math.round(RENDER_HEIGHT * aspect), RENDER_HEIGHT);
-        // Every scene's camera must be re-centred on the design band, or the
-        // world drifts to the left of the wider canvas.
         for (const scene of game.scene.scenes) applyRenderScale(scene);
       }
       game.scale.refresh();
@@ -195,8 +208,6 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
   window.visualViewport?.addEventListener('resize', () => {
     setTimeout(refreshScale, 50);
   });
-
-  requestFullscreenOnFirstTouch(game);
 
   return game;
 }

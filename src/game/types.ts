@@ -22,6 +22,18 @@ export type EndingId =
 export type Locale = 'en' | 'de';
 export type PropertyKind = 'stall' | 'bathhouse' | 'home' | 'warehouse';
 export type StaffRole = 'apprentice' | 'bathmaid' | 'manager' | 'herb_boy' | 'nightwatch';
+/** A personal strength. It supplements a role; it never replaces it. */
+export type StaffTrait = 'careful' | 'sociable' | 'thrifty' | 'steadfast';
+/** The partner's chosen, visible priority for the household. */
+export type HouseholdFocus = 'home' | 'trade' | 'kin';
+/** Last-act consequences are saved rather than re-rolled on later visits. */
+export type Act3ConsequenceId =
+  | 'epidemic_memory'
+  | 'rival_reckoning'
+  | 'debt_shadow'
+  | 'lepra_reputation'
+  | 'staff_compact'
+  | 'family_network';
 export type OfficeId = 'none' | 'quarter_warden' | 'guild_elder' | 'city_surgeon' | 'council_seat';
 export type TitleId = 'citizen' | 'freeman' | 'master_bader' | 'honorable' | 'noble_surgeon';
 export type GoreLevel = 'low' | 'medium' | 'high';
@@ -38,6 +50,8 @@ export type Difficulty = 'merciful' | 'fair' | 'harsh';
  * with an unreadable layout and no way out is worse than an extra setting.
  */
 export type CompactMode = 'auto' | 'on' | 'off';
+/** Historically framed follow-up plans, resolved when the next day opens. */
+export type RegimenId = 'pest_regimen' | 'rest_diet' | 'bath_linen';
 
 export interface Stats {
   hand: number;
@@ -193,6 +207,21 @@ export interface StaffMember {
   skill: number; // 1-10
   wage: number;
   daysEmployed: number;
+  /** Added in save schema 3; legacy staff receive a deterministic default. */
+  trait?: StaffTrait;
+}
+
+/** A deferred, non-invasive course of care. It records a game outcome, never a diagnosis. */
+export interface CarePlan {
+  id: string;
+  regimenId: RegimenId;
+  patientUid: string;
+  patientName: string;
+  patientClass: PatientClass;
+  templateId: string;
+  complaintKey: string;
+  dueDay: number;
+  fit: boolean;
 }
 
 export interface SpouseState {
@@ -200,6 +229,8 @@ export interface SpouseState {
   affection: number; // 0-100
   cityId: string;
   marriedDay: number;
+  /** Household, trade, or kin network; legacy marriages default to household. */
+  householdFocus?: HouseholdFocus;
 }
 
 export interface HeirState {
@@ -321,6 +352,10 @@ export interface GameState {
   audioMuted: boolean;
   // Full-feature expansions
   staff: StaffMember[];
+  /** Follow-up plans created by the Regimen path. Absent on legacy saves. */
+  carePlans?: CarePlan[];
+  /** Permanent, journalled repercussions that have already happened in act 3. */
+  act3Consequences?: Act3ConsequenceId[];
   spouse: SpouseState | null;
   heir: HeirState | null;
   office: OfficeId;

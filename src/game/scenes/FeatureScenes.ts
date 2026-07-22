@@ -10,7 +10,7 @@ import {
   canTrainStaff,
   ensureStaff,
 } from '../systems/staff';
-import type { StaffRole } from '../types';
+import type { HouseholdFocus, StaffRole } from '../types';
 import { canRepayDebt, repayDebt } from '../systems/economy';
 import { DEBT_CALL_IN } from '../systems/pressure';
 import {
@@ -24,6 +24,8 @@ import {
   canMarryNow,
   canGiftSpouse,
   canMoveSpouseHere,
+  canSetHouseholdFocus,
+  setHouseholdFocus,
   SUITORS,
 } from '../systems/family';
 import {
@@ -37,13 +39,15 @@ import {
   canDonateChurch,
   OFFICE_COST,
   TITLE_COST,
+  craftAuthority,
 } from '../systems/politics';
 import type { OfficeId, TitleId } from '../types';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
 import { drawBackground, makeButton, bodyText, panel, titleText, hudText, COLORS } from '../ui/theme';
-import { gatedButton } from '../ui/gated';
+import { explain, gatedButton } from '../ui/gated';
 import { showToast } from '../ui/dialogs';
 import { audio } from '../audio/AudioManager';
+import { APP_RELEASE_LABEL } from '../appInfo';
 import { activeQuests, questTitleKey } from '../systems/story';
 import { activeFestival, rollCityEvent } from '../systems/events';
 import {
@@ -54,7 +58,13 @@ import {
 } from '../systems/reputation';
 import { transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
-import { addManagementBackground } from '../ui/art';
+import {
+  addManagementBackground,
+  addPortrait,
+  portraitKeyForHouseholdFocus,
+  portraitKeyForStaffRole,
+} from '../ui/art';
+import { playAmbientLoop } from '../ui/fx';
 import { honour, honourRankKey } from '../systems/honour';
 import { settings, updateSettings } from '../systems/settings';
 import { Stack } from '../ui/layout';
@@ -175,14 +185,18 @@ export class StaffScene extends Phaser.Scene {
     if (!s.staff.length) {
       bodyText(this, 60, 130, t('staff_none'), { fontSize: '16px' });
     } else {
-      s.staff.slice(0, 10).forEach((m, i) => {
-        const y = 120 + i * 44;
+      s.staff.slice(0, 7).forEach((m, i) => {
+        const y = 120 + i * 60;
+        addPortrait(this, 78, y + 18, portraitKeyForStaffRole(m.role), {
+          size: 40,
+          seed: m.id,
+        });
         bodyText(
           this,
-          60,
+          108,
           y,
-          `${m.name} · ${t(`role_${m.role}`)} · ${t('loyalty')}: ${m.loyalty} · ${t('skill')}: ${m.skill} · ${t('wage_per_day', { n: m.wage })}`,
-          { fontSize: '13px', wordWrap: { width: 420 } },
+          `${m.name} · ${t(`role_${m.role}`)} · ${t(`trait_${m.trait ?? 'careful'}`)}\n${t(`trait_${m.trait ?? 'careful'}_help`)} · ${t('loyalty')}: ${m.loyalty} · ${t('skill')}: ${m.skill} · ${t('wage_per_day', { n: m.wage })}`,
+          { fontSize: '12px', wordWrap: { width: 380 } },
         );
         gatedButton(
           this,
@@ -225,10 +239,12 @@ export class StaffScene extends Phaser.Scene {
     const roles: StaffRole[] = ['apprentice', 'bathmaid', 'manager', 'herb_boy', 'nightwatch'];
     const propId = s.properties.find((p) => p.cityId === s.locationId && (p.kind === 'bathhouse' || p.kind === 'stall'))?.id ?? null;
     roles.forEach((role, i) => {
+      const y = 250 + i * 55;
+      addPortrait(this, 820, y, portraitKeyForStaffRole(role), { size: 36, seed: role });
       makeButton(
         this,
         1000,
-        250 + i * 55,
+        y,
         `${t(`role_${role}`)}`,
         () => {
           mutate((st) => {
@@ -255,18 +271,28 @@ export class FamilyScene extends Phaser.Scene {
   create(): void {
     void audio.setContext('family');
     drawBackground(this, 'room');
-    addManagementBackground(this, 'bg_family');
+    if (this.textures.exists('bg_household_v11')) {
+      addManagementBackground(this, 'bg_household_v11');
+    } else {
+      addManagementBackground(this, 'bg_family');
+    }
+    playAmbientLoop(this, 'hearth', GAME_WIDTH - 170, GAME_HEIGHT - 120, 240, 135, -3);
     titleText(this, GAME_WIDTH / 2, 40, t('family_title'), '30px');
     const s = getState();
     hudText(this, 40, 80, `${t('coin')}: ${s.coin}`);
 
     panel(this, 60, 120, 560, 400);
     if (s.spouse) {
+      const focus = s.spouse.householdFocus ?? 'home';
+      addPortrait(this, 700, 220, portraitKeyForHouseholdFocus(focus), {
+        size: 110,
+        seed: s.spouse.name,
+      });
       bodyText(
         this,
         80,
         140,
-        `${t('spouse')}: ${t(s.spouse.name)}\n${t('affection')}: ${s.spouse.affection}\n${t('location')}: ${locName(s.spouse.cityId)}`,
+        `${t('spouse')}: ${t(s.spouse.name)}\n${t('affection')}: ${s.spouse.affection}\n${t('location')}: ${locName(s.spouse.cityId)}\n${t('household_focus')}: ${t(`focus_${focus}`)}\n${t(`focus_${focus}_help`)}`,
         { fontSize: '16px', wordWrap: { width: 500 } },
       );
       gatedButton(this, 200, 320, t('gift_spouse'), canGiftSpouse(s), () => {
@@ -279,8 +305,20 @@ export class FamilyScene extends Phaser.Scene {
         saveGame();
         this.scene.restart();
       }, { width: 200 });
+      (['home', 'trade', 'kin'] as HouseholdFocus[]).forEach((focus, i) => {
+        gatedButton(this, 150 + i * 155, 380, t(`focus_${focus}`), canSetHouseholdFocus(s, focus), () => {
+          mutate((st) => setHouseholdFocus(st, focus));
+          saveGame();
+          this.scene.restart();
+        }, {
+          width: 140,
+          height: 40,
+          fontSize: '13px',
+          fill: (s.spouse?.householdFocus ?? 'home') === focus ? 0x6d5a2f : undefined,
+        });
+      });
       if (s.heir) {
-        bodyText(this, 80, 400, `${t('heir')}: ${s.heir.name} (${s.heir.ageYears}y)`, {
+        bodyText(this, 80, 440, `${t('heir')}: ${s.heir.name} (${s.heir.ageYears}y)`, {
           fontSize: '16px',
           color: '#e8c547',
         });
@@ -347,7 +385,10 @@ export class PoliticsScene extends Phaser.Scene {
   create(): void {
     void audio.setContext('politics');
     drawBackground(this, 'room');
-    if (this.textures.exists('bg_politics')) {
+    // Debt is the Lombard; otherwise the civic chamber.
+    if ((getState().debt ?? 0) > 0 && this.textures.exists('bg_lombard_v11')) {
+      addManagementBackground(this, 'bg_lombard_v11');
+    } else if (this.textures.exists('bg_politics')) {
       addManagementBackground(this, 'bg_politics');
     } else {
       addManagementBackground(this, 'bg_guild');
@@ -390,12 +431,15 @@ export class PoliticsScene extends Phaser.Scene {
        * One value, used for both, and the label carries it.
        */
       const chunk = Math.max(0, Math.min(s.coin, Math.ceil(s.debt)));
+      const repayReq = chunk > 0
+        ? canRepayDebt(s)
+        : { ok: false as const, reasonKey: 'req_coin', need: 1, have: s.coin };
       gatedButton(
         this,
         1100,
         545,
         t('repay_debt_some', { n: chunk }),
-        chunk > 0 ? canRepayDebt(s) : { ok: false, reasonKey: 'req_coin', need: 1, have: s.coin },
+        repayReq,
         () => {
           let paid = 0;
           mutate((st) => {
@@ -413,6 +457,11 @@ export class PoliticsScene extends Phaser.Scene {
         },
         { width: 240 },
       );
+      if (!repayReq.ok) {
+        bodyText(this, 1100, 578, explain(repayReq), {
+          fontSize: '12px', color: '#c4a574', align: 'center', wordWrap: { width: 260 },
+        }).setOrigin(0.5, 0);
+      }
     }
 
     panel(this, 40, 120, 600, 470);
@@ -421,7 +470,15 @@ export class PoliticsScene extends Phaser.Scene {
       fontSize: '15px',
     });
     bodyText(this, 60, 192, t('politics_need_elite'), { fontSize: '12px', color: '#a88' });
-    (Object.keys(OFFICE_COST) as Exclude<OfficeId, 'none'>[]).forEach((off, i) => {
+    if (craftAuthority(s) === 'council') {
+      bodyText(this, 60, 212, t('nurnberg_craft_rule'), {
+        fontSize: '12px', color: '#c9b48a', wordWrap: { width: 520 },
+      });
+    }
+    const offices = (Object.keys(OFFICE_COST) as Exclude<OfficeId, 'none'>[]).filter(
+      (off) => !(craftAuthority(s) === 'council' && off === 'guild_elder'),
+    );
+    offices.forEach((off, i) => {
       const c = OFFICE_COST[off];
       const needE = eliteForOffice(off);
       // Six separate conditions gate an office and every one of them used to
@@ -497,6 +554,9 @@ export class SettingsScene extends Phaser.Scene {
     drawBackground(this, 'dark');
     addManagementBackground(this, 'bg_settings');
     titleText(this, GAME_WIDTH / 2, 44, t('settings_title'), '32px');
+    bodyText(this, GAME_WIDTH - 40, 44, APP_RELEASE_LABEL, {
+      fontSize: '13px', color: '#c4a574', align: 'right',
+    }).setOrigin(1, 0.5);
 
     const cfg = settings();
     const lc = 90;
@@ -517,9 +577,14 @@ export class SettingsScene extends Phaser.Scene {
     // -- Display ------------------------------------------------------
     bodyText(this, lc, 360, t('settings_display'), { fontSize: '17px', color: '#e8c547' });
     const disp = new Stack(392, 10);
-    makeButton(this, lc + 150, disp.next(42),
-      this.scale.isFullscreen ? t('fullscreen_off') : t('fullscreen_on'),
-      () => this.toggleFullscreen(), { width: 300, height: 42, fontSize: '15px' });
+    // iPhone Safari cannot fullscreen arbitrary web content. Showing a button
+    // that can only fail feels like a broken control, so expose fullscreen
+    // only where the platform advertises it and always request it explicitly.
+    if (typeof document !== 'undefined' && document.fullscreenEnabled) {
+      makeButton(this, lc + 150, disp.next(42),
+        this.scale.isFullscreen ? t('fullscreen_off') : t('fullscreen_on'),
+        () => this.toggleFullscreen(), { width: 300, height: 42, fontSize: '15px' });
+    }
     makeButton(this, lc + 150, disp.next(42),
       `${t('text_scale')}: ${Math.round(cfg.textScale * 100)}%`,
       () => {
@@ -600,12 +665,17 @@ export class SettingsScene extends Phaser.Scene {
    * button callback rather than being restored from settings on boot.
    */
   private toggleFullscreen(): void {
+    if (typeof document === 'undefined' || !document.fullscreenEnabled) return;
     try {
       if (this.scale.isFullscreen) {
         this.scale.stopFullscreen();
         updateSettings({ fullscreen: false });
       } else {
-        this.scale.startFullscreen();
+        // Phaser forwards a browser promise on modern engines. Resolve it so
+        // a denied request never becomes an unhandled rejection in Safari or
+        // a WebView; the game remains in its normal responsive view.
+        const requested = this.scale.startFullscreen() as unknown as Promise<unknown> | void;
+        void Promise.resolve(requested).catch(() => updateSettings({ fullscreen: false }));
         updateSettings({ fullscreen: true });
       }
     } catch {

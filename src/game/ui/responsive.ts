@@ -32,6 +32,22 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../types';
 import { isTouchDevice } from '../mobile';
 import { settings } from '../systems/settings';
 
+/** Apple's comfortable touch target, expressed in real CSS pixels. */
+export const MIN_TOUCH_CSS = 44;
+
+/**
+ * Convert a physical CSS-pixel minimum into the current world coordinate
+ * system. At 844×320, for example, one world unit is only 0.44 CSS pixels.
+ */
+export function worldForCss(cssPixels: number): number {
+  return Math.ceil(cssPixels / Math.max(worldScale(), 0.1));
+}
+
+/** Minimum button height in world units when compact mode is active. */
+export function touchTargetHeight(): number {
+  return compact() ? Math.max(46, worldForCss(MIN_TOUCH_CSS)) : 46;
+}
+
 /**
  * Is this a screen that needs the compact treatment?
  *
@@ -54,8 +70,11 @@ export function compact(): boolean {
   if (mode === 'off') return false;
 
   if (!isTouchDevice()) return false;
-  // Below this the standard layout stops being reachable without zooming.
-  return worldScale() < 0.72;
+  // A 40–46 world-unit desktop button falls below Apple's 44px target on an
+  // iPad whose canvas is even slightly FIT-scaled. Compact mode keeps every
+  // touch target real-size-first there too; non-touch desktop browsers retain
+  // the denser layout.
+  return worldScale() < 1.1;
 }
 
 /** Real CSS pixels per world unit, as Phaser's FIT scaling will apply them. */
@@ -81,19 +100,34 @@ export function worldScale(): number {
 export type TextRole = 'title' | 'heading' | 'body' | 'small' | 'button';
 
 export function fontFor(role: TextRole): string {
-  const c = compact();
-  switch (role) {
-    case 'title':
-      return c ? '34px' : '28px';
-    case 'heading':
-      return c ? '24px' : '18px';
-    case 'body':
-      return c ? '20px' : '14px';
-    case 'small':
-      return c ? '17px' : '12px';
-    case 'button':
-      return c ? '21px' : '15px';
+  if (!compact()) {
+    switch (role) {
+      case 'title': return '28px';
+      case 'heading': return '18px';
+      case 'body': return '14px';
+      case 'small': return '12px';
+      case 'button': return '15px';
+    }
   }
+
+  // These are minima in both world and physical space. Keeping the physical
+  // floor is the important part: a 21px world-space button label used to be
+  // 9px on Safari with its landscape browser bars visible.
+  const cssFloor: Record<TextRole, number> = {
+    title: 22,
+    heading: 17,
+    body: 15,
+    small: 13,
+    button: 15,
+  };
+  const worldFloor: Record<TextRole, number> = {
+    title: 36,
+    heading: 28,
+    body: 26,
+    small: 22,
+    button: 26,
+  };
+  return `${Math.max(worldFloor[role], worldForCss(cssFloor[role]))}px`;
 }
 
 /* ------------------------------------------------------------------ *
@@ -102,12 +136,12 @@ export function fontFor(role: TextRole): string {
 
 /** Primary action button size. */
 export function primarySize(): { width: number; height: number } {
-  return compact() ? { width: 620, height: 72 } : { width: 340, height: 46 };
+  return compact() ? { width: 680, height: touchTargetHeight() } : { width: 340, height: 46 };
 }
 
 /** Secondary / grid button size. */
 export function secondarySize(): { width: number; height: number } {
-  return compact() ? { width: 300, height: 62 } : { width: 208, height: 40 };
+  return compact() ? { width: 520, height: touchTargetHeight() } : { width: 208, height: 40 };
 }
 
 /** How many buttons fit across a row. */
@@ -117,7 +151,7 @@ export function gridColumns(): number {
 
 /** Vertical pitch between stacked rows. */
 export function rowPitch(): number {
-  return compact() ? 76 : 48;
+  return compact() ? touchTargetHeight() + 14 : 48;
 }
 
 /* ------------------------------------------------------------------ *

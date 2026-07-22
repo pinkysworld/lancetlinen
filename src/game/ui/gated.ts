@@ -12,8 +12,8 @@
  *  - append a short reason to the label, so the obstacle is visible without
  *    interacting;
  *  - grey the button, so it does not look broken;
- *  - and, when tapped anyway, raise a toast with the full sentence including
- *    the numbers — "Fame 15 needed, you have 5".
+ *  - and keep the full reason available to the surrounding screen, which can
+ *    place it below a disabled control without leaving a tap or hotkey path.
  *
  * The numbers are the part that was missing everywhere. "Denied" teaches the
  * player nothing; "you have 5 of the 15 needed" tells them what to go and do.
@@ -21,7 +21,6 @@
 import type Phaser from 'phaser';
 import { t } from '../i18n';
 import { makeButton, type ButtonOpts } from './theme';
-import { showToast } from './dialogs';
 import type { Requirement } from '../systems/requirements';
 
 /**
@@ -61,7 +60,7 @@ export const LOCK_GLYPH = '✗';
  *
  * A requirement with numbers compresses well — "Reichsruhm 30" says the whole
  * thing in two words. One without numbers is a sentence, and a sentence does
- * not belong on a button; `explain` puts it in the toast instead.
+ * not belong on a button; `explain` places it in the surrounding hint text.
  */
 export function shortReason(req: Requirement): string {
   if (req.ok) return '';
@@ -95,18 +94,16 @@ export function gatedButton(
     y,
     `${label}${suffix}`,
     () => {
+      // `makeButton` removes disabled pointer targets; keep this as the
+      // authoritative guard for registry and programmatic activation.
       if (!req.ok) {
-        // Reachable via the keyboard even when greyed, and worth answering:
-        // the face never carries the whole sentence, and on a narrow button it
-        // carries nothing but a mark.
-        showToast(scene, explain(req), '#b33a3a', 2800);
         return;
       }
       onClick();
     },
     // `keepHeight`: a gated button must never grow. Its size is fixed by the
     // layout around it, and the reason is an addition to the label rather than
-    // the label itself — if it does not fit, it belongs in the toast.
+    // the label itself — if it does not fit, the screen can show it nearby.
     { ...opts, disabled: !req.ok, keepHeight: true },
   );
 }

@@ -115,8 +115,8 @@ describe('wiring', () => {
     expect(SRC).toContain('scene.input.off');
   });
 
-  it('asks for fullscreen only once', () => {
-    // Re-prompting someone who declined would be obnoxious.
-    expect(SRC).toContain('if (asked) return');
+  it('contains no automatic fullscreen request', () => {
+    // Fullscreen is now an explicit, capability-gated Settings choice.
+    expect(SRC).not.toContain('requestFullscreenOnFirstTouch');
   });
 });

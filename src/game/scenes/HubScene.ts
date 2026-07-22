@@ -39,7 +39,7 @@ import { nextStepCard, sectionLabel, primaryFill, helpBar, groupCard } from '../
 import { pendingScenario } from '../systems/scenarios';
 import { canBeCalledToLepraschau } from '../systems/lepraschau';
 import { reputationSummaryKeys } from '../systems/reputation';
-import { emberParticles, sceneBackground, steamParticles, transitionTo } from '../ui/fx';
+import { emberParticles, playAmbientLoop, sceneBackground, steamParticles, transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
 import { columns } from '../ui/layout';
 import { computeDemand, topFactors } from '../systems/demand';
@@ -51,8 +51,14 @@ import { compact, fontFor, gridColumnsX, primarySize, secondarySize } from '../u
 import { tomorrowNotes } from '../data/seasons';
 
 export class HubScene extends Phaser.Scene {
+  private compactPage: 'main' | 'more' = 'main';
+
   constructor() {
     super('Hub');
+  }
+
+  init(data?: { compactPage?: 'main' | 'more' }): void {
+    this.compactPage = data?.compactPage ?? 'main';
   }
 
   create(): void {
@@ -137,6 +143,7 @@ export class HubScene extends Phaser.Scene {
     drawBackground(this, 'room');
     addLocationBackground(this);
     emberParticles(this, 70, GAME_HEIGHT - 60);
+    playAmbientLoop(this, 'hearth', 120, GAME_HEIGHT - 100, 200, 112, -4);
 
     // Phone layout takes over here, before any of the desktop furniture is
     // built. Placing this check further down drew both layouts on top of one
@@ -289,13 +296,16 @@ export class HubScene extends Phaser.Scene {
     );
 
     const tip = tutorialTipKey(s);
+    let workLabelY = 322;
     if (tip) {
-      // Kept clear of the "— Work —" caption at y=322.
-      bodyText(this, GAME_WIDTH / 2, 302, t(tip.replace(/\./g, '_')), {
+      // Localised guidance can occupy two lines. Derive the work band from
+      // the measured text instead of letting German guidance cover its title.
+      const tipText = bodyText(this, GAME_WIDTH / 2, 292, t(tip.replace(/\./g, '_')), {
         fontSize: '13px',
         color: '#a8c0c4',
         wordWrap: { width: 1000 },
-      }).setOrigin(0.5);
+      }).setOrigin(0.5, 0.5);
+      workLabelY = Math.max(workLabelY, tipText.y + tipText.height / 2 + 18);
     }
 
     const cx = GAME_WIDTH / 2;
@@ -303,8 +313,9 @@ export class HubScene extends Phaser.Scene {
     // ── Primary action ────────────────────────────────────────────────
     // Given its own band above the cards so the advisor's recommendation
     // reads as the obvious thing to do.
-    sectionLabel(this, cx, 322, 'section_work');
+    sectionLabel(this, cx, workLabelY, 'section_work');
     const broke = isDestitute(s);
+    const primaryY = workLabelY + 36;
     // The price belongs on the button. Without it the player clicks a bare
     // "Open the shop", is told they cannot afford it, and has no way to find
     // out what it would have cost or how far short they are — reported three
@@ -312,11 +323,11 @@ export class HubScene extends Phaser.Scene {
     makeButton(
       this,
       cx,
-      358,
+      primaryY,
       `${t('open_bath')}\n${t('open_bath_cost', { n: dailyOperatingCost(s) })}`,
       () => this.openBusiness(),
       {
-        width: broke ? 200 : 320,
+        width: 320,
         height: 52,
         fill: primaryFill(step.action === 'open'),
         primary: true,
@@ -326,9 +337,12 @@ export class HubScene extends Phaser.Scene {
     // Only shown when the player genuinely cannot open. Opening needs the day's
     // costs in coin, and travelling costs too — without this a player with an
     // empty purse and nothing to sell had no move left at all.
+    const loanY = primaryY + 64;
     if (broke) {
-      makeButton(this, cx + 190, 358, t('take_loan'), () => this.borrow(), {
-        width: 220,
+      // The Lombard is an emergency escape route. It gets a reserved row so
+      // long labels never share the open-business hit area or the cards below.
+      makeButton(this, cx, loanY, t('take_loan'), () => this.borrow(), {
+        width: 320,
         height: 52,
         fill: 0x6b4a2f,
         fontSize: '15px',
@@ -336,7 +350,7 @@ export class HubScene extends Phaser.Scene {
     }
 
     // ── Three grouped cards ───────────────────────────────────────────
-    const cardY = 396;
+    const cardY = broke ? loanY + 46 : primaryY + 38;
     const cardH = 196;
     const btn = { width: 170, height: 40, fontSize: '15px' };
 
@@ -421,51 +435,57 @@ export class HubScene extends Phaser.Scene {
     const COL = gridColumnsX();
     const secOpts = { ...sec, fontSize: fontFor('button'), noHotkey: true };
 
-    bodyText(this, cx, 96, `${t('coin')}: ${s.coin} · ${t('day', { n: s.day })}`, {
+    bodyText(this, cx, 44, `${t('coin')}: ${s.coin} · ${t('day', { n: s.day })}`, {
       fontSize: fontFor('heading'),
       color: '#e8d5a8',
       align: 'center',
     }).setOrigin(0.5);
 
-    // The advisor's one-line nudge, since the full card is gone.
-    bodyText(this, cx, 132, t(step.bodyKey), {
-      fontSize: fontFor('small'),
-      color: '#a8c0c4',
-      align: 'center',
-      wordWrap: { width: 900 },
-    }).setOrigin(0.5);
+    if (this.compactPage === 'main') {
+      // The advisor's one-line nudge, since the full card is gone.
+      bodyText(this, cx, 78, t(step.bodyKey), {
+        fontSize: fontFor('small'),
+        color: '#a8c0c4',
+        align: 'center',
+        wordWrap: { width: 900 },
+      }).setOrigin(0.5);
 
-    const broke = isDestitute(s);
-    makeButton(
-      this,
-      broke ? cx - 170 : cx,
-      190,
-      `${t('open_bath')}\n${t('open_bath_cost', { n: dailyOperatingCost(s) })}`,
-      () => this.openBusiness(),
-      {
-        ...prim,
-        width: broke ? 380 : prim.width,
-        fill: primaryFill(step.action === 'open'),
-        primary: true,
-      },
-    );
-    if (broke) {
-      makeButton(this, cx + 230, 190, t('take_loan'), () => this.borrow(), {
-        ...sec,
-        width: 240,
-        height: prim.height,
-        fontSize: fontFor('button'),
-        fill: 0x6b4a2f,
-      });
+      const broke = isDestitute(s);
+      const actionY = 154;
+      makeButton(
+        this,
+        cx,
+        actionY,
+        `${t('open_bath')}\n${t('open_bath_cost', { n: dailyOperatingCost(s) })}`,
+        () => this.openBusiness(),
+        {
+          ...prim,
+          width: prim.width,
+          fill: primaryFill(step.action === 'open'),
+          primary: true,
+        },
+      );
+      if (broke) {
+        makeButton(this, cx, actionY + prim.height + 14, t('take_loan'), () => this.borrow(), {
+          ...prim,
+          width: prim.width,
+          fontSize: fontFor('button'),
+          fill: 0x6b4a2f,
+        });
+      }
+    } else {
+      titleText(this, cx, 96, t('menu_more'), fontFor('title'));
     }
 
-    // Ordered by how often a player actually needs them.
-    const dests: Array<[string, () => void]> = [
+    const mainDests: Array<[string, () => void]> = [
       [t('market'), () => transitionTo(this, 'Market')],
       [t('travel'), () => transitionTo(this, 'TravelMap')],
       [t('study'), () => transitionTo(this, 'Study')],
       [t('upgrades'), () => transitionTo(this, 'Upgrades')],
       [t('nav_journal'), () => transitionTo(this, 'Journal')],
+      [t('menu_more'), () => this.scene.restart({ compactPage: 'more' })],
+    ];
+    const moreDests: Array<[string, () => void]> = [
       [t('property'), () => transitionTo(this, 'Property')],
       [t('seek_master'), () => transitionTo(this, 'Mentors')],
       [t('nav_staff'), () => transitionTo(this, 'Staff')],
@@ -473,13 +493,15 @@ export class HubScene extends Phaser.Scene {
       [t('nav_politics'), () => transitionTo(this, 'Politics')],
       [t('save'), () => this.manualSave()],
       [t('nav_settings'), () => transitionTo(this, 'Settings')],
+      [t('back'), () => this.scene.restart({ compactPage: 'main' })],
     ];
+    const dests = this.compactPage === 'main' ? mainDests : moreDests;
 
-    const rowTop = 268;
+    const rowTop = this.compactPage === 'main' ? (isDestitute(s) ? 322 : 274) : 174;
     dests.forEach(([label, onClick], i) => {
       const col = i % COL.length;
       const line = Math.floor(i / COL.length);
-      makeButton(this, COL[col]!, rowTop + line * (sec.height + 8), label, onClick, secOpts);
+      makeButton(this, COL[col]!, rowTop + line * (sec.height + 10), label, onClick, secOpts);
     });
 
     installSceneKeys(this, { onBack: () => transitionTo(this, 'Help') });

@@ -23,6 +23,7 @@ import { addPortrait } from '../ui/art';
 import { ORIGINS, applyOriginStats } from '../data/origins';
 import { defaultStats } from '../state';
 import { HONOUR_START } from '../systems/honour';
+import { compact, fontFor, touchTargetHeight } from '../ui/responsive';
 
 /** Card geometry, kept here so the two layout passes cannot drift apart. */
 const CARD_W = 388;
@@ -50,6 +51,12 @@ export class CharacterScene extends Phaser.Scene {
     });
 
     const origin = ORIGINS[this.originIdx]!;
+
+    if (compact()) {
+      this.renderCompact(origin);
+      installSceneKeys(this, { onBack: () => transitionTo(this, 'MainMenu') });
+      return;
+    }
 
     titleText(this, GAME_WIDTH / 2, 46, t('choose_origin'), '28px');
 
@@ -191,6 +198,70 @@ export class CharacterScene extends Phaser.Scene {
     })
       .setOrigin(0, 0.5)
       .setDepth(6);
+  }
+
+  /** One chosen origin at a time; six miniature dossiers are not phone UI. */
+  private renderCompact(origin: (typeof ORIGINS)[number]): void {
+    const h = touchTargetHeight();
+    const originCount = ORIGINS.length;
+    const choose = (delta: number) => {
+      const idx = (this.originIdx + delta + originCount) % originCount;
+      this.scene.restart({ originIdx: idx, name: ORIGINS[idx]!.names[0] });
+    };
+
+    titleText(this, GAME_WIDTH / 2, 34, t('choose_origin'), fontFor('title'));
+    makeButton(this, 120, 76, t('back'), () => transitionTo(this, 'MainMenu'), {
+      width: 190, height: h, fontSize: fontFor('button'), back: true,
+    });
+
+    panel(this, 170, 138, 940, 178);
+    makeButton(this, 92, 226, '‹', () => choose(-1), {
+      width: 120, height: h, fontSize: fontFor('title'), noHotkey: true,
+    });
+    makeButton(this, 1188, 226, '›', () => choose(1), {
+      width: 120, height: h, fontSize: fontFor('title'), noHotkey: true,
+    });
+
+    const portrait = this.textures.exists(origin.portraitKey)
+      ? origin.portraitKey
+      : origin.fallbackPortrait;
+    addPortrait(this, 300, 227, portrait, { size: 148, depth: 5 });
+    const stats = applyOriginStats(defaultStats(), origin);
+    const purse = 35 + origin.coin;
+    const standing = HONOUR_START + origin.honour;
+    bodyText(this, 410, 166, t(origin.nameKey), {
+      fontSize: fontFor('heading'), color: '#f0d98a', wordWrap: { width: 620 },
+    }).setOrigin(0, 0.5);
+    bodyText(this, 410, 204, t('origin_stats', stats as unknown as Record<string, number>), {
+      fontSize: fontFor('small'), color: '#a8c0c4', wordWrap: { width: 620 },
+    }).setOrigin(0, 0.5);
+    bodyText(this, 410, 238, `${t('origin_purse')} ${purse}   ${t('origin_standing')} ${standing}`, {
+      fontSize: fontFor('small'), color: origin.honour < 0 ? '#c98a6a' : '#8aa87a', wordWrap: { width: 620 },
+    }).setOrigin(0, 0.5);
+    const knows = origin.techniques.length
+      ? origin.techniques.map((id) => techName(id)).join(', ')
+      : t('origin_knows_none');
+    bodyText(this, 410, 272, `${t('origin_knows')}: ${knows}`, {
+      fontSize: fontFor('small'), color: '#9a8878', wordWrap: { width: 620 },
+    }).setOrigin(0, 0.5);
+
+    panel(this, 120, 326, 1040, 82, 0.82);
+    bodyText(this, GAME_WIDTH / 2, 336, t(origin.descKey), {
+      fontSize: fontFor('small'), color: '#d8c9a8', align: 'center', wordWrap: { width: 1000 },
+    }).setOrigin(0.5, 0);
+
+    if (!origin.names.includes(this.name)) this.name = origin.names[0]!;
+    origin.names.forEach((n, i) => {
+      const selected = n === this.name;
+      makeButton(this, i % 2 === 0 ? 390 : 890, 470 + Math.floor(i / 2) * (h + 7), n, () => {
+        this.scene.restart({ originIdx: this.originIdx, name: n });
+      }, {
+        width: 400, height: h, fontSize: fontFor('button'), fill: selected ? 0x6d5a2f : undefined,
+      });
+    });
+    makeButton(this, GAME_WIDTH / 2, 670, t('start'), () => this.begin(), {
+      width: 520, height: h, fontSize: fontFor('button'), primary: true,
+    });
   }
 
   private begin(): void {

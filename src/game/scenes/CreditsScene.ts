@@ -15,6 +15,7 @@ import { installSceneKeys } from '../ui/input';
 import { addManagementBackground } from '../ui/art';
 import { audio } from '../audio/AudioManager';
 import { getState } from '../state';
+import { APP_RELEASE_LABEL } from '../appInfo';
 
 declare global {
   interface Window {
@@ -32,6 +33,9 @@ export class CreditsScene extends Phaser.Scene {
     drawBackground(this, 'dark');
     addManagementBackground(this, 'bg_settings');
     titleText(this, GAME_WIDTH / 2, 48, t('credits_title'), '30px');
+    bodyText(this, GAME_WIDTH - 72, 48, APP_RELEASE_LABEL, {
+      fontSize: '13px', color: '#c4a574', align: 'right',
+    }).setOrigin(1, 0.5);
 
     panel(this, 140, 96, GAME_WIDTH - 280, 470);
 

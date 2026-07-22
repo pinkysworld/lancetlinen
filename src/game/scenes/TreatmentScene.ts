@@ -45,11 +45,12 @@ import {
   flash,
   floatingNumber,
   panelIn,
+  playAmbientLoop,
   sceneBackground,
   shake,
   transitionTo,
 } from '../ui/fx';
-import { compact, fontFor } from '../ui/responsive';
+import { compact, fontFor, touchTargetHeight } from '../ui/responsive';
 import { gatedButton } from '../ui/gated';
 import { canExamine } from '../data/examinations';
 import {
@@ -60,6 +61,7 @@ import {
   judgeVein,
   moonSign,
 } from '../data/bloodletting';
+import { REGIMENS, REGIMEN_MAP, canStartRegimen, startRegimen } from '../systems/regimen';
 
 /**
  * Top of the technique list and the space it may occupy.
@@ -121,6 +123,8 @@ export class TreatmentScene extends Phaser.Scene {
   private tongue: TongueReading | null = null;
   private finishing = false;
   private techPage = 0;
+  private compactPage: 'exams' | 'care' | 'techniques' | 'regimens' = 'exams';
+  private treatmentPath: 'procedure' | 'regimen' = 'procedure';
   /** Display-list objects that survive a `render()` — see `buildStatic`. */
   private staticObjects: Phaser.GameObjects.GameObject[] = [];
 
@@ -145,6 +149,8 @@ export class TreatmentScene extends Phaser.Scene {
     this.tongue = null;
     this.finishing = false;
     this.techPage = 0;
+    this.compactPage = 'exams';
+    this.treatmentPath = 'procedure';
     void audio.setContext('treatment');
     this.buildStatic();
     this.render();
@@ -160,13 +166,14 @@ export class TreatmentScene extends Phaser.Scene {
    */
   private buildStatic(): void {
     drawBackground(this, 'room');
-    sceneBackground(this, 'art_bath', {
-      fallbacks: ['bath_bg'],
+    sceneBackground(this, 'bg_sickroom_v11', {
+      fallbacks: ['art_bath', 'bath_bg'],
       brightness: 0.7,
       topScrim: 90,
       bottomScrim: 70,
     });
     emberParticles(this, 110, GAME_HEIGHT - 90);
+    playAmbientLoop(this, 'bath_steam', GAME_WIDTH - 160, GAME_HEIGHT - 130, 260, 146, -4);
     if (this.textures.exists('art_tools')) {
       this.add
         .image(GAME_WIDTH - 140, GAME_HEIGHT - 100, 'art_tools')
@@ -255,6 +262,11 @@ export class TreatmentScene extends Phaser.Scene {
       return;
     }
 
+    if (compact()) {
+      this.renderCompact();
+      return;
+    }
+
     const p = this.patient;
     const s = getState();
     const astro = bloodlettingDayModifier(s);
@@ -267,7 +279,8 @@ export class TreatmentScene extends Phaser.Scene {
     // readings out through the frame and under the parchment below — every
     // position here used to be a fixed number.
     const panelTop = 42;
-    addPortrait(this, 130, 165, portraitKeyForPatient(p), { size: 118, seed: p.uid });
+    const portraitSize = 118;
+    addPortrait(this, 130, 165, portraitKeyForPatient(p), { size: portraitSize, seed: p.uid });
     titleText(this, 380, 58, p.name, '22px').setOrigin(0.5);
 
     // Humor line carries the diagnosis *and* how far to trust it, so the Eye
@@ -307,7 +320,11 @@ export class TreatmentScene extends Phaser.Scene {
 
     // Findings flow below the portrait and the status block, whichever runs
     // longer, and each pushes the next down by its own measured height.
-    let findY = Math.max(228, statusText.y + statusText.height + 10);
+    // The carved frame overhangs the picture. Findings must start below both
+    // it and the translated status block; otherwise a long pulse line draws
+    // through the upper panel in German.
+    const portraitBottom = 165 + portraitSize * 0.72;
+    let findY = Math.max(228, portraitBottom + 12, statusText.y + statusText.height + 10);
 
     if (this.pulse) {
       const narrowed = this.pulse.candidates.map((h) => humorName(h)).join(' / ');
@@ -607,12 +624,30 @@ export class TreatmentScene extends Phaser.Scene {
       }
     }
 
-    // Techniques list
+    // Procedures and deferred regimens share the right panel. The player can
+    // always return to the hand-work list; a regimen is a different choice,
+    // not an extra hidden technique that happens to resolve tomorrow.
     panel(this, 580, 42, 660, 620);
-    bodyText(this, 600, 52, t('technique_pick'), { fontSize: '18px', color: '#e8c547' });
+    makeButton(this, 728, 68, t('treatment_procedure'), () => {
+      this.treatmentPath = 'procedure';
+      this.render();
+    }, { width: 236, height: 34, fontSize: '13px', fill: this.treatmentPath === 'procedure' ? COLORS.green : COLORS.panelLight, noHotkey: true });
+    makeButton(this, 1084, 68, t('regimen_title'), () => {
+      this.treatmentPath = 'regimen';
+      this.render();
+    }, { width: 236, height: 34, fontSize: '13px', fill: this.treatmentPath === 'regimen' ? COLORS.green : COLORS.panelLight, noHotkey: true });
+
+    if (this.treatmentPath === 'regimen') {
+      this.renderRegimenPanel(s, 600, 116, 620);
+      helpBar(this, 'help_treatment', GAME_HEIGHT - 14);
+      installSceneKeys(this);
+      return;
+    }
+
+    bodyText(this, 600, 104, t('technique_pick'), { fontSize: '18px', color: '#e8c547' });
     // Flowing, not fixed: `technique_green_hint` wraps to two lines in German
     // and the warning below it was pinned 20px down, so the two overlapped.
-    const hint = bodyText(this, 600, 78, t('technique_green_hint'), {
+    const hint = bodyText(this, 600, 128, t('technique_green_hint'), {
       fontSize: '12px',
       color: '#8a7a68',
       wordWrap: { width: 620 },
@@ -634,7 +669,7 @@ export class TreatmentScene extends Phaser.Scene {
       const i = TECH_DISPLAY_ORDER.indexOf(id);
       return i < 0 ? 999 : i;
     };
-    const unlocked = TECHNIQUES.filter((tech) => s.unlockedTechniques.includes(tech.id)).sort(
+    const unlocked = TECHNIQUES.filter((tech) => tech.id !== 'hygiene_clean' && s.unlockedTechniques.includes(tech.id)).sort(
       (a, b) => orderIdx(a.id) - orderIdx(b.id),
     );
     // Stable craft order. Sorting the *correct* techniques onto page one was
@@ -740,6 +775,301 @@ export class TreatmentScene extends Phaser.Scene {
 
     // 1 Examine, 2 Pulse, 3 Refuse, then the techniques take 4-9.
     installSceneKeys(this);
+  }
+
+  private renderRegimenPanel(
+    state: ReturnType<typeof getState>,
+    x: number,
+    top: number,
+    width: number,
+  ): void {
+    bodyText(this, x, top, t('regimen_intro'), {
+      fontSize: '13px', color: '#c4a574', wordWrap: { width }, lineSpacing: 2,
+    });
+    REGIMENS.forEach((regimen, index) => {
+      const y = top + 100 + index * 148;
+      const req = canStartRegimen(state, this.patient, regimen.id);
+      titleText(this, x, y, t(regimen.labelKey), '17px').setOrigin(0, 0.5);
+      bodyText(this, x, y + 18, t(regimen.bodyKey), {
+        fontSize: '12px', color: '#a8c0c4', wordWrap: { width: 380 }, lineSpacing: 2,
+      });
+      gatedButton(this, 1080, y + 26, t('regimen_schedule'), req, () => this.finishRegimen(regimen.id), {
+        width: 250, height: 42, fontSize: '13px', noHotkey: true,
+      });
+    });
+    bodyText(this, x, 624, t('regimen_disclaimer'), {
+      fontSize: '12px', color: '#c9a227', wordWrap: { width }, lineSpacing: 2,
+    });
+  }
+
+  private finishRegimen(regimenId: keyof typeof REGIMEN_MAP): void {
+    if (this.finishing || this.phase === 'result') return;
+    this.finishing = true;
+    let started = false;
+    mutate((state) => {
+      const plan = startRegimen(state, this.patient, regimenId);
+      if (!plan) return;
+      started = true;
+      state.storyFlags['patients_remaining'] = Math.max(
+        0,
+        Number(state.storyFlags['patients_remaining'] ?? 1) - 1,
+      );
+      state.patientsToday += 1;
+      state.totalTreated += 1;
+      this.result = {
+        kind: 'partial',
+        pay: 0,
+        reputationDelta: 0,
+        ethicsDelta: 0,
+        xp: 0,
+        messageKey: 'regimen_started',
+        messageParams: { name: this.patient.name, regimen: t(REGIMEN_MAP[regimenId].labelKey) },
+      };
+    });
+    if (!started) {
+      this.finishing = false;
+      this.render();
+      return;
+    }
+    removeFromQueue(this.patient.uid);
+    audio.sfx('page');
+    saveGame();
+    this.phase = 'result';
+    this.render();
+  }
+
+  /**
+   * Phone treatment flow. The desktop screen is a two-panel workbench, but
+   * fitting its examination controls and its technique list into 320 CSS
+   * pixels made the real controls only 27px tall. Paging preserves every
+   * decision while giving each tap target the same 44px physical minimum as
+   * the rest of the compact game.
+   */
+  private renderCompact(): void {
+    const p = this.patient;
+    const s = getState();
+    const h = touchTargetHeight();
+    const twoCol = { width: 520, height: h, fontSize: fontFor('button'), noHotkey: true };
+    const full = { width: 1080, height: h, fontSize: fontFor('button'), noHotkey: true };
+    const statusHumor = this.diagnosedHumor
+      ? humorName(this.diagnosedHumor)
+      : t('humor_unknown');
+
+    woodPanel(this, 40, 16, GAME_WIDTH - 80, 130, 0.94).setDepth(-2);
+    addPortrait(this, 120, 81, portraitKeyForPatient(p), { size: 88, seed: p.uid });
+    titleText(this, 245, 43, p.name, fontFor('heading')).setOrigin(0, 0.5);
+    bodyText(this, 245, 72, `${className(p.class)} · ${t(p.complaintKey.replace('complaint.', 'complaint_'))}`, {
+      fontSize: fontFor('small'), color: '#e8d5a8', wordWrap: { width: 900 },
+    }).setOrigin(0, 0.5);
+    bodyText(this, 245, 108, `${t('severity')}: ${severityMarks(p.severity)} · ${t('humor')}: ${statusHumor}`, {
+      fontSize: fontFor('small'), color: '#a8c0c4', wordWrap: { width: 900 },
+    }).setOrigin(0, 0.5);
+
+    if (this.compactPage === 'techniques') {
+      this.renderCompactTechniques(s, h, full, twoCol);
+      return;
+    }
+    if (this.compactPage === 'regimens') {
+      this.renderCompactRegimens(s, full, twoCol);
+      return;
+    }
+
+    if (this.compactPage === 'exams') {
+      makeButton(this, 350, 230, t('diagnose'), () => {
+        mutate((st) => {
+          const dx = diagnosePatient(st, this.patient);
+          this.diagnosedHumor = dx.humor;
+          this.diagnosisConfidenceKey = dx.confidenceKey;
+        });
+        audio.sfx('page');
+        this.render();
+      }, twoCol);
+      makeButton(this, 930, 230, t('pulse'), () => {
+        mutate((st) => {
+          this.pulse = readPulse(st, this.patient);
+        });
+        audio.sfx('pulse');
+        this.render();
+      }, twoCol);
+
+      const uroReq = this.urine
+        ? ({ ok: false, reasonKey: 'req_already_have' } as const)
+        : canExamine(s, 'uroscopy');
+      gatedButton(this, 350, 344, t('uroscopy'), uroReq, () => {
+        mutate((st) => {
+          this.urine = readUrine(st, this.patient);
+        });
+        audio.sfx('splash');
+        this.render();
+      }, twoCol);
+      makeButton(this, 930, 344, t('refuse'), () => {
+        mutate((st) => {
+          if (p.class === 'beggar') st.ethics = Math.max(0, st.ethics - 3);
+          else st.reputation[st.locationId] = (st.reputation[st.locationId] ?? 0) - 1;
+          st.storyFlags['patients_remaining'] = Math.max(
+            0,
+            Number(st.storyFlags['patients_remaining'] ?? 1) - 1,
+          );
+        });
+        removeFromQueue(p.uid);
+        transitionTo(this, 'Bathhouse');
+      }, { ...twoCol, fill: COLORS.blood });
+
+      makeButton(this, 350, 458, t('fee_stance_label'), () => {
+        this.compactPage = 'care';
+        this.render();
+      }, twoCol);
+      makeButton(this, 930, 458, t('technique_pick'), () => {
+        this.compactPage = 'techniques';
+        this.render();
+      }, { ...twoCol, primary: true });
+      makeButton(this, GAME_WIDTH / 2, 574, t('regimen_title'), () => {
+        this.compactPage = 'regimens';
+        this.render();
+      }, full);
+    } else {
+      const stance = p.feeStance ?? 'usual';
+      const intensity = p.intensity ?? 'usual';
+      const sign = moonSign(s);
+      const veins = VEINS.filter((v) => s.stats.hand >= v.minHand);
+      const current = p.vein ?? veins[0]?.id ?? null;
+      const region = this.palpation?.region ?? null;
+      const verdict = current ? judgeVein(s, current, region) : null;
+
+      bodyText(this, GAME_WIDTH / 2, 172, `${t('moon_in', { sign: t(`zodiac_${sign}`), n: daysInSign(s) })}${
+        isEgyptianDay(s.day) ? ` · ${t('egyptian_day_warn')}` : ''
+      }`, {
+        fontSize: fontFor('small'),
+        color: isEgyptianDay(s.day) ? '#b33a3a' : '#a8c0c4',
+        wordWrap: { width: GAME_WIDTH - 160 }, align: 'center',
+      }).setOrigin(0.5);
+      makeButton(this, 350, 250, `${t('fee_stance_label')}: ${t(STANCE_KEYS[stance])} ▸`, () => {
+        p.feeStance = STANCES[(STANCES.indexOf(stance) + 1) % STANCES.length]!;
+        audio.sfx('click');
+        this.render();
+      }, { ...twoCol, fill: stance === 'alms' ? COLORS.green : stance === 'demand' ? 0x5a4420 : COLORS.panelLight });
+      makeButton(this, 930, 250, `${t('intensity_label')}: ${t(INTENSITY_KEYS[intensity])} ▸`, () => {
+        p.intensity = INTENSITIES[(INTENSITIES.indexOf(intensity) + 1) % INTENSITIES.length]!;
+        audio.sfx('click');
+        this.render();
+      }, { ...twoCol, fill: intensity === 'bold' ? 0x5a3020 : COLORS.panelLight });
+
+      if (current && verdict) {
+        makeButton(this, GAME_WIDTH / 2, 364, `${t('vein_label')}: ${t(`vein_${current}`)} ▸`, () => {
+          const index = veins.findIndex((v) => v.id === current);
+          p.vein = veins[(index + 1) % veins.length]!.id;
+          audio.sfx('click');
+          this.render();
+        }, {
+          ...full,
+          fill: verdict.tone === 'good' ? COLORS.green : verdict.tone === 'bad' ? COLORS.blood : COLORS.panelLight,
+        });
+        bodyText(this, GAME_WIDTH / 2, 430, t(verdict.key), {
+          fontSize: fontFor('small'),
+          color: verdict.tone === 'good' ? '#5a9a6e' : verdict.tone === 'bad' ? '#c9a227' : '#a88',
+          wordWrap: { width: GAME_WIDTH - 160 }, align: 'center',
+        }).setOrigin(0.5);
+      }
+
+      makeButton(this, 350, 528, t('back'), () => {
+        this.compactPage = 'exams';
+        this.render();
+      }, twoCol);
+      makeButton(this, 930, 528, t('technique_pick'), () => {
+        this.compactPage = 'techniques';
+        this.render();
+      }, { ...twoCol, primary: true });
+    }
+
+    installSceneKeys(this, { onBack: () => transitionTo(this, 'Bathhouse') });
+  }
+
+  private renderCompactTechniques(
+    s: ReturnType<typeof getState>,
+    h: number,
+    full: { width: number; height: number; fontSize: string; noHotkey: boolean },
+    twoCol: { width: number; height: number; fontSize: string; noHotkey: boolean },
+  ): void {
+    const orderIdx = (id: string) => {
+      const i = TECH_DISPLAY_ORDER.indexOf(id);
+      return i < 0 ? 999 : i;
+    };
+    const ordered = TECHNIQUES.filter((tech) => tech.id !== 'hygiene_clean' && s.unlockedTechniques.includes(tech.id)).sort(
+      (a, b) => orderIdx(a.id) - orderIdx(b.id),
+    );
+    const perPage = 3;
+    const pages = Math.max(1, Math.ceil(ordered.length / perPage));
+    if (this.techPage >= pages) this.techPage = 0;
+    const slice = ordered.slice(this.techPage * perPage, this.techPage * perPage + perPage);
+
+    bodyText(this, GAME_WIDTH / 2, 166, `${t('technique_pick')} · ${t('tech_page', { n: this.techPage + 1, m: pages })}`, {
+      fontSize: fontFor('small'), color: '#e8c547', align: 'center',
+    }).setOrigin(0.5);
+    slice.forEach((tech, index) => {
+      const check = canUseTechnique(s, tech.id);
+      const plausible = this.isPlausible(tech.id);
+      const label = `${plausible ? '★ ' : ''}${techName(tech.id)}${
+        check.ok ? '' : check.reason === 'supplies' ? ` — ${t('need_supplies')}` : ` — ${t('need_skill')}`
+      }`;
+      makeButton(this, GAME_WIDTH / 2, 238 + index * (h + 12), label, () => {
+        if (!check.ok) return;
+        this.selectedTech = tech.id;
+        this.phase = 'skill';
+        if (tech.category === 'blood') void audio.setContext('treatment_blood');
+        else void audio.setContext('treatment');
+        audio.sfx('click');
+        this.render();
+      }, {
+        ...full,
+        disabled: !check.ok,
+        fill: plausible ? COLORS.green : tech.category === 'dental' ? 0x4a3a28 : COLORS.panelLight,
+      });
+    });
+
+    const navY = 590;
+    makeButton(this, 350, navY, this.techPage > 0 ? '◀' : t('back'), () => {
+      if (this.techPage > 0) this.techPage -= 1;
+      else this.compactPage = 'exams';
+      this.render();
+    }, twoCol);
+    makeButton(this, 930, navY, this.techPage < pages - 1 ? '▶' : t('back'), () => {
+      if (this.techPage < pages - 1) this.techPage += 1;
+      else this.compactPage = 'exams';
+      this.render();
+    }, twoCol);
+    installSceneKeys(this, { onBack: () => {
+      this.compactPage = 'exams';
+      this.render();
+    } });
+  }
+
+  private renderCompactRegimens(
+    state: ReturnType<typeof getState>,
+    full: { width: number; height: number; fontSize: string; noHotkey: boolean },
+    twoCol: { width: number; height: number; fontSize: string; noHotkey: boolean },
+  ): void {
+    bodyText(this, GAME_WIDTH / 2, 166, t('regimen_intro'), {
+      fontSize: fontFor('small'), color: '#c4a574', wordWrap: { width: GAME_WIDTH - 160 }, align: 'center',
+    }).setOrigin(0.5);
+    REGIMENS.forEach((regimen, index) => {
+      const req = canStartRegimen(state, this.patient, regimen.id);
+      const y = 260 + index * 94;
+      gatedButton(this, GAME_WIDTH / 2, y, t(regimen.labelKey), req, () => this.finishRegimen(regimen.id), full);
+      bodyText(this, GAME_WIDTH / 2, y + 36, t(regimen.bodyKey), {
+        fontSize: fontFor('small'), color: '#a8c0c4', wordWrap: { width: GAME_WIDTH - 180 }, align: 'center',
+      }).setOrigin(0.5, 0);
+    });
+    bodyText(this, GAME_WIDTH / 2, 532, t('regimen_disclaimer'), {
+      fontSize: fontFor('small'), color: '#c9a227', wordWrap: { width: GAME_WIDTH - 180 }, align: 'center',
+    }).setOrigin(0.5, 0);
+    makeButton(this, GAME_WIDTH / 2, 624, t('back'), () => {
+      this.compactPage = 'exams';
+      this.render();
+    }, full);
+    installSceneKeys(this, { onBack: () => {
+      this.compactPage = 'exams';
+      this.render();
+    } });
   }
 
   private renderSkillCheck(): void {

@@ -172,31 +172,3 @@ export function installPinchZoom(scene: Phaser.Scene): void {
     scene.input.off(Phaser.Input.Events.POINTER_UP, onUp);
   });
 }
-
-/**
- * Ask for fullscreen on the first touch.
- *
- * Safari on iOS keeps its address and tab bars, which on a phone in landscape
- * eats a third of the height. Fullscreen has to come from a user gesture, so
- * it is requested on the first tap and never again — repeatedly prompting a
- * player who declined would be obnoxious.
- *
- * Fails silently: iPhone Safari does not support the Fullscreen API on
- * arbitrary elements at all, so this helps on iPad and Android and does
- * nothing on iPhone.
- */
-export function requestFullscreenOnFirstTouch(game: Phaser.Game): void {
-  if (!isTouchDevice()) return;
-  let asked = false;
-  const ask = () => {
-    if (asked) return;
-    asked = true;
-    window.removeEventListener('pointerdown', ask);
-    try {
-      if (!game.scale.isFullscreen) game.scale.startFullscreen();
-    } catch {
-      /* Unsupported (iPhone Safari) or refused — the game works either way. */
-    }
-  };
-  window.addEventListener('pointerdown', ask, { once: true });
-}

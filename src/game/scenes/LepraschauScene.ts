@@ -49,8 +49,8 @@ export class LepraschauScene extends Phaser.Scene {
   private render(): void {
     this.children.removeAll();
     drawBackground(this, 'room');
-    sceneBackground(this, 'bg_council', {
-      fallbacks: ['bg_politics', 'bg_journal'],
+    sceneBackground(this, 'bg_council_v11', {
+      fallbacks: ['bg_council', 'bg_politics', 'bg_journal'],
       brightness: 0.5,
       topScrim: 90,
     });

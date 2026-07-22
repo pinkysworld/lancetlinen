@@ -16,8 +16,10 @@ import { ensureFamily } from './systems/family';
 import { ensurePolitics } from './systems/politics';
 import { ensureJournal } from './systems/journal';
 import { ensureReputation } from './systems/reputation';
+import { ensureAct3Consequences } from './systems/act3';
 import { getLocale, t } from './i18n';
 import { ORIGINS, originById, applyOriginStats } from './data/origins';
+import { APP_VERSION } from './appInfo';
 
 export function defaultStats(): Stats {
   return { hand: 3, eye: 3, tongue: 2, back: 3, soul: 3 };
@@ -44,7 +46,7 @@ export function createNewGame(
   // a technique or two. Previously every run started identical.
   const origin = originById(originId);
   return {
-    version: 2,
+    version: 3,
     playerName: playerName || 'Bader',
     originId: origin.id,
     locale,
@@ -113,6 +115,8 @@ export function createNewGame(
     freePlay: false,
     audioMuted: false,
     staff: [],
+    carePlans: [],
+    act3Consequences: [],
     spouse: null,
     heir: null,
     office: 'none',
@@ -141,6 +145,7 @@ export function ensureFullState(s: GameState): void {
   ensurePolitics(s);
   ensureJournal(s);
   ensureReputation(s);
+  ensureAct3Consequences(s);
   ensureStarterTechniques(s);
   // Merge rather than replace: older saves keep the settings they had and gain
   // defaults for anything added since.
@@ -152,6 +157,10 @@ export function ensureFullState(s: GameState): void {
   if (s.lastCityEventDay === undefined) s.lastCityEventDay = 0;
   if (s.festivalActive === undefined) s.festivalActive = null;
   if (!s.titlesOwned) s.titlesOwned = ['citizen'];
+  if (!s.carePlans) s.carePlans = [];
+  // The release number belongs in SaveMeta. This schema number only controls
+  // state migration, so a presentation-only release never breaks old saves.
+  if (s.version < 3) s.version = 3;
 }
 
 let state: GameState = createNewGame('Bader');
@@ -188,6 +197,8 @@ export interface SaveMeta {
   locationId: string;
   act: number;
   coin: number;
+  /** Visible build that produced the save; absent remains valid for legacy saves. */
+  appVersion?: string;
 }
 
 export interface SaveResult {
@@ -210,6 +221,7 @@ function buildMeta(s: GameState): SaveMeta {
     locationId: s.locationId,
     act: s.act,
     coin: s.coin,
+    appVersion: APP_VERSION,
   };
 }
 

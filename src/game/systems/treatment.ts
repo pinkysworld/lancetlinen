@@ -86,6 +86,9 @@ export function generatePatient(state: GameState): PatientInstance {
       return Math.random() < 0.08;
     }
     if (t.id === 'plague_like' && !state.epidemicActive) return false;
+    // Obstetric help is deliberately not a routine Bader service. It appears
+    // only after the household network produces a referral in act 3.
+    if (t.id === 'midwife_assist' && !state.storyFlags['midwife_referral']) return false;
     if (t.id === 'noble_secret' && !state.storyFlags['bath_license']) return Math.random() < 0.05;
     if (t.id === 'fistula_case' && state.totalTreated < 12) return false;
     if (t.id === 'cataract' || t.id === 'eye_cloud') {

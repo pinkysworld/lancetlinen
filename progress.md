@@ -1,0 +1,45 @@
+Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit" plan for Lancet & Linen.
+
+## 2026-07-21 — implementation started
+
+- Baseline is clean: TypeScript, 510 unit tests, and production build passed before changes.
+- First delivery target: compact-size primitives plus the menu, character creation, dialogue, and day-summary layouts.
+- Browser evidence from the audit: the existing compact main menu works, but character creation, dialogue, and the day summary were still desktop layouts at 844×390.
+- No new visual assets are needed. Keep portrait orientation as a rotate prompt.
+
+## 2026-07-21 — completed implementation and checks
+
+- Compact controls now derive from a 44 CSS-pixel floor, including iPad landscape FIT scaling.
+- Main menu and Hub are paginated; character origin, dialogue, day ledger, and treatment all have dedicated compact flows.
+- Treatment is three short pages: examination, fee/intensity plus moon/vein choice, then a three-technique pager.
+- Fullscreen is Settings-only, feature-detected, and rejection-safe. The old first-tap fullscreen path has been removed.
+- Added a DEV-only `render_game_to_text()` control/state bridge and deterministic `advanceTime(ms)` for browser testing.
+- Added focused logic coverage for events, family, guidance, journal, queue, requirements, and save export/import.
+- Browser screenshots checked 844×320, 844×390, 932×430, and 1180×820 landscape. Core controls reported at least 44 CSS pixels.
+- Hardened button event cleanup after the browser audit found an old scene could be destroyed before its pointer-up cleanup completed; a fresh touch run produced no browser errors.
+- Final validation: `npx tsc --noEmit`, `npm test` (521 tests), `npm run build`, and `git diff --check` passed. The build remains 511.28 kB gzip and retains the existing chunk-size warning.
+
+## 2026-07-21 — v1.1.0 foundation
+
+- Package and Vite release metadata now use v1.1.0; saved metadata records the app version while save schema migrates to v3.
+- Fixed the desktop and compact Lombard layout by giving the emergency loan a dedicated row; treatment findings now begin below the portrait frame and measured status text.
+- Disabled gated actions are now defended in both button registries and callbacks. Debt repayment has an explicit unavailable reason below the inactive control.
+- Added the local `playwright` dev dependency for reproducible E2E work. Its canvas exporter is black in this WebGL environment even in headed mode, so browser visuals must also be checked through the in-app browser screenshots; text-state artifacts remain valid.
+- Checks: `npx tsc --noEmit` and `npm test` (521 tests) passed.
+
+## 2026-07-21 — v1.1.0 history, household, Manual and browser pass
+
+- Added stored Act-3 consequences, staff traits/events, spouse household focus, story-gated birth assistance, and the Nürnberg council/sworn-craft rule.
+- Added the twelve-chapter Manual, a 60-entry bilingual Lexicon with evidence/source markers, the source bibliography, and the Grok Build v1.1 asset brief.
+- Added deterministic DEV presets (`hub-broke`, treatment, debt, household and regimen states) to `render_game_to_text` / `advanceTime` testing.
+- Fixed Safari viewport recovery: Phaser now rebuilds its backing width when visual-viewport dimensions settle after rotation or browser-bar changes.
+- Browser checked touch-mode 844×320 main menu, Manual and Lexicon list/article. Canvas fills 844×320, 844×390 and 932×430 after boot; iPad-landscape remains safely FIT-scaled without clipping.
+- Final validation passed: `npx tsc --noEmit`, `npm test` (532 tests), `npm run build`, and `git diff --check`. The production bundle is 528.23 kB gzip; its size warning remains the explicitly deferred performance follow-up.
+- Final touch-mode review at 844×320 confirmed the full-width Lexicon article, its evidence/source marker, and readable Back control. The in-app browser session was then reset and closed.
+
+## 2026-07-22 — Grok v1.1 art integration verified
+
+- Grok's four 2048×1152 scene backgrounds, nine 768×1024 staff/family portraits, and three four-frame WebP ambience loops are present, preloaded, and wired into the relevant treatment, household, debt, council, staff, and family surfaces.
+- The three loops run at 3 fps, have a frame-one static fallback, and honour the existing reduced-particles setting.
+- Static visual inspection found deliberate blank/dark space for UI text in each new background. Automated validation remains green: `npx tsc --noEmit`, `npm test` (532), `npm run build`, and `git diff --check`.
+- The external Playwright game client cannot resolve the workspace-local Playwright package from its skill directory; its generated canvas capture is additionally black in this WebGL environment. Use the existing DEV text bridge plus in-app/physical-device visual acceptance for the final UI pass.

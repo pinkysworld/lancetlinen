@@ -34,6 +34,18 @@ const OFFICE_ORDER: OfficeId[] = [
   'council_seat',
 ];
 
+/** Nürnberg's council regulated craft through sworn work and inspection; it
+ * is not modelled as a generic guild ladder. Other towns retain that ladder. */
+export function craftAuthority(state: GameState): 'council' | 'guild' {
+  return state.locationId === 'nurnberg' ? 'council' : 'guild';
+}
+
+function officeOrderFor(state: GameState): OfficeId[] {
+  return craftAuthority(state) === 'council'
+    ? ['none', 'quarter_warden', 'city_surgeon', 'council_seat']
+    : OFFICE_ORDER;
+}
+
 /**
  * May the player stand for this office, and if not, which condition fails?
  *
@@ -51,9 +63,11 @@ export function canApplyForOffice(
   ensurePolitics(state);
   ensureReputation(state);
   const cost = OFFICE_COST[office];
+  const order = officeOrderFor(state);
   return firstUnmet(
+    must(!(craftAuthority(state) === 'council' && office === 'guild_elder'), 'req_nurnberg_craft'),
     must(
-      OFFICE_ORDER.indexOf(office) > OFFICE_ORDER.indexOf(state.office),
+      order.indexOf(office) > order.indexOf(state.office),
       'req_office_rank',
     ),
     // Civic office was closed to a man of doubtful standing. This is the point
@@ -62,7 +76,9 @@ export function canApplyForOffice(
     // Offices were not handed to disgraced cutters.
     atLeast('req_elite', state.repElite, eliteForOffice(office)),
     atLeast('req_council', state.councilFavor, cost.council),
-    atLeast('req_guild', state.guildFavor, cost.guild),
+    // In Nürnberg the council's sworn-work rule replaces a guild-favour gate.
+    // The higher council threshold below remains the public accountability.
+    atLeast('req_guild', state.guildFavor, craftAuthority(state) === 'council' ? 0 : cost.guild),
     atLeast('req_coin', state.coin, cost.coin),
   );
 }
