@@ -1,4 +1,4 @@
-import type { GameState, OfficeId, TitleId } from '../types';
+import type { GameState, OfficeCandidacy, OfficeId, TitleId } from '../types';
 import { addJournal } from './journal';
 import { canHoldOffice, honourFromScandal, honourFromCharity } from './honour';
 import { ensureReputation, eliteForOffice, fameForTitle } from './reputation';
@@ -12,6 +12,39 @@ export const OFFICE_COST: Record<Exclude<OfficeId, 'none'>, { coin: number; coun
   council_seat: { coin: 350, council: 40, guild: 15 },
 };
 
+/**
+ * A Bader cannot buy civic authority at a counter. The money is a filing,
+ * oath and patronage expense split between the petition and the eventual
+ * appointment, while the decision itself happens after the council has met.
+ */
+export const OFFICE_APPLICATION_FEE: Record<Exclude<OfficeId, 'none'>, number> = {
+  quarter_warden: 20,
+  guild_elder: 30,
+  city_surgeon: 50,
+  council_seat: 80,
+};
+
+export const OFFICE_DECISION_DAYS: Record<Exclude<OfficeId, 'none'>, number> = {
+  quarter_warden: 3,
+  guild_elder: 4,
+  city_surgeon: 5,
+  council_seat: 6,
+};
+
+/** Career evidence beyond coin and favour; values are deliberate pacing gates. */
+export const OFFICE_CAREER_REQUIREMENTS: Record<Exclude<OfficeId, 'none'>, {
+  local: number;
+  treated: number;
+  prestige: number;
+}> = {
+  quarter_warden: { local: 25, treated: 12, prestige: 8 },
+  guild_elder: { local: 35, treated: 24, prestige: 16 },
+  city_surgeon: { local: 50, treated: 35, prestige: 28 },
+  council_seat: { local: 65, treated: 50, prestige: 45 },
+};
+
+export const OFFICE_ACTION_COOLDOWN_DAYS = 7;
+
 export const TITLE_COST: Record<Exclude<TitleId, 'citizen'>, { coin: number; prestige: number }> = {
   freeman: { coin: 50, prestige: 5 },
   master_bader: { coin: 150, prestige: 15 },
@@ -24,6 +57,8 @@ export function ensurePolitics(state: GameState): void {
   if (!state.title) state.title = 'citizen';
   if (!state.titlesOwned) state.titlesOwned = ['citizen'];
   if (state.prestige === undefined) state.prestige = 0;
+  if (state.officeCandidacy === undefined) state.officeCandidacy = null;
+  if (!state.officeActionLastDay) state.officeActionLastDay = {};
 }
 
 /** Rank order of civic offices; you climb, you do not skip or step back. */
@@ -57,13 +92,14 @@ function officeOrderFor(state: GameState): OfficeId[] {
  * then price, because being quoted a price you can meet when the real
  * obstacle is your reputation sends you off to earn coin you did not need.
  */
-export function canApplyForOffice(
+function canBeConsideredForOffice(
   state: GameState,
   office: Exclude<OfficeId, 'none'>,
 ): Requirement {
   ensurePolitics(state);
   ensureReputation(state);
   const cost = OFFICE_COST[office];
+  const career = OFFICE_CAREER_REQUIREMENTS[office];
   const order = officeOrderFor(state);
   return firstUnmet(
     must(!(craftAuthority(state) === 'council' && office === 'guild_elder'), 'req_nurnberg_craft'),
@@ -74,27 +110,137 @@ export function canApplyForOffice(
     // Civic office was closed to a man of doubtful standing. This is the point
     // where the honour axis bites hardest: coin alone will not buy a seat.
     must(canHoldOffice(state).ok, 'req_honour'),
+    atLeast('req_local_reputation', state.reputation[state.locationId] ?? 0, career.local),
+    atLeast('req_treated', state.totalTreated, career.treated),
+    atLeast('req_prestige', state.prestige ?? 0, career.prestige),
     // Offices were not handed to disgraced cutters.
     atLeast('req_elite', state.repElite, eliteForOffice(office)),
     atLeast('req_council', state.councilFavor, Math.max(0, cost.council - councilRequirementDiscount(state))),
     // In Nürnberg the council's sworn-work rule replaces a guild-favour gate.
     // The higher council threshold below remains the public accountability.
     atLeast('req_guild', state.guildFavor, craftAuthority(state) === 'council' ? 0 : cost.guild),
-    atLeast('req_coin', state.coin, cost.coin),
+    atLeast('req_coin', state.coin, OFFICE_APPLICATION_FEE[office]),
   );
 }
 
+/** May the player file a request for a later council/guild appointment? */
+export function canApplyForOffice(
+  state: GameState,
+  office: Exclude<OfficeId, 'none'>,
+): Requirement {
+  ensurePolitics(state);
+  return firstUnmet(
+    must(!state.officeCandidacy, 'req_office_candidacy_active'),
+    canBeConsideredForOffice(state, office),
+  );
+}
+
+/** File an appointment request; it never grants the office immediately. */
 export function applyForOffice(state: GameState, office: Exclude<OfficeId, 'none'>): boolean {
   if (!canApplyForOffice(state, office).ok) return false;
-  const cost = OFFICE_COST[office];
+  const fee = OFFICE_APPLICATION_FEE[office];
+  const dueDay = state.day + OFFICE_DECISION_DAYS[office];
+  state.coin -= fee;
+  state.officeCandidacy = {
+    office,
+    cityId: state.locationId,
+    filedDay: state.day,
+    dueDay,
+    feePaid: fee,
+  };
+  addJournal(state, 'journal_office_petition', 'politics', {
+    office: `office_${office}`,
+    day: dueDay,
+  });
+  return true;
+}
 
-  state.coin -= cost.coin;
-  state.office = office;
-  state.prestige += 10;
-  state.councilFavor += 5;
+/** Remaining payment is due only if the council/guild actually confirms it. */
+function confirmationCost(candidacy: OfficeCandidacy): number {
+  return Math.max(0, OFFICE_COST[candidacy.office].coin - candidacy.feePaid);
+}
+
+/** Resolve an outstanding appointment once its stated council day has arrived. */
+export function resolveDueOfficeCandidacy(state: GameState): 'appointed' | 'refused' | null {
+  ensurePolitics(state);
+  const candidacy = state.officeCandidacy;
+  if (!candidacy || state.day < candidacy.dueDay) return null;
+
+  const selection = canBeConsideredForOffice(state, candidacy.office);
+  const remaining = confirmationCost(candidacy);
+  const stayedInCity = state.locationId === candidacy.cityId;
+  if (!selection.ok || !stayedInCity || state.coin < remaining) {
+    state.officeCandidacy = null;
+    addJournal(state, 'journal_office_refused', 'politics', {
+      office: `office_${candidacy.office}`,
+    });
+    return 'refused';
+  }
+
+  state.coin -= remaining;
+  state.office = candidacy.office;
+  state.prestige = Math.min(100, (state.prestige ?? 0) + 8);
+  state.councilFavor += 3;
   state.repElite = Math.min(100, state.repElite + 2);
   state.repFame = Math.min(100, state.repFame + 1);
-  addJournal(state, `journal_office_${office}`, 'politics');
+  state.officeCandidacy = null;
+  addJournal(state, `journal_office_${candidacy.office}`, 'politics');
+  return 'appointed';
+}
+
+export function officeActionKey(office: OfficeId): string | null {
+  switch (office) {
+    case 'quarter_warden': return 'office_action_quarter_warden';
+    case 'guild_elder': return 'office_action_guild_elder';
+    case 'city_surgeon': return 'office_action_city_surgeon';
+    case 'council_seat': return 'office_action_council_seat';
+    default: return null;
+  }
+}
+
+/** One useful, bounded duty per office week, not a new repeatable money button. */
+export function canUseOfficeAction(state: GameState): Requirement {
+  ensurePolitics(state);
+  if (state.office === 'none') return { ok: false, reasonKey: 'req_no_office' };
+  const last = state.officeActionLastDay?.[state.office] ?? -OFFICE_ACTION_COOLDOWN_DAYS;
+  const readyDay = last + OFFICE_ACTION_COOLDOWN_DAYS;
+  return firstUnmet(
+    atLeast('req_office_action_wait', state.day, readyDay),
+    must(
+      state.office !== 'city_surgeon' || (state.inventory.linen >= 2 && state.inventory.salve >= 1),
+      'req_office_action_supplies',
+    ),
+  );
+}
+
+export function useOfficeAction(state: GameState): boolean {
+  if (!canUseOfficeAction(state).ok || state.office === 'none') return false;
+  const office = state.office;
+  state.officeActionLastDay![office] = state.day;
+  switch (office) {
+    case 'quarter_warden':
+      state.guildFavor += 2;
+      state.councilFavor += 1;
+      state.reputation[state.locationId] = Math.min(100, (state.reputation[state.locationId] ?? 0) + 1);
+      break;
+    case 'guild_elder':
+      state.guildFavor += 4;
+      state.repElite = Math.min(100, state.repElite + 1);
+      break;
+    case 'city_surgeon':
+      state.inventory.linen -= 2;
+      state.inventory.salve -= 1;
+      state.coin += 28;
+      state.repElite = Math.min(100, state.repElite + 2);
+      state.reputation[state.locationId] = Math.min(100, (state.reputation[state.locationId] ?? 0) + 2);
+      break;
+    case 'council_seat':
+      state.councilFavor += 4;
+      state.prestige = Math.min(100, (state.prestige ?? 0) + 2);
+      state.repElite = Math.min(100, state.repElite + 1);
+      break;
+  }
+  addJournal(state, `journal_${officeActionKey(office)}`, 'politics');
   return true;
 }
 

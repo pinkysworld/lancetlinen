@@ -6,6 +6,7 @@ import { createNewGame, getState, setState } from './game/state';
 import type { GameState, PatientInstance } from './game/types';
 import { startRegimen } from './game/systems/regimen';
 import { startCorrespondence } from './game/systems/correspondence';
+import { applyForOffice } from './game/systems/politics';
 import { sceneButtons } from './game/ui/theme';
 
 const parent = document.getElementById('game-container');
@@ -51,7 +52,9 @@ if (ENABLE_DEV_TEST_BRIDGE) {
     | 'staff-training'
     | 'regimen-follow-up'
     | 'correspondence-active'
-    | 'city-agreement';
+    | 'city-agreement'
+    | 'office-candidacy'
+    | 'office-duty';
   const fixedPatient = (templateId: string, complaintKey: string): PatientInstance => ({
     uid: `test-${templateId}`,
     templateId,
@@ -107,6 +110,9 @@ if (ENABLE_DEV_TEST_BRIDGE) {
       correspondence: state.correspondence ?? null,
       houseRelations: state.houseRelations ?? {},
       cityConsequences: state.cityConsequences ?? [],
+      office: state.office,
+      officeCandidacy: state.officeCandidacy ?? null,
+      officeActionLastDay: state.officeActionLastDay ?? {},
       treated: state.totalTreated,
       ending: state.ending,
       staff: state.staff.map((member) => ({
@@ -201,6 +207,28 @@ if (ENABLE_DEV_TEST_BRIDGE) {
         state.storyFlags['correspondence_augsburg_complete'] = true;
         scene = 'Civic';
         break;
+      case 'office-candidacy':
+        state.coin = 200;
+        state.honour = 80;
+        state.reputation.nurnberg = 30;
+        state.totalTreated = 14;
+        state.prestige = 10;
+        state.repElite = 30;
+        state.councilFavor = 20;
+        applyForOffice(state, 'quarter_warden');
+        scene = 'Politics';
+        break;
+      case 'office-duty':
+        state.coin = 200;
+        state.honour = 80;
+        state.reputation.nurnberg = 40;
+        state.totalTreated = 22;
+        state.prestige = 20;
+        state.repElite = 35;
+        state.councilFavor = 30;
+        state.office = 'quarter_warden';
+        scene = 'Politics';
+        break;
     }
     setState(state);
     startTestScene(scene, data);
@@ -212,7 +240,7 @@ if (ENABLE_DEV_TEST_BRIDGE) {
   const presetFromUrl = new URLSearchParams(window.location.search).get('testPreset');
   const allowedPresets: TestPreset[] = [
     'hub-broke', 'treatment-max-findings', 'debt-empty', 'debt-payable',
-    'act3-household', 'staff-training', 'regimen-follow-up', 'correspondence-active', 'city-agreement',
+    'act3-household', 'staff-training', 'regimen-follow-up', 'correspondence-active', 'city-agreement', 'office-candidacy', 'office-duty',
   ];
   if (presetFromUrl && allowedPresets.includes(presetFromUrl as TestPreset)) {
     const loadAfterMenu = () => {

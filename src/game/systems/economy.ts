@@ -22,7 +22,7 @@ import { checkAchievements } from './achievements';
 import { incomeMult, pressureMult } from './settings';
 import { householdCostRelief, spouseDaily } from './family';
 import { resolveAct3Consequences } from './act3';
-import { officeIncomeBonus } from './politics';
+import { officeIncomeBonus, resolveDueOfficeCandidacy } from './politics';
 import { festivalPatientMult } from './events';
 import { addJournal } from './journal';
 import { syncQuests } from './story';
@@ -61,6 +61,10 @@ export function applyMorningCosts(state: GameState): { cost: number; wood: numbe
   // evening. The journal makes the consequence visible before new patients.
   resolveDueRegimens(state);
   resolveDueStaffTraining(state);
+  // Petitions are dealt with when the next working day opens. This keeps the
+  // stated Ratstag visible, and prevents office applications from functioning
+  // like instant purchases.
+  resolveDueOfficeCandidacy(state);
   const cost = dailyOperatingCost(state);
   const local = getLocalBath(state);
   const wood = local && local.kind === 'bathhouse' ? WOOD_PER_DAY : 1;

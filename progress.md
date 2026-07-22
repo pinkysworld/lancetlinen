@@ -100,3 +100,10 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - Save schema 7 migrates existing staff without changing skill, loyalty or employment history; it only adds the new pacing fields deterministically.
 - The Nürnberg craft explanation now measures its own wrapped height before office buttons are placed. Politics panels reserve the repayment row, and the Lombard control is rendered after panel backgrounds so an active repayment face cannot appear disabled underneath them.
 - Focused pacing, migration, responsive and TypeScript checks pass (55 tests); final `npm test` (557), `npx tsc --noEmit`, `npm run build` and `git diff --check` pass. The skill-owned external Playwright client remains blocked by its package-resolution issue. In-app browser screenshots verified training start/status and the debt-payable Politics layout with no console warnings.
+
+## 2026-07-22 — civic appointments and bounded office duties
+
+- Save schema 8 replaces instant office purchases with a paid petition, a visible council day and a later appointment decision. Candidates now also require honour, local standing, treated patients, prestige and the relevant civic networks; a city change, lost prerequisites or missing remaining funds can make the petition fail.
+- Nürnberg is explicitly modelled as a restricted petition to a patrician council, not a general election. The final internal-compatible `council_seat` role is displayed as *Ratsbeauftragter* / *Council commissioner*, avoiding a claim that the player enters the Innerer Rat.
+- Every office now has a visible, bounded service action with a seven-day cooldown: ward round, craft inspection, civic wound inspection, or a limited council charge. Their effects are small and specific; the civic inspection consumes linen and salve.
+- Added a deterministic `office-candidacy` and `office-duty` DEV preset plus text-bridge state. The browser pass verified petition timing, working duty effects, disabled cooldown feedback and zero console errors. The required skill-owned external Playwright client still cannot resolve its own Playwright dependency.

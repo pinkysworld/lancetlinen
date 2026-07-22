@@ -34,7 +34,7 @@ describe('staff pacing', () => {
     const state = staffedState();
     state.version = 6;
     ensureFullState(state);
-    expect(state.version).toBe(7);
+    expect(state.version).toBe(8);
     expect(state.staff[0]).toMatchObject({ skill: 4, daysEmployed: 3, lastGiftDay: 0 });
   });
 

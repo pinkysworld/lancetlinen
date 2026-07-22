@@ -99,6 +99,22 @@ standing and council favour, is journalled once, and has a transparent local
 effect. It neither unlocks a guild elder position nor changes another city's
 office rules.
 
+### Office petitions and council service / Amtseingaben und Ratsdienst
+
+City offices are a paced career system, not instant purchases. A candidate needs
+honour, local standing, treated patients, prestige and the relevant networks;
+filing an input costs a smaller fee. The council or craft body decides only on
+the displayed council day, and the remaining expense is paid only on a
+successful appointment. Leaving the city, losing the required standing or
+spending the remaining funds can therefore make the petition fail.
+
+In Nürnberg this is deliberately **not** a general election. The game models
+a restricted petition to a patrician council. The final role is called a
+*Ratsbeauftragter* rather than a seat in the Innerer Rat. Each office grants one
+bounded service action every seven days: ward round, craft inspection, civic
+wound inspection, or a limited council charge. These actions provide small,
+visible civic benefits rather than an unlimited coin source.
+
 ## 11. Act 3
 
 Six saved consequence channels can fire once: epidemic memory, rival

@@ -59,6 +59,15 @@ export type CorrespondenceRouteId = 'augsburg_cloth' | 'florentine_letters' | 't
 /** Permanent local agreements; they belong to a city, not to a travel map bonus. */
 export type CityConsequenceId = 'augsburg_linen_contract' | 'nurnberg_sworn_inspection';
 
+/** A filed request for a civic appointment, resolved on a later council day. */
+export interface OfficeCandidacy {
+  office: Exclude<OfficeId, 'none'>;
+  cityId: string;
+  filedDay: number;
+  dueDay: number;
+  feePaid: number;
+}
+
 export interface Stats {
   hand: number;
   eye: number;
@@ -383,6 +392,10 @@ export interface GameState {
   spouse: SpouseState | null;
   heir: HeirState | null;
   office: OfficeId;
+  /** A civic appointment is pending; old saves start with no application. */
+  officeCandidacy?: OfficeCandidacy | null;
+  /** Last day an office-specific authority action was used, keyed by office. */
+  officeActionLastDay?: Partial<Record<Exclude<OfficeId, 'none'>, number>>;
   title: TitleId;
   journal: JournalEntry[];
   settings: GameSettings;

@@ -41,9 +41,14 @@ import {
   canBuyTitle,
   canBribeCouncil,
   canDonateChurch,
+  canUseOfficeAction,
   OFFICE_COST,
+  OFFICE_APPLICATION_FEE,
+  OFFICE_DECISION_DAYS,
   TITLE_COST,
   craftAuthority,
+  officeActionKey,
+  useOfficeAction,
 } from '../systems/politics';
 import type { OfficeId, TitleId } from '../types';
 import { GAME_WIDTH, GAME_HEIGHT } from '../types';
@@ -56,7 +61,6 @@ import { activeQuests, questTitleKey } from '../systems/story';
 import { activeFestival, rollCityEvent } from '../systems/events';
 import {
   reputationSummaryKeys,
-  eliteForOffice,
   fameForTitle,
   ensureReputation,
 } from '../systems/reputation';
@@ -462,8 +466,6 @@ export class PoliticsScene extends Phaser.Scene {
       (off) => !(craftAuthority(s) === 'council' && off === 'guild_elder'),
     );
     offices.forEach((off, i) => {
-      const c = OFFICE_COST[off];
-      const needE = eliteForOffice(off);
       // Six separate conditions gate an office and every one of them used to
       // produce the same "denied" toast, so the player could not tell coin
       // from council favour from honour.
@@ -471,18 +473,43 @@ export class PoliticsScene extends Phaser.Scene {
         this,
         300,
         actionY + i * 55,
-        `${t(`office_${off}`)} — ${t('coin_amount', { n: c.coin })} · ${t('rep_elite')} ab ${needE}`,
+        `${t(`office_${off}`)} — ${t('office_petition_fee', { n: OFFICE_APPLICATION_FEE[off] })} · ${t('office_decision_in', { n: OFFICE_DECISION_DAYS[off] })}`,
         canApplyForOffice(s, off),
         () => {
           mutate((st) => applyForOffice(st, off));
           audio.sfx('guild');
-          showToast(this, t('office_gained'));
+          showToast(this, t('office_petition_sent'));
           saveGame();
           this.scene.restart();
         },
         { width: 420, height: 44, fontSize: '13px' },
       );
     });
+    const officeStatusY = actionY + offices.length * 55 + 6;
+    if (s.officeCandidacy) {
+      bodyText(
+        this,
+        60,
+        officeStatusY,
+        t('office_candidacy_pending', {
+          office: t(`office_${s.officeCandidacy.office}`),
+          day: s.officeCandidacy.dueDay,
+        }),
+        { fontSize: '12px', color: '#c9b48a', wordWrap: { width: 520 } },
+      );
+    } else if (s.office && s.office !== 'none') {
+      const actionKey = officeActionKey(s.office)!;
+      const actionReq = canUseOfficeAction(s);
+      gatedButton(this, 300, officeStatusY + 28, t(actionKey), actionReq, () => {
+        mutate((st) => useOfficeAction(st));
+        audio.sfx('guild');
+        saveGame();
+        this.scene.restart();
+      }, { width: 420, height: 44, fontSize: '13px' });
+      bodyText(this, 60, officeStatusY + 58, t(`${actionKey}_help`), {
+        fontSize: '11px', color: '#c9b48a', wordWrap: { width: 520 },
+      });
+    }
 
     panel(this, 660, 120, 580, 500);
     bodyText(this, 680, 135, t('titles'), { fontSize: '18px', color: '#e8c547' });

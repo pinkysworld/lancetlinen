@@ -21,7 +21,7 @@ describe('v1.3 save migration', () => {
     legacy.staff = [{ id: 'old-1', name: 'Klara', role: 'bathmaid', propertyId: null, loyalty: 66, skill: 4, wage: 7, daysEmployed: 9 }];
     legacy.spouse = { name: 'suitor_anna', affection: 70, cityId: 'nurnberg', marriedDay: 2 };
     ensureFullState(legacy);
-    expect(legacy.version).toBe(7);
+    expect(legacy.version).toBe(8);
     expect(legacy.coin).toBe(73);
     expect(legacy.carePlans).toEqual([]);
     expect(legacy.act3Consequences).toEqual([]);
@@ -36,6 +36,8 @@ describe('v1.3 save migration', () => {
     expect(legacy.spouse?.householdFocus).toBe('home');
     expect(legacy.courtshipLastActionDay).toBe(0);
     expect(legacy.spouseLastGiftDay).toBe(0);
+    expect(legacy.officeCandidacy).toBeNull();
+    expect(legacy.officeActionLastDay).toEqual({});
   });
 });
 
@@ -76,6 +78,9 @@ describe('Nuremberg craft rule', () => {
     state.repElite = 100;
     state.councilFavor = 100;
     state.guildFavor = 0;
+    state.reputation.nurnberg = 25;
+    state.totalTreated = 12;
+    state.prestige = 8;
     expect(craftAuthority(state)).toBe('council');
     expect(canApplyForOffice(state, 'quarter_warden').ok).toBe(true);
     expect(canApplyForOffice(state, 'guild_elder')).toMatchObject({ ok: false, reasonKey: 'req_nurnberg_craft' });

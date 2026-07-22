@@ -13,6 +13,8 @@ turn gameplay into medical advice or claim that a medieval practice works.
 5. Treccani, [Giovanni di Bicci de’ Medici](https://www.treccani.it/enciclopedia/giovanni-di-bicci-de-medici_res-0d7a7119-9b6c-11e6-9e53-00271042e8d9_%28Dizionario-Biografico%29/). Used for the 1397 Florentine Medici-bank chronology and the distinction between the 1382 correspondence setting and later fame.
 6. Metropolitan Museum of Art, [Medieval Islamic textiles and trade](https://www.metmuseum.org/perspectives/medieval-islamic-textiles-twentieth-century). Used for fourteenth-century trade links carrying textiles through Byzantine and Mediterranean routes, including Tabriz.
 7. The Vatican, [Alexander VI (Rodrigo de Borja)](https://www.vatican.va/content/vatican/en/holy-father/alessandro-vi.html). Used to delimit the much later 1492–1503 papal period rather than placing a powerful Borgia faction in 1382.
+8. Museen der Stadt Nürnberg, [Nürnberger Rat](https://museen.nuernberg.de/fembohaus/dauerausstellung/zeitreise-durch-die-geschichte-nuernbergs/nuernberger-rat/). Used for the patrician character of Nürnberg's Innerer Rat and the exclusion of other groups after 1349.
+9. Stadtarchiv Nürnberg, [Daten zur Stadtgeschichte](https://www.nuernberg.de/internet/stadtarchiv/stadtgeschichte_daten.html). Used for the around-1320 patrician council constitution and the suppression of the 1348 craft uprising.
 
 ## How the game uses them
 
@@ -34,6 +36,7 @@ Humoral balance, uroscopy, miasma, bloodletting, fumigation, bathing, diet and r
 - The Fugger contact is a small Augsburg weaving-house connection; the Medici contact is a correspondence setting, not the later Medici bank; the Borgia name is kept to the Lexicon as a chronological boundary, not a live 1382 faction.
 - The Augsburg linen agreement is a limited local follow-up to the textile correspondence. It does not claim a documented personal contract for this Bader.
 - The Nürnberg council inspection is a **Spielvereinfachung** of local craft regulation and civic oversight. It affects only that city's council gate and does not invent a universal guild ladder.
+- A civic office is represented as a petition, a stated council day and an appointment decision, not as a modern election. The visible *Ratsbeauftragter* is a limited council commission, not a claimed seat in Nürnberg's Innerer Rat. Its timed duties are game abstractions of civic and craft service.
 
 # Spielvereinfachungen
 
