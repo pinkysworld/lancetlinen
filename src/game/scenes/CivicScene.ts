@@ -6,7 +6,7 @@ import { GAME_WIDTH } from '../types';
 import { drawBackground, makeButton, bodyText, panel, titleText, hudText } from '../ui/theme';
 import { explain, gatedButton } from '../ui/gated';
 import { addLocationBackground } from '../ui/art';
-import { transitionTo } from '../ui/fx';
+import { sceneBackground, transitionTo } from '../ui/fx';
 import { installSceneKeys } from '../ui/input';
 import { compact, fontFor, primarySize, secondarySize } from '../ui/responsive';
 import { audio } from '../audio/AudioManager';
@@ -28,7 +28,13 @@ export class CivicScene extends Phaser.Scene {
   create(): void {
     void audio.setContext('politics');
     drawBackground(this, 'room');
-    addLocationBackground(this, { brightness: 0.56, topScrim: 92 });
+    // The new council painting belongs only to Nürnberg. Augsburg keeps its
+    // location art, so a city-specific consequence does not erase locality.
+    if (getState().locationId === 'nurnberg' && this.textures.exists('bg_cinematic_council')) {
+      sceneBackground(this, 'bg_cinematic_council', { brightness: 0.56, topScrim: 92 });
+    } else {
+      addLocationBackground(this, { brightness: 0.56, topScrim: 92 });
+    }
     if (compact()) this.renderCompact();
     else this.renderDesktop();
     installSceneKeys(this, { onBack: () => transitionTo(this, 'Hub') });

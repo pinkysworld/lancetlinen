@@ -1,9 +1,29 @@
 # Lancet & Linen — Grok Build video brief
 
 **Purpose:** short cinematic sequences for the Steam trailer, store page and
-social clips. These are **not** gameplay assets and must not be embedded in the
-browser build. The playable game continues to use the small, accessible WebP
-loops described in `ART_WORK_V1.1.md`.
+social clips. The **video clips** are not gameplay assets and must not be
+embedded in the browser build. Their matching still frames may be used as
+deferred, static game backgrounds; the playable game continues to use the
+small, accessible WebP loops described in `ART_WORK_V1.1.md`.
+
+## Delivered part — 2026-07-22
+
+The six stills are now in `public/assets/cinematic/` and serve as deferred
+background alternatives in the related game scenes. They remain static in
+gameplay so controls, text and reduced-motion behaviour stay reliable.
+
+| Brief clip | Still | Current use | Video status |
+|---|---|---|---|
+| Market morning | `market-morning.jpg` | market and city events | pending |
+| Bath steam | `bathhouse.jpg` | waiting room | `public/trailer/bathhouse-opening.mp4` delivered |
+| Careful treatment | `sickroom.jpg` | treatment | pending |
+| Council choice | `council-choice.jpg` | Nürnberg civic consequences | pending |
+| Household evening | `household-evening.jpg` | family | pending |
+| Road to Augsburg | `road-to-augsburg.jpg` | travel result and correspondence | `public/trailer/road-to-augsburg.mp4` delivered |
+
+The two MP4s are deliberately **not preloaded or auto-played**. They are
+retained for the later Steam/store trailer edit; this prevents a 15 MB download
+from delaying a player’s first playable screen.
 
 ## Delivery contract
 

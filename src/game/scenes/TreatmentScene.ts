@@ -166,8 +166,8 @@ export class TreatmentScene extends Phaser.Scene {
    */
   private buildStatic(): void {
     drawBackground(this, 'room');
-    sceneBackground(this, 'bg_sickroom_v11', {
-      fallbacks: ['art_bath', 'bath_bg'],
+    sceneBackground(this, 'bg_cinematic_sickroom', {
+      fallbacks: ['bg_sickroom_v11', 'art_bath', 'bath_bg'],
       brightness: 0.7,
       topScrim: 90,
       bottomScrim: 70,

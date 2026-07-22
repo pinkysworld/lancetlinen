@@ -39,7 +39,7 @@ export class CorrespondenceScene extends Phaser.Scene {
   create(): void {
     void audio.setContext('travel_result');
     drawBackground(this, 'dark');
-    addManagementBackground(this, 'bg_road');
+    addManagementBackground(this, this.textures.exists('bg_cinematic_road') ? 'bg_cinematic_road' : 'bg_road');
     const state = getState();
     const active = activeCorrespondence(state);
     if (compact()) {

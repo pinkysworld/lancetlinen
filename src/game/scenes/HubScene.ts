@@ -684,8 +684,8 @@ export class BathhouseScene extends Phaser.Scene {
     const s = getState();
     void audio.setContext('bathhouse');
     drawBackground(this, 'room');
-    sceneBackground(this, 'art_bath', {
-      fallbacks: ['bath_bg'],
+    sceneBackground(this, 'bg_cinematic_bath', {
+      fallbacks: ['art_bath', 'bath_bg'],
       brightness: 0.84,
       topScrim: 105,
       bottomScrim: 80,

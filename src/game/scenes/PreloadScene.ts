@@ -141,6 +141,15 @@ const ART_DEFERRED: [string, string][] = [
   ['loop_fumigation_02', 'assets/loop_fumigation/frame-02.webp'],
   ['loop_fumigation_03', 'assets/loop_fumigation/frame-03.webp'],
   ['loop_fumigation_04', 'assets/loop_fumigation/frame-04.webp'],
+  // v1.3 cinematic stills from the trailer brief. These are backgrounds, not
+  // animated gameplay video: they stream after the menu and each scene keeps
+  // its existing art as a fallback.
+  ['bg_cinematic_market', 'assets/cinematic/market-morning.jpg'],
+  ['bg_cinematic_bath', 'assets/cinematic/bathhouse.jpg'],
+  ['bg_cinematic_sickroom', 'assets/cinematic/sickroom.jpg'],
+  ['bg_cinematic_council', 'assets/cinematic/council-choice.jpg'],
+  ['bg_cinematic_household', 'assets/cinematic/household-evening.jpg'],
+  ['bg_cinematic_road', 'assets/cinematic/road-to-augsburg.jpg'],
 ];
 
 /** Generate canvas textures so the game is playable without external art. */

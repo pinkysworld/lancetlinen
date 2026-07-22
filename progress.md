@@ -68,3 +68,9 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - `npx tsc --noEmit` and the targeted migration/family/portrait/release-note tests pass (30 tests). The required skill-owned Playwright client was run against the local Vite server and again fails before launch: Node resolves `playwright` from the skill directory rather than this workspace. No screenshot was produced by that client; use the in-app browser/simulator route for visual evidence.
 - In-app browser verification at 844×320 confirmed the start-menu **What’s new** button, both release-note pages and no new console warnings/errors. The `act3-household` preset confirmed that switching Anna from household to trade changes only the focus text/effect after art is ready; her portrait stays unchanged. The browser viewport override was reset and its temporary tab closed.
 - Final validation passed: `npx tsc --noEmit`, `npm test` (544 tests), `npm run build`, production DEV-bridge absence, and `git diff --check`. Current cacheable output: entry 1.81 kB gzip; shell 6.70 kB; management 8.91 kB; gameplay 153.43 kB; i18n 13.47 kB; Phaser 357.84 kB.
+
+## 2026-07-22 — Grok cinematic delivery (in progress)
+
+- Imported the six approved 1280×720 stills as deferred cinematic scene alternatives: market, bathhouse, sickroom, Nürnberg council, household and road.
+- Imported the two completed 6.04-second H.264/24-fps clips to `public/trailer/`; they are documented and deliberately not preloaded or auto-played, pending a complete representative Steam trailer edit.
+- TypeScript and focused cinematic/portrait tests pass (17 tests). The skill-owned external browser client remains unavailable because it resolves `playwright` from the skill directory; in-app browser checks show the sickroom, household and road cinematics at runtime with no console warnings or errors.

@@ -136,7 +136,7 @@ export class TravelResultScene extends Phaser.Scene {
     void audio.setContext('travel_result');
     drawBackground(this, 'dark');
     // Arrival after a journey — the road, not a black screen.
-    addManagementBackground(this, 'bg_road');
+    addManagementBackground(this, this.textures.exists('bg_cinematic_road') ? 'bg_cinematic_road' : 'bg_road');
     panel(this, GAME_WIDTH / 2 - 300, 180, 600, 320);
     titleText(this, GAME_WIDTH / 2, 220, t('encounter'), '28px');
     bodyText(this, GAME_WIDTH / 2, 280, t('arrive', { days: data.days }), {

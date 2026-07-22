@@ -271,7 +271,9 @@ export class FamilyScene extends Phaser.Scene {
   create(): void {
     void audio.setContext('family');
     drawBackground(this, 'room');
-    if (this.textures.exists('bg_household_v11')) {
+    if (this.textures.exists('bg_cinematic_household')) {
+      addManagementBackground(this, 'bg_cinematic_household');
+    } else if (this.textures.exists('bg_household_v11')) {
       addManagementBackground(this, 'bg_household_v11');
     } else {
       addManagementBackground(this, 'bg_family');
@@ -699,7 +701,7 @@ export class CityEventScene extends Phaser.Scene {
     audio.sfx('crowd');
     drawBackground(this, 'dark');
     // A city event happens in the streets; it was showing bare gradient.
-    addManagementBackground(this, 'bg_market');
+    addManagementBackground(this, this.textures.exists('bg_cinematic_market') ? 'bg_cinematic_market' : 'bg_market');
     panel(this, GAME_WIDTH / 2 - 320, 160, 640, 340);
     titleText(this, GAME_WIDTH / 2, 200, t('city_event'), '28px');
     bodyText(this, GAME_WIDTH / 2, 300, t(data.textKey.replace(/\./g, '_')), {

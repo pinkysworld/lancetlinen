@@ -36,7 +36,9 @@ export class MarketScene extends Phaser.Scene {
     void audio.setContext('market');
     audio.sfx('market');
     drawBackground(this, 'room');
-    sceneBackground(this, 'bg_market', { brightness: 0.52, topScrim: 80 });
+    sceneBackground(this, 'bg_cinematic_market', {
+      fallbacks: ['bg_market'], brightness: 0.52, topScrim: 80,
+    });
     titleText(this, GAME_WIDTH / 2, 50, t('market'), '32px');
     const s = getState();
     const prices = marketPrices(s);
