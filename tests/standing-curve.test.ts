@@ -19,8 +19,13 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('phaser', () => ({ default: {} }));
 
-import { applyTreatmentReputation } from '../src/game/systems/reputation';
-import { fameForTitle } from '../src/game/systems/reputation';
+import {
+  addFacetRep,
+  applyTreatmentReputation,
+  fameForTitle,
+  localRank,
+  LOCAL_LEGEND_REPUTATION,
+} from '../src/game/systems/reputation';
 import { createNewGame } from '../src/game/state';
 import type { GameState, PatientClass } from '../src/game/types';
 
@@ -79,6 +84,30 @@ describe('losses are not cushioned by a good name', () => {
     applyTreatmentReputation(known, 'peasant', 'death');
     applyTreatmentReputation(unknown, 'peasant', 'death');
     expect(beforeKnown - known.repFolk).toBeCloseTo(beforeUnknown - unknown.repFolk, 5);
+  });
+});
+
+describe('local standing is a late-career distinction', () => {
+  it('keeps a strong main-story career below Living legend', () => {
+    const s = goodCareer(CAMPAIGN_TREATED);
+    const local = s.reputation[s.locationId] ?? 0;
+    expect(local).toBeLessThan(50);
+    expect(localRank(local)).not.toBe('legend');
+  });
+
+  it('tapers praise after a Bader is already well known', () => {
+    const s = createNewGame('Bekannt', 'de');
+    s.reputation[s.locationId] = 70;
+    addFacetRep(s, { local: 10 });
+    expect(s.reputation[s.locationId]).toBeGreaterThan(70);
+    expect(s.reputation[s.locationId]).toBeLessThan(80);
+  });
+
+  it('leaves Living legend reachable through a long successful career', () => {
+    const s = goodCareer(140);
+    const local = s.reputation[s.locationId] ?? 0;
+    expect(local).toBeGreaterThanOrEqual(LOCAL_LEGEND_REPUTATION);
+    expect(localRank(local)).toBe('legend');
   });
 });
 

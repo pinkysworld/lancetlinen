@@ -10,6 +10,7 @@ import {
   readUrine,
   readPalpation,
   readTongue,
+  techniqueMasteryLevel,
   type PalpationReading,
   type PulseReading,
   type TongueReading,
@@ -1022,9 +1023,10 @@ export class TreatmentScene extends Phaser.Scene {
     slice.forEach((tech, index) => {
       const check = canUseTechnique(s, tech.id);
       const plausible = this.isPlausible(tech.id);
+      const mastery = techniqueMasteryLevel(s, tech.id);
       const label = `${plausible ? '★ ' : ''}${techName(tech.id)}${
         check.ok ? '' : check.reason === 'supplies' ? ` — ${t('need_supplies')}` : ` — ${t('need_skill')}`
-      }`;
+      }${mastery > 0 ? ` · ${t('mastery_short')} ${mastery}` : ''}`;
       makeButton(this, GAME_WIDTH / 2, 238 + index * (h + 12), label, () => {
         if (!check.ok) return;
         this.selectedTech = tech.id;

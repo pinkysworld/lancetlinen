@@ -32,12 +32,20 @@ export type LocalRank =
   | 'renowned'
   | 'legend';
 
+/**
+ * "Living legend" is a late-career distinction, not the next step after a
+ * few prosperous weeks.  The campaign's master examination opens around 35
+ * treated patients; a name at this level needs a much longer, public record
+ * in the same city.
+ */
+export const LOCAL_LEGEND_REPUTATION = 90;
+
 export function localRank(rep: number): LocalRank {
   if (rep < -15) return 'disgraced';
   if (rep < 12) return 'unknown';
   if (rep < 30) return 'known';
   if (rep < 50) return 'respected';
-  if (rep < 75) return 'renowned';
+  if (rep < LOCAL_LEGEND_REPUTATION) return 'renowned';
   return 'legend';
 }
 
@@ -68,10 +76,33 @@ function gainFactor(current: number): number {
   return Math.max(0.15, 1 - current / 100);
 }
 
+/**
+ * A town remembers a run of good work, but every additional patient cannot
+ * add the same amount of standing forever.  Local standing was the one facet
+ * that still rose flatly, and it was also being increased a second time from
+ * the outcome display in `applyTreatment`.  That made "Living legend" a
+ * mid-career badge rather than a durable end-game achievement.
+ *
+ * The first thirty points remain brisk: a newcomer should become known by
+ * doing competent work.  From there the returns taper to a 20% floor, so
+ * renowned practitioners still progress, but need roughly a long free-play
+ * career, high-stakes events, or civic work to become a legend.
+ */
+function localGainFactor(current: number): number {
+  if (current <= 30) return 1;
+  return Math.max(0.2, 1 - (current - 30) / 90);
+}
+
 /** Apply a facet change: gains taper near the ceiling, losses do not. */
 function addFacet(current: number, delta: number, lo = 0, hi = 100): number {
   const scaled = delta > 0 ? delta * gainFactor(current) : delta;
   return clamp(current + scaled, lo, hi);
+}
+
+/** Apply a local-standing change; only positive gossip is tapered. */
+function addLocalStanding(current: number, delta: number): number {
+  const scaled = delta > 0 ? delta * localGainFactor(current) : delta;
+  return clamp(current + scaled, -50, 100);
 }
 
 export function addFacetRep(
@@ -86,7 +117,7 @@ export function addFacetRep(
   if (delta.fame) state.repFame = addFacet(state.repFame, delta.fame);
   if (delta.local) {
     const id = cityId ?? state.locationId;
-    state.reputation[id] = clamp((state.reputation[id] ?? 0) + delta.local, -50, 100);
+    state.reputation[id] = addLocalStanding(state.reputation[id] ?? 0, delta.local);
     maybeRankJournal(state, beforeLocal, state.reputation[id] ?? 0);
   }
 }

@@ -1197,6 +1197,7 @@ export const de = {
   recommended_tech: 'Empfohlene Techniken: {{list}}',
   recommended_unknown: 'Untersucht den Patienten für bessere Optionen.',
   technique_pick: 'Behandlung wählen',
+  mastery_short: 'Übung',
   technique_green_hint: '★ = zieht an dem Saft, den Eure Untersuchung vermutet. Mehrere können passen; nur manche taugen zur Beschwerde. Grau = Vorräte oder Können fehlen.',
   skill_check_help: 'Tippen, wenn die goldene Marke im grünen Band ist. Bessere Timing = bessere Chance.',
   bath_help: 'Behandelt Wartende nacheinander. Ist die Reihe leer, beendet den Tag.',
@@ -1222,7 +1223,7 @@ export const de = {
     'Tagebuch hält Geschichte und Ereignisse fest.\nGesinde braucht Lohn und Treue.\nFamilie: Werbung → Ehe → Erbe.\nPolitik: Ämter und Titel heben Ansehen und Preise.\n\nEntscheidungen mit Nonne, Zunft und Rivalen ändern Ethik, Kirchenzorn und Enden.',
   help_page_rep_title: 'Euer Ruf als Bader',
   help_page_rep_body:
-    'Der Name eines mittelalterlichen Baders war keine einzelne Zahl — er war Gasse, Hof und Straße.\n\n• Stadtruf — örtlicher Rang in der Stadt, in der ihr steht (Entehrt → Legende).\n• Volksvertrauen — Gemeine, Diener, Bauern. Almosen und faire Preise heben es; Hochmut und Tode senken es. Hohes Volk → treues Gesinde, mehr arme Patienten.\n• Elitengunst — Adel, reiche Kaufleute, Klerus. Hausbesuche und Erfolge bei den Reichen. Nötig für Ämter.\n• Ruhm — Name im Reich. Meister-Rabatte, weniger Wegelagerer, Startguthaben in neuen Städten. Titel verlangen Ruhm.\n\nSzenarien (Pest, Zunft, Brautbad, Kirchenbefragung…) zwingen zu harten Tauschgeschäften zwischen Münze, Ethik und diesen Achsen.\n\nHistorisch standen Bader unter den Universitätsärzten, waren aber unverzichtbar. Reines Leinen, Zunftgebühren und den falschen Patienten nicht zu töten zählten mehr als Theorie.',
+    'Der Name eines mittelalterlichen Baders war keine einzelne Zahl — er war Gasse, Hof und Straße.\n\n• Stadtruf — örtlicher Rang in der Stadt, in der ihr steht (Entehrt → Legende). Die ersten Stufen wachsen rasch; Berühmtheit und „Lebende Legende“ verlangen einen langen, bewährten Ruf am selben Ort.\n• Volksvertrauen — Gemeine, Diener, Bauern. Almosen und faire Preise heben es; Hochmut und Tode senken es. Hohes Volk → treues Gesinde, mehr arme Patienten.\n• Elitengunst — Adel, reiche Kaufleute, Klerus. Hausbesuche und Erfolge bei den Reichen. Nötig für Ämter.\n• Ruhm — Name im Reich. Meister-Rabatte, weniger Wegelagerer, Startguthaben in neuen Städten. Titel verlangen Ruhm.\n\nJede Technik sammelt Übung. Meisterschaft gibt nur einen kleinen, verlässlichen Vorteil; Untersuchung, Vorräte, Risiko und ruhige Hand bleiben entscheidend.\n\nSzenarien (Pest, Zunft, Brautbad, Kirchenbefragung…) zwingen zu harten Tauschgeschäften zwischen Münze, Ethik und diesen Achsen.\n\nHistorisch standen Bader unter den Universitätsärzten, waren aber unverzichtbar. Reines Leinen, Zunftgebühren und den falschen Patienten nicht zu töten zählten mehr als Theorie.',
   help_page_save_title: 'Speichern & Mobil',
   help_page_save_body:
     'Speichern legt den Stand im Browser ab.\nLaden stellt den letzten Stand wieder her.\nExport lädt/kopiert JSON-Sicherung (wichtig auf dem iPhone).\nImport fügt eine Sicherung im Hauptmenü ein.\n\nQuerformat ist auf dem Handy angenehmer. Spielhilfe jederzeit im Hub.',

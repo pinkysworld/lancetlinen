@@ -86,3 +86,10 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - The procedure list now reserves half of the *actual* button height plus a 12px gutter below its measured hint/warning text. This fixes the touch-layout bug where a row's centre was positioned after the warning but its upper half still covered it.
 - The four-frame bath-steam loop remains available on the treatment workbench, but is explicitly hidden before rendering the treatment outcome so it cannot float as an apparent video tile over the result card.
 - Targeted layout tests pass. In-app browser verification ran the full bloodletting → skill check → outcome flow: the astrology warning clears the list and the result card has no loop overlay or console warnings. The required external game client was also rerun and remains blocked before launch because it resolves Playwright from the skill directory rather than the workspace.
+
+## 2026-07-22 — progression calibration
+
+- Local standing no longer receives a second, generic outcome increment after the multi-facet reputation system has already applied its result. Positive local standing now tapers after the first 30 points; losses remain fully consequential.
+- "Living legend" moves from 75 to 90 local standing. A strong 35-patient main-story career remains below it, while the test curve reaches it only through a long, successful 140-patient career.
+- Stored technique XP now grants a small per-technique mastery benefit at 60 / 160 / 320 XP (maximum +4 percentage points). It is visible as `Übung` / `Practice` in the treatment list and cannot replace examination, supplies, risk, or the timing check.
+- Focused progression checks pass (11 tests); final `npm test` (554), `npx tsc --noEmit`, `npm run build` and `git diff --check` pass. The required skill-owned Playwright client was rerun and remains blocked before launch because it resolves `playwright` from the skill directory instead of the workspace. In-app browser review of the treatment preset shows a clear, non-overlapping treatment list and no console warnings.

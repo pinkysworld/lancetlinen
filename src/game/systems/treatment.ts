@@ -35,6 +35,26 @@ import { titlePayMult } from './politics';
 import { incomeMult } from './settings';
 import { pickPortraitKey } from '../ui/art';
 
+/**
+ * Technique XP was stored and displayed but did not affect play.  These tiers
+ * turn it into a modest, predictable craft benefit without letting repetition
+ * erase diagnosis, risk, or the timing check.  A master is still fallible;
+ * their hand is simply a little less green when repeating a familiar art.
+ */
+export const TECHNIQUE_MASTERY_XP = [0, 60, 160, 320] as const;
+
+export function techniqueMasteryLevel(state: GameState, techniqueId: string): number {
+  const xp = state.techniqueXp[techniqueId] ?? 0;
+  if (xp >= TECHNIQUE_MASTERY_XP[3]) return 3;
+  if (xp >= TECHNIQUE_MASTERY_XP[2]) return 2;
+  if (xp >= TECHNIQUE_MASTERY_XP[1]) return 1;
+  return 0;
+}
+
+export function techniqueMasteryBonus(state: GameState, techniqueId: string): number {
+  return [0, 0.01, 0.025, 0.04][techniqueMasteryLevel(state, techniqueId)] ?? 0;
+}
+
 let uidCounter = 0;
 
 function pick<T>(arr: T[]): T {
@@ -267,6 +287,7 @@ export function applyTreatment(
   // through the skill check (wider target, slower marker). Between the two the
   // net value of Hand is about the same, but the minigame decides more.
   const handBonus = state.stats.hand * 0.014;
+  const masteryBonus = techniqueMasteryBonus(state, techniqueId);
   const severityPenalty = patient.severity * 0.06;
   const boilerBonus = state.bathhouse.boiler && tech.category === 'bathing' ? 0.05 : 0;
 
@@ -278,6 +299,7 @@ export function applyTreatment(
     pulseBonus +
     eyeBonus +
     handBonus +
+    masteryBonus +
     // The minigame is now difficulty-scaled and skill-scaled, so it carries
     // real weight instead of being a 15-point rounding error.
     skillBonus * 0.28 +
@@ -471,11 +493,9 @@ export function applyTreatment(
   state.totalTreated += 1;
   state.patientsToday += 1;
   state.ethics = Math.max(0, Math.min(100, state.ethics + ethicsDelta));
-  // Local city rep still adjusted for display delta (facet system also writes local)
-  state.reputation[state.locationId] = Math.max(
-    -50,
-    Math.min(100, (state.reputation[state.locationId] ?? 0) + reputationDelta * 0.35),
-  );
+  // `reputationDelta` remains the immediate outcome shown to the player and
+  // the day ledger.  Local standing itself is owned by the multi-facet system
+  // above; writing it again here used to double every successful treatment.
 
   state.techniqueXp[techniqueId] = (state.techniqueXp[techniqueId] ?? 0) + xp;
   // Stat growth slow
