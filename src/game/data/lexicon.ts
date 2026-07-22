@@ -335,6 +335,14 @@ const ADDITIONS: RawLexiconEntry[] = [
   { id: 'source_limits', category: 'world', titleKey: 'lex_source_limits', bodyKey: 'lex_source_limits_body', simplified: true },
 ];
 
+/** v1.2 articles use their specific bibliography rather than category fallbacks. */
+const CORRESPONDENCE_ADDITIONS: LexiconEntry[] = [
+  { id: 'fugger_1382', category: 'world', titleKey: 'lex_fugger_1382', bodyKey: 'lex_fugger_1382_body', evidence: 'attested', sourceIds: ['fugger_history'] },
+  { id: 'medici_1397', category: 'city', titleKey: 'lex_medici_1397', bodyKey: 'lex_medici_1397_body', evidence: 'attested', sourceIds: ['medici_treccani'] },
+  { id: 'tabriz_trade', category: 'world', titleKey: 'lex_tabriz_trade', bodyKey: 'lex_tabriz_trade_body', evidence: 'attested', sourceIds: ['met_trade'] },
+  { id: 'borja_1492', category: 'world', titleKey: 'lex_borja_1492', bodyKey: 'lex_borja_1492_body', evidence: 'attested', sourceIds: ['vatican_borgia'] },
+];
+
 const SOURCE_BY_CATEGORY: Record<LexiconCategory, HistoricalSourceId> = {
   trade: 'wellcome_blood',
   medicine: 'wellcome_blood',
@@ -345,11 +353,14 @@ const SOURCE_BY_CATEGORY: Record<LexiconCategory, HistoricalSourceId> = {
 };
 
 /** All articles carry a marker and citation, including pre-v1.1 entries. */
-export const LEXICON: LexiconEntry[] = [...BASE_LEXICON, ...ADDITIONS].map((entry) => ({
-  ...entry,
-  evidence: entry.simplified ? 'game_simplification' : 'attested',
-  sourceIds: [SOURCE_BY_CATEGORY[entry.category]],
-}));
+export const LEXICON: LexiconEntry[] = [
+  ...[...BASE_LEXICON, ...ADDITIONS].map((entry): LexiconEntry => ({
+    ...entry,
+    evidence: entry.simplified ? 'game_simplification' : 'attested',
+    sourceIds: [SOURCE_BY_CATEGORY[entry.category]],
+  })),
+  ...CORRESPONDENCE_ADDITIONS,
+];
 
 export function lexiconByCategory(cat: LexiconCategory): LexiconEntry[] {
   return LEXICON.filter((e) => e.category === cat);

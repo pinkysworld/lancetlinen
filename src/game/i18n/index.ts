@@ -41,7 +41,7 @@ export async function initI18n(locale: Locale = 'en'): Promise<void> {
 }
 
 /** Params whose values are themselves i18n keys (suitors, npcs…) */
-const KEY_LIKE_PARAM = /^(suitor_|npc_|title_|office_|role_|tech_|loc_)/;
+const KEY_LIKE_PARAM = /^(suitor_|npc_|title_|office_|role_|tech_|loc_|route_|house_)/;
 
 function resolveParams(
   params?: Record<string, string | number>,

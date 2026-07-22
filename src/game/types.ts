@@ -52,6 +52,10 @@ export type Difficulty = 'merciful' | 'fair' | 'harsh';
 export type CompactMode = 'auto' | 'on' | 'off';
 /** Historically framed follow-up plans, resolved when the next day opens. */
 export type RegimenId = 'pest_regimen' | 'rest_diet' | 'bath_linen';
+/** Historically framed contacts available in the 1382 campaign. */
+export type HouseId = 'fugger_weavers' | 'florentine_correspondents' | 'levantine_caravan';
+/** A delayed letter or courier exchange, never an instantaneous travel bonus. */
+export type CorrespondenceRouteId = 'augsburg_cloth' | 'florentine_letters' | 'tabriz_letter';
 
 export interface Stats {
   hand: number;
@@ -224,6 +228,14 @@ export interface CarePlan {
   fit: boolean;
 }
 
+/** One active long-distance exchange. Only one can travel at a time. */
+export interface CorrespondenceMission {
+  routeId: CorrespondenceRouteId;
+  houseId: HouseId;
+  startedDay: number;
+  dueDay: number;
+}
+
 export interface SpouseState {
   name: string;
   affection: number; // 0-100
@@ -356,6 +368,10 @@ export interface GameState {
   carePlans?: CarePlan[];
   /** Permanent, journalled repercussions that have already happened in act 3. */
   act3Consequences?: Act3ConsequenceId[];
+  /** Trust earned with historically framed merchant and courier contacts. */
+  houseRelations?: Partial<Record<HouseId, number>>;
+  /** A single letter or courier currently away from the household. */
+  correspondence?: CorrespondenceMission | null;
   spouse: SpouseState | null;
   heir: HeirState | null;
   office: OfficeId;

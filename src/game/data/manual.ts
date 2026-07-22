@@ -16,9 +16,9 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
   { id: 'regimens', titleKey: 'manual_regimens', bodyKey: 'manual_regimens_body', sourceIds: ['wellcome_church'] },
   { id: 'complaints', titleKey: 'manual_complaints', bodyKey: 'manual_complaints_body', sourceIds: ['game_simplification'] },
   { id: 'bathhouse', titleKey: 'manual_bathhouse', bodyKey: 'manual_bathhouse_body', sourceIds: ['gnm_daily_life'] },
-  { id: 'city', titleKey: 'manual_city', bodyKey: 'manual_city_body', sourceIds: ['gnm_daily_life'] },
-  { id: 'household', titleKey: 'manual_household', bodyKey: 'manual_household_body', sourceIds: ['gnm_daily_life'] },
+  { id: 'city', titleKey: 'manual_city', bodyKey: 'manual_city_body', sourceIds: ['gnm_daily_life', 'fugger_history'] },
+  { id: 'household', titleKey: 'manual_household', bodyKey: 'manual_household_body', sourceIds: ['fugger_history', 'medici_treccani', 'met_trade'] },
   { id: 'politics', titleKey: 'manual_politics', bodyKey: 'manual_politics_body', sourceIds: ['wellcome_church'] },
   { id: 'act3', titleKey: 'manual_act3', bodyKey: 'manual_act3_body', sourceIds: ['game_simplification'] },
-  { id: 'sources', titleKey: 'manual_sources', bodyKey: 'manual_sources_body', sourceIds: ['gnm_daily_life', 'wellcome_church', 'wellcome_blood'] },
+  { id: 'sources', titleKey: 'manual_sources', bodyKey: 'manual_sources_body', sourceIds: ['gnm_daily_life', 'wellcome_church', 'wellcome_blood', 'vatican_borgia'] },
 ];

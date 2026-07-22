@@ -1,4 +1,4 @@
-# Lancet & Linen v1.1.0 — Manual & Lexicon
+# Lancet & Linen v1.2.0 — Manual & Lexicon
 
 This manual is bilingual in the game (Deutsch/English). The sections below are
 the maintained Markdown counterpart of the in-game **Manual & Lexicon** entry.
@@ -64,12 +64,17 @@ ladder. Other locations retain guild logic. Coin is a readable, simplified
 Pfennig/Heller economy rather than a claim of stable cross-city purchasing
 power.
 
-## 9. Household and staff / Haushalt und Personal
+## 9. Household, staff and letters / Haushalt, Personal und Briefe
 
 A spouse may focus on household, trade or kinship. While together, household
 reduces daily costs; trade slightly improves local purchase prices; kinship
 contributes periodic civic access. Family, staff, prestige and affection feed
 into later consequences rather than being decorative counters.
+
+**Houses & letters** adds delayed correspondence: an Augsburg weaving contact,
+Florentine letters, and a courier toward Tabriz. These are contracts, copied
+letters, samples and contacts — not a personal trip by the Bader or a claim of
+medical superiority.
 
 ## 10. Politics and debt / Politik und Schuld
 

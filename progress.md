@@ -43,3 +43,11 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - The three loops run at 3 fps, have a frame-one static fallback, and honour the existing reduced-particles setting.
 - Static visual inspection found deliberate blank/dark space for UI text in each new background. Automated validation remains green: `npx tsc --noEmit`, `npm test` (532), `npm run build`, and `git diff --check`.
 - The external Playwright game client cannot resolve the workspace-local Playwright package from its skill directory; its generated canvas capture is additionally black in this WebGL environment. Use the existing DEV text bridge plus in-app/physical-device visual acceptance for the final UI pass.
+
+## 2026-07-22 — v1.2.0 historical houses & correspondence
+
+- Added a save-safe schema-v4 contacts system: neutral relations migrate deterministically, and one paid correspondence may be in flight at a time.
+- The three time-gated routes are deliberately 1382-plausible exchanges rather than anachronistic dynasty roles: Augsburg weaving, Florentine account letters, and a courier network toward Tabriz. Their returns resolve on a later day with visible journal consequences.
+- Added a full-width compact correspondence screen, a Hub entry, `correspondence-active` DEV preset, and text-bridge state for repeatable browser checks.
+- The Manual, bilingual Lexicon and bibliography now document the chronologies and sources; the Lexicon has 64 entries.
+- Final validation: `npx tsc --noEmit`, `npm test` (535 tests), `npm run build`, `git diff --check` all pass. Production build confirms the DEV test bridge is absent. The bundle is 534.62 kB gzip and retains the deferred chunk-size warning.

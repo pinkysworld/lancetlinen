@@ -5,6 +5,7 @@ import { syncAchievements } from './game/systems/achievements';
 import { createNewGame, getState, setState } from './game/state';
 import type { GameState, PatientInstance } from './game/types';
 import { startRegimen } from './game/systems/regimen';
+import { startCorrespondence } from './game/systems/correspondence';
 import { sceneButtons } from './game/ui/theme';
 
 const parent = document.getElementById('game-container');
@@ -29,9 +30,12 @@ void syncAchievements();
 
 const game = createGame(parent);
 
-// Dev-only browser-test bridge. It never ships in the production bundle, but
-// lets the game client inspect the same active controls that a player sees.
-if (import.meta.env.DEV) {
+// Dev-only browser-test bridge. Some desktop launchers set NODE_ENV=production
+// even while Vite itself serves `--mode development`; include that real dev
+// mode as well. Production builds replace both branches with false, so this
+// control surface never ships to players.
+const ENABLE_DEV_TEST_BRIDGE = import.meta.env.DEV || import.meta.env.MODE === 'development';
+if (ENABLE_DEV_TEST_BRIDGE) {
   const testWindow = window as unknown as {
     __game: typeof game;
     render_game_to_text: () => string;
@@ -44,7 +48,8 @@ if (import.meta.env.DEV) {
     | 'debt-empty'
     | 'debt-payable'
     | 'act3-household'
-    | 'regimen-follow-up';
+    | 'regimen-follow-up'
+    | 'correspondence-active';
   const fixedPatient = (templateId: string, complaintKey: string): PatientInstance => ({
     uid: `test-${templateId}`,
     templateId,
@@ -84,6 +89,8 @@ if (import.meta.env.DEV) {
       act: state.act,
       carePlans: state.carePlans?.map((plan) => ({ regimen: plan.regimenId, dueDay: plan.dueDay })) ?? [],
       act3Consequences: state.act3Consequences ?? [],
+      correspondence: state.correspondence ?? null,
+      houseRelations: state.houseRelations ?? {},
       treated: state.totalTreated,
       ending: state.ending,
       controls: scene ? sceneButtons(scene).map((button) => ({
@@ -137,6 +144,15 @@ if (import.meta.env.DEV) {
         startRegimen(state, patient, 'pest_regimen');
         break;
       }
+      case 'correspondence-active':
+        state.day = 20;
+        state.act = 3;
+        state.coin = 99;
+        state.stats.tongue = 6;
+        state.storyFlags['correspondence_florence_complete'] = true;
+        startCorrespondence(state, 'tabriz_letter');
+        scene = 'Correspondence';
+        break;
     }
     setState(state);
     game.scene.start(scene, data);

@@ -8,20 +8,28 @@ import { canApplyForOffice, craftAuthority } from '../src/game/systems/politics'
 import { MANUAL_CHAPTERS } from '../src/game/data/manual';
 import { LEXICON } from '../src/game/data/lexicon';
 
-describe('v1.1 save migration', () => {
+describe('v1.2 save migration', () => {
   it('migrates a schema-2 state without losing legacy fields', () => {
     const legacy = createNewGame('Legacy');
     legacy.version = 2;
     legacy.coin = 73;
     delete legacy.carePlans;
     delete legacy.act3Consequences;
+    delete legacy.houseRelations;
+    delete legacy.correspondence;
     legacy.staff = [{ id: 'old-1', name: 'Klara', role: 'bathmaid', propertyId: null, loyalty: 66, skill: 4, wage: 7, daysEmployed: 9 }];
     legacy.spouse = { name: 'suitor_anna', affection: 70, cityId: 'nurnberg', marriedDay: 2 };
     ensureFullState(legacy);
-    expect(legacy.version).toBe(3);
+    expect(legacy.version).toBe(4);
     expect(legacy.coin).toBe(73);
     expect(legacy.carePlans).toEqual([]);
     expect(legacy.act3Consequences).toEqual([]);
+    expect(legacy.houseRelations).toMatchObject({
+      fugger_weavers: 0,
+      florentine_correspondents: 0,
+      levantine_caravan: 0,
+    });
+    expect(legacy.correspondence).toBeNull();
     expect(legacy.staff[0]?.trait).toBeDefined();
     expect(legacy.spouse?.householdFocus).toBe('home');
   });

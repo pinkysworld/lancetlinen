@@ -23,6 +23,7 @@ import { addJournal } from './journal';
 import { syncQuests } from './story';
 import { tickReputation } from './reputation';
 import { resolveDueRegimens } from './regimen';
+import { resolveDueCorrespondence } from './correspondence';
 import { localGoodsMult, type PricedItem } from '../data/prices';
 import { seasonalGoodsMult } from '../data/seasons';
 import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
@@ -114,6 +115,9 @@ export function endDay(state: GameState): void {
     state.season = (state.season + 1) % 4;
     if (state.season === 0) state.year += 1;
   }
+  // Couriers return after the calendar advances, so a stated "seven days"
+  // always means seven completed nights rather than a same-evening reward.
+  resolveDueCorrespondence(state);
   state.patientsToday = 0;
   state.dayEarnings = 0;
   state.dayReputation = 0;
