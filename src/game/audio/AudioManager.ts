@@ -83,7 +83,7 @@ const CONTEXT_MAP: Record<AudioContextId, { music: MusicId; ambience: AmbienceId
   name_entry: { music: 'menu', ambience: 'none' },
   hub: { music: 'bath', ambience: 'steam' },
   hub_epidemic: { music: 'tense', ambience: 'wind' },
-  hub_festival: { music: 'market', ambience: 'crowd' },
+  hub_festival: { music: 'festival', ambience: 'crowd' },
   hub_monastery: { music: 'monastery', ambience: 'none' },
   hub_war: { music: 'war', ambience: 'camp' },
   bathhouse: { music: 'bath', ambience: 'steam' },
@@ -131,6 +131,8 @@ class AudioManager {
   private musicGeneration = 0;
   /** The streaming <audio> element for the current recorded track, if any. */
   private trackEl: HTMLAudioElement | null = null;
+  /** A track that failed to load once falls back to its procedural theme. */
+  private failedTrackFiles = new Set<string>();
   /** Gain of the track currently playing, before volume settings. */
   private trackGain = 1;
   private _visBound = false;
@@ -162,6 +164,10 @@ class AudioManager {
         ]);
       }
       this.unlocked = this.ctx.state === 'running';
+      // A media element can have been created while the browser was still
+      // waiting for a user gesture. Retry it after the successful unlock
+      // instead of leaving the scene on a silent (or procedural) fallback.
+      if (this.unlocked && this.trackEl?.paused) this.startTrack(this.trackEl);
       if (!this._visBound) {
         this._visBound = true;
         document.addEventListener('visibilitychange', () => {
@@ -540,19 +546,34 @@ class AudioManager {
    * memory, and fifteen megabytes of music decoded to PCM is roughly 150 MB,
    * which is unreasonable on a phone. This streams and loops natively.
    */
-  private playTrack(track: Track, vol: number): void {
+  private startTrack(el: HTMLAudioElement): void {
+    if (this.trackEl !== el || this.muted) return;
+    // A rejected play() is normal before the first gesture. `unlock()` retries
+    // it after a real gesture; a decode/network failure is handled by `error`.
+    void el.play().catch(() => {});
+  }
+
+  private playTrack(track: Track, vol: number, id: MusicId): void {
     this.stopTrack();
-    const el = new Audio(`assets/music/${track.file}.mp3`);
+    const el = new Audio(new URL(`assets/music/${track.file}.mp3`, window.location.href).toString());
     el.loop = true;
     el.preload = 'auto';
     el.volume = 0;
     this.trackEl = el;
     this.trackGain = track.gain;
 
-    // Autoplay is blocked until a gesture; that is expected and not an error.
-    void el.play().catch(() => {
-      /* Will start on the next call after the player has interacted. */
+    el.addEventListener('canplay', () => this.startTrack(el), { once: true });
+    el.addEventListener('error', () => {
+      if (this.trackEl !== el) return;
+      // Do not retry a broken URL forever. The documented procedural theme is
+      // a more useful fallback than silence, and the failure remains scoped to
+      // this one file for the rest of the session.
+      this.failedTrackFiles.add(track.file);
+      this.trackEl = null;
+      this.musicNodes = null;
+      void this.music(id);
     });
+    this.startTrack(el);
 
     // Fade in by hand — <audio> has no ramp, and jumping to full volume on a
     // scene change is jarring.
@@ -627,13 +648,14 @@ class AudioManager {
     const vol = this.gMusic();
     if (vol <= 0) return;
 
-    // A recorded track wins where one exists. Contexts without one fall
-    // through to the procedural engine below — `dialogue` and `night` are
+    // A recorded track wins where one exists. Contexts without one (or a
+    // recording that the browser cannot decode) fall through to the procedural
+    // engine below — `dialogue` and `night` are
     // deliberately left synthetic, because a sparse drone under dialogue is
     // exactly what that wants.
     const track = trackFor(id);
-    if (track) {
-      this.playTrack(track, vol);
+    if (track && !this.failedTrackFiles.has(track.file)) {
+      this.playTrack(track, vol, id);
       this.musicNodes = { stop: () => this.stopTrack() };
       return;
     }

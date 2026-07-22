@@ -40,9 +40,9 @@ export interface Track {
 /**
  * Which recording plays for which context.
  *
- * Several contexts share a track. That is deliberate — six pieces covering
- * thirteen contexts reads as a coherent score, where thirteen unrelated pieces
- * would read as a shuffle.
+ * Several contexts share a track. The score has distinct pieces where the
+ * game changes emotional register (festival, travel aftermath, danger and war)
+ * while retaining a small enough palette to sound coherent rather than random.
  */
 export const TRACKS: Partial<Record<Exclude<MusicId, 'none'>, Track>> = {
   menu: {
@@ -57,6 +57,12 @@ export const TRACKS: Partial<Record<Exclude<MusicId, 'none'>, Track>> = {
     author: 'RandomMind',
     gain: 0.62,
   },
+  festival: {
+    file: 'mus_festival_pub',
+    source: 'https://opengameart.org/content/crowded-pub',
+    author: 'Bobjt',
+    gain: 0.46,
+  },
   road: {
     file: 'mus_road',
     source: 'https://opengameart.org/content/medieval-exploration',
@@ -64,10 +70,10 @@ export const TRACKS: Partial<Record<Exclude<MusicId, 'none'>, Track>> = {
     gain: 0.66,
   },
   travel_result: {
-    file: 'mus_road',
-    source: 'https://opengameart.org/content/medieval-exploration',
-    author: 'RandomMind',
-    gain: 0.66,
+    file: 'mus_travel_grasslands',
+    source: 'https://opengameart.org/content/grasslands-theme',
+    author: 'DST',
+    gain: 0.5,
   },
   bath: {
     file: 'mus_bath',
@@ -101,6 +107,20 @@ export const TRACKS: Partial<Record<Exclude<MusicId, 'none'>, Track>> = {
     source: 'https://opengameart.org/content/breves-dies-hominis',
     author: 'Magdalen Kadel',
     gain: 0.5,
+  },
+  tense: {
+    file: 'mus_tense_lament',
+    source: 'https://opengameart.org/content/laments-of-the-war',
+    author: 'Cethiel',
+    // Under plague, difficult procedures and serious dialogue: never compete
+    // with the written decision, but avoid the old exposed oscillator drone.
+    gain: 0.28,
+  },
+  war: {
+    file: 'mus_war_battle',
+    source: 'https://opengameart.org/content/medieval-battle',
+    author: 'RandomMind',
+    gain: 0.38,
   },
 };
 

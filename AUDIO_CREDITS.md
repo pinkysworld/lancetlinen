@@ -21,9 +21,13 @@ licence compels it.
 | Main menu, character creation | `mus_menu.mp3` | Medieval: The Bard's Tale | RandomMind | [OpenGameArt](https://opengameart.org/content/medieval-the-bards-tale) | CC0 |
 | Market, festival day | `mus_market.mp3` | Medieval: Market Day (loop) | RandomMind | [OpenGameArt](https://opengameart.org/content/medieval-market-day) | CC0 |
 | The road, arrival | `mus_road.mp3` | Medieval: Exploration | RandomMind | [OpenGameArt](https://opengameart.org/content/medieval-exploration) | CC0 |
+| Festival day | `mus_festival_pub.mp3` | Crowded Pub (2025 remix) | Bobjt | [OpenGameArt](https://opengameart.org/content/crowded-pub) | CC0 |
+| Arrival after travel | `mus_travel_grasslands.mp3` | GrassLands Theme | DST | [OpenGameArt](https://opengameart.org/content/grasslands-theme) | CC0 |
 | Bathhouse, treatment, family | `mus_bath.mp3` | Medieval: Harvest Season | RandomMind | [OpenGameArt](https://opengameart.org/content/medieval-harvest-season) | CC0 |
 | Endings | `mus_festival.mp3` | Medieval: Minstrel Dance | RandomMind | [OpenGameArt](https://opengameart.org/content/medieval-minstrel-dance) | CC0 |
 | Monastery, council | `mus_chant.mp3` | Breves dies hominis | Magdalen Kadel | [OpenGameArt](https://opengameart.org/content/breves-dies-hominis) | CC0 |
+| Pest, serious intervention, tense dialogue | `mus_tense_lament.mp3` | Laments of the War | Cethiel | [OpenGameArt](https://opengameart.org/content/laments-of-the-war) | CC0 |
+| War camp | `mus_war_battle.mp3` | Medieval: Battle | RandomMind | [OpenGameArt](https://opengameart.org/content/medieval-battle) | CC0 |
 
 **`mus_chant` is the one piece that is genuinely of the period** rather than
 written to evoke it: a vocal setting of a twelfth–thirteenth century
@@ -31,9 +35,10 @@ composition, originally from Wikimedia Commons and released to the public
 domain by the performer. It carries the monastery and the graver political
 scenes.
 
-All files were transcoded to MP3 at 112 kbps. MP3 rather than OGG/Opus because
+Files are shipped as MP3 at 96–112 kbps. MP3 rather than OGG/Opus because
 Safari on iOS is unreliable with Opus in an OGG container, and the game is
-tested there.
+tested there. The additional tracks use 96 kbps to preserve mobile download
+headroom while retaining stereo content.
 
 ## Sound effects and the remaining score
 
@@ -45,8 +50,8 @@ through to it, and two are left synthetic on purpose:
 
 - `dialogue` — a sparse drone under text the player is reading is exactly
   right, and a recorded piece would compete with the writing.
-- `tense`, `night`, `war` — the phrygian and aeolian themes in
-  `src/game/audio/themes.ts` do this better than any CC0 recording found.
+- `night` — the aeolian theme in `src/game/audio/themes.ts` remains intentionally
+  spare. It does not compete with the player’s reading or the ambient effects.
 
 ## If you add a track
 

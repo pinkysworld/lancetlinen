@@ -74,3 +74,9 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - Imported the six approved 1280×720 stills as deferred cinematic scene alternatives: market, bathhouse, sickroom, Nürnberg council, household and road.
 - Imported the two completed 6.04-second H.264/24-fps clips to `public/trailer/`; they are documented and deliberately not preloaded or auto-played, pending a complete representative Steam trailer edit.
 - TypeScript and focused cinematic/portrait tests pass (17 tests). The skill-owned external browser client remains unavailable because it resolves `playwright` from the skill directory; in-app browser checks show the sickroom, household and road cinematics at runtime with no console warnings or errors.
+
+## 2026-07-22 — audio reliability and score variation (in progress)
+
+- Audited all shipped music files: every original and four new CC0 sources decode as 44.1 kHz stereo MP3. The perceived hum came from the intentionally procedural dialogue/night/danger/war fallback themes, not corrupt source files.
+- Added four curated CC0 tracks for festival, travel arrival, serious danger and war camp. Kept ordinary dialogue and night deliberately sparse so text remains readable; the 1597 Dowland render was not included because it falls outside the 1382 setting.
+- Recorded tracks now retry after the first successful user-gesture unlock and fall back to their procedural theme if the browser reports a media error, rather than becoming permanently silent. The skill-owned Playwright client was run and remains blocked by its own package-resolution issue; the in-app browser’s bloodletting path completed with no console warnings/errors.

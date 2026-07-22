@@ -28,6 +28,7 @@ export type MusicId =
   | 'road'
   | 'tense'
   | 'market'
+  | 'festival'
   | 'monastery'
   | 'war'
   | 'politics'
@@ -155,6 +156,22 @@ export const THEMES: Record<Exclude<MusicId, 'none'>, ThemeSpec> = {
     drum: { freq: 88, vol: 0.05, everyBeats: 3 },
     lowpass: 3000,
     reverb: 0.2,
+  },
+
+  /** Festival fallback: brighter than the market, but still modal and acoustic. */
+  festival: {
+    root: 'D3',
+    mode: 'mixolydian',
+    bpm: 92,
+    beatsPerBar: 6,
+    phrases: [REACH, ARCH, TURN],
+    droneVol: 0.12,
+    melodyOctave: 2,
+    melodyVol: 0.1,
+    restBars: [0, 1],
+    drum: { freq: 92, vol: 0.05, everyBeats: 3 },
+    lowpass: 3100,
+    reverb: 0.16,
   },
 
   /** Monastery. Mixolydian, very slow, wide open fifths — closest to chant. */

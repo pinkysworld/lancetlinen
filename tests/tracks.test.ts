@@ -43,7 +43,7 @@ describe('the files exist', () => {
       (sum, t) => sum + statSync(join(MUSIC_DIR, `${t.file}.mp3`)).size,
       0,
     );
-    expect(total / 1_000_000).toBeLessThan(20);
+    expect(total / 1_000_000).toBeLessThan(22);
   });
 });
 
@@ -113,10 +113,12 @@ describe('procedural fallback', () => {
     }
   });
 
-  it('leaves the sparse contexts synthetic on purpose', () => {
+  it('keeps only the deliberately sparse contexts synthetic', () => {
     // A recorded piece under dialogue would compete with the writing.
     expect(trackFor('dialogue')).toBeNull();
     expect(trackFor('night')).toBeNull();
+    expect(trackFor('tense')).not.toBeNull();
+    expect(trackFor('war')).not.toBeNull();
   });
 
   it('returns nothing for the silent context', () => {
@@ -126,7 +128,7 @@ describe('procedural fallback', () => {
 
 describe('coverage', () => {
   it('covers the contexts a player spends the most time in', () => {
-    for (const id of ['menu', 'bath', 'market', 'road'] as const) {
+    for (const id of ['menu', 'bath', 'market', 'festival', 'road', 'tense', 'war'] as const) {
       expect(trackFor(id), `${id} should have a recording`).not.toBeNull();
     }
   });

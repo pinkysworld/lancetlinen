@@ -35,7 +35,7 @@ function melodyPitches(spec: ThemeSpec): number[] {
 describe('theme coverage', () => {
   it('defines every music id the game can request', () => {
     // A missing theme would throw at runtime inside `music()`.
-    expect(entries.length).toBe(13);
+    expect(entries.length).toBe(14);
   });
 
   it('gives every theme phrases to play', () => {
