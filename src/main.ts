@@ -49,7 +49,8 @@ if (ENABLE_DEV_TEST_BRIDGE) {
     | 'debt-payable'
     | 'act3-household'
     | 'regimen-follow-up'
-    | 'correspondence-active';
+    | 'correspondence-active'
+    | 'city-agreement';
   const fixedPatient = (templateId: string, complaintKey: string): PatientInstance => ({
     uid: `test-${templateId}`,
     templateId,
@@ -66,6 +67,19 @@ if (ENABLE_DEV_TEST_BRIDGE) {
     palpated: true,
     tongueRead: true,
   });
+  /**
+   * Browser presets must replace the visible scene, not layer a test scene on
+   * top of the asynchronous Preload/MainMenu hand-off. `game.scene.start()`
+   * from the game manager does not know which scene should be retired.
+   */
+  const startTestScene = (scene: string, data?: Record<string, unknown>) => {
+    for (const active of game.scene.getScenes(true)) {
+      if (active.scene.key !== 'Preload' && active.scene.key !== scene) {
+        game.scene.stop(active.scene.key);
+      }
+    }
+    game.scene.start(scene, data);
+  };
   const presetState = (): GameState => {
     const state = createNewGame('Browser Test');
     state.storyFlags['intro_done'] = true;
@@ -91,6 +105,7 @@ if (ENABLE_DEV_TEST_BRIDGE) {
       act3Consequences: state.act3Consequences ?? [],
       correspondence: state.correspondence ?? null,
       houseRelations: state.houseRelations ?? {},
+      cityConsequences: state.cityConsequences ?? [],
       treated: state.totalTreated,
       ending: state.ending,
       controls: scene ? sceneButtons(scene).map((button) => ({
@@ -153,8 +168,38 @@ if (ENABLE_DEV_TEST_BRIDGE) {
         startCorrespondence(state, 'tabriz_letter');
         scene = 'Correspondence';
         break;
+      case 'city-agreement':
+        state.day = 14;
+        state.act = 2;
+        state.locationId = 'augsburg';
+        state.coin = 99;
+        state.reputation.augsburg = 30;
+        state.storyFlags['correspondence_augsburg_complete'] = true;
+        scene = 'Civic';
+        break;
     }
     setState(state);
-    game.scene.start(scene, data);
+    startTestScene(scene, data);
   };
+
+  // A local-only URL entrance makes the same deterministic presets usable in
+  // Safari/WebKit simulators, where page-evaluation bridges are intentionally
+  // not exposed by the browser UI. The whole block is stripped from production.
+  const presetFromUrl = new URLSearchParams(window.location.search).get('testPreset');
+  const allowedPresets: TestPreset[] = [
+    'hub-broke', 'treatment-max-findings', 'debt-empty', 'debt-payable',
+    'act3-household', 'regimen-follow-up', 'correspondence-active', 'city-agreement',
+  ];
+  if (presetFromUrl && allowedPresets.includes(presetFromUrl as TestPreset)) {
+    const loadAfterMenu = () => {
+      // Core assets are ready only after Preload launches the menu. Waiting
+      // here avoids a race where the menu is launched over the test scene.
+      if (!game.scene.isActive('MainMenu')) {
+        window.setTimeout(loadAfterMenu, 40);
+        return;
+      }
+      testWindow.loadTestPreset(presetFromUrl as TestPreset);
+    };
+    loadAfterMenu();
+  }
 }

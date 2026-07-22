@@ -29,6 +29,7 @@ import { CreditsScene } from './scenes/CreditsScene';
 import { ScenarioScene } from './scenes/ScenarioScene';
 import { LepraschauScene } from './scenes/LepraschauScene';
 import { CorrespondenceScene } from './scenes/CorrespondenceScene';
+import { CivicScene } from './scenes/CivicScene';
 import { isTouchDevice } from './mobile';
 import { targetAspect } from './ui/viewport';
 import { fadeInScene } from './ui/fx';
@@ -111,6 +112,7 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
       RecipeScene,
       LepraschauScene,
       CorrespondenceScene,
+      CivicScene,
     ],
   };
 

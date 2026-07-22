@@ -24,6 +24,7 @@ import { syncQuests } from './story';
 import { tickReputation } from './reputation';
 import { resolveDueRegimens } from './regimen';
 import { resolveDueCorrespondence } from './correspondence';
+import { cityGoodsMultiplier } from './cityConsequences';
 import { localGoodsMult, type PricedItem } from '../data/prices';
 import { seasonalGoodsMult } from '../data/seasons';
 import { atLeast, firstUnmet, must, refuse, type Requirement } from './requirements';
@@ -300,6 +301,7 @@ export function marketPrices(state: GameState): Record<string, number> {
       Math.round(
         price *
           localGoodsMult(state.locationId, item) *
+          cityGoodsMultiplier(state, state.locationId, item) *
           seasonalGoodsMult(state, item) *
           (state.spouse?.householdFocus === 'trade' && state.spouse.cityId === state.locationId
             ? 0.95

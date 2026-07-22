@@ -3,6 +3,7 @@ import { addJournal } from './journal';
 import { canHoldOffice, honourFromScandal, honourFromCharity } from './honour';
 import { ensureReputation, eliteForOffice, fameForTitle } from './reputation';
 import { atLeast, firstUnmet, must, type Requirement } from './requirements';
+import { councilRequirementDiscount } from './cityConsequences';
 
 export const OFFICE_COST: Record<Exclude<OfficeId, 'none'>, { coin: number; council: number; guild: number }> = {
   quarter_warden: { coin: 80, council: 15, guild: 5 },
@@ -75,7 +76,7 @@ export function canApplyForOffice(
     must(canHoldOffice(state).ok, 'req_honour'),
     // Offices were not handed to disgraced cutters.
     atLeast('req_elite', state.repElite, eliteForOffice(office)),
-    atLeast('req_council', state.councilFavor, cost.council),
+    atLeast('req_council', state.councilFavor, Math.max(0, cost.council - councilRequirementDiscount(state))),
     // In Nürnberg the council's sworn-work rule replaces a guild-favour gate.
     // The higher council threshold below remains the public accountability.
     atLeast('req_guild', state.guildFavor, craftAuthority(state) === 'council' ? 0 : cost.guild),

@@ -539,6 +539,10 @@ export class PoliticsScene extends Phaser.Scene {
       this.scene.restart();
     }, { width: 240 });
 
+    makeButton(this, 1100, 640, t('nav_city_consequences'), () => transitionTo(this, 'Civic'), {
+      width: 260, height: 42, noHotkey: true,
+    });
+
     makeButton(this, GAME_WIDTH / 2, 640, t('back'), () => transitionTo(this, 'Hub'));
     installSceneKeys(this, { onBack: () => transitionTo(this, 'Hub') });
   }

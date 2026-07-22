@@ -51,3 +51,11 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - Added a full-width compact correspondence screen, a Hub entry, `correspondence-active` DEV preset, and text-bridge state for repeatable browser checks.
 - The Manual, bilingual Lexicon and bibliography now document the chronologies and sources; the Lexicon has 64 entries.
 - Final validation: `npx tsc --noEmit`, `npm test` (535 tests), `npm run build`, `git diff --check` all pass. Production build confirms the DEV test bridge is absent. The bundle is 534.62 kB gzip and retains the deferred chunk-size warning.
+
+## 2026-07-22 — v1.3 performance and city consequences (in progress)
+
+- Rolldown now emits cacheable `phaser` and `i18n` chunks. The game-content chunk fell to 163.68 kB gzip; Phaser is a separate 357.84 kB gzip runtime chunk.
+- Added schema-v5 city agreements: a returned Augsburg cloth letter can lead to a local linen agreement, and a Nürnberg council inspection makes the city-specific sworn-craft rule mechanically consequential. Both are one-time, journalled, visible and save-migrated.
+- Unit and migration coverage is green at 538 tests. The bundled external game-client still cannot resolve Playwright from its skill directory; rerun is recorded as an environment limitation while simulator/in-app checks remain required.
+- Safari on iPhone 17 Pro / iOS 26.4 Simulator passed portrait rotation prompt, landscape main menu, origin carousel, dialogue and the local Augsburg city-agreement tap/disabled-reason flow. The URL preset initially raced Preload and layered on the menu; it now waits for MainMenu and replaces every active non-Preload scene. Evidence and the remaining real-device Safari/Chrome checklist live in `docs/IOS_ACCEPTANCE.md`.
+- Final v1.3 checks: `npx tsc --noEmit`, `npm test` (538 tests), `npm run build`, production DEV-bridge absence and `git diff --check` pass. Final split: entry 1.80 kB gzip; shell 6.33 kB; management 8.91 kB; gameplay 152.29 kB; i18n 13.47 kB; Phaser 357.84 kB. The external skill-owned Playwright client still fails before launch because Node resolves packages from the skill directory, not this workspace; simulator screenshots and unit checks are the validated local evidence. Physical Safari and Chrome iOS sign-off remains the explicit release gate in `docs/IOS_ACCEPTANCE.md`.

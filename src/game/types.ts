@@ -56,6 +56,8 @@ export type RegimenId = 'pest_regimen' | 'rest_diet' | 'bath_linen';
 export type HouseId = 'fugger_weavers' | 'florentine_correspondents' | 'levantine_caravan';
 /** A delayed letter or courier exchange, never an instantaneous travel bonus. */
 export type CorrespondenceRouteId = 'augsburg_cloth' | 'florentine_letters' | 'tabriz_letter';
+/** Permanent local agreements; they belong to a city, not to a travel map bonus. */
+export type CityConsequenceId = 'augsburg_linen_contract' | 'nurnberg_sworn_inspection';
 
 export interface Stats {
   hand: number;
@@ -372,6 +374,8 @@ export interface GameState {
   houseRelations?: Partial<Record<HouseId, number>>;
   /** A single letter or courier currently away from the household. */
   correspondence?: CorrespondenceMission | null;
+  /** One-time, city-bound trade or council agreements earned in play. */
+  cityConsequences?: CityConsequenceId[];
   spouse: SpouseState | null;
   heir: HeirState | null;
   office: OfficeId;

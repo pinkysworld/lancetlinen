@@ -18,6 +18,7 @@ import { ensureJournal } from './systems/journal';
 import { ensureReputation } from './systems/reputation';
 import { ensureAct3Consequences } from './systems/act3';
 import { ensureCorrespondence } from './systems/correspondence';
+import { ensureCityConsequences } from './systems/cityConsequences';
 import { getLocale, t } from './i18n';
 import { ORIGINS, originById, applyOriginStats } from './data/origins';
 import { APP_VERSION } from './appInfo';
@@ -47,7 +48,7 @@ export function createNewGame(
   // a technique or two. Previously every run started identical.
   const origin = originById(originId);
   return {
-    version: 4,
+    version: 5,
     playerName: playerName || 'Bader',
     originId: origin.id,
     locale,
@@ -120,6 +121,7 @@ export function createNewGame(
     act3Consequences: [],
     houseRelations: {},
     correspondence: null,
+    cityConsequences: [],
     spouse: null,
     heir: null,
     office: 'none',
@@ -150,6 +152,7 @@ export function ensureFullState(s: GameState): void {
   ensureReputation(s);
   ensureAct3Consequences(s);
   ensureCorrespondence(s);
+  ensureCityConsequences(s);
   ensureStarterTechniques(s);
   // Merge rather than replace: older saves keep the settings they had and gain
   // defaults for anything added since.
@@ -164,7 +167,7 @@ export function ensureFullState(s: GameState): void {
   if (!s.carePlans) s.carePlans = [];
   // The release number belongs in SaveMeta. This schema number only controls
   // state migration, so a presentation-only release never breaks old saves.
-  if (s.version < 4) s.version = 4;
+  if (s.version < 5) s.version = 5;
 }
 
 let state: GameState = createNewGame('Bader');

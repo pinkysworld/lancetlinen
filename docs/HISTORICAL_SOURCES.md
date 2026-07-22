@@ -1,6 +1,6 @@
 # Historical sources and limits
 
-This bibliography is the binding source register for **Lancet & Linen v1.2.0**.
+This bibliography is the binding source register for **Lancet & Linen v1.3.0**.
 It supports the game's portrayal of period ideas and institutions; it does not
 turn gameplay into medical advice or claim that a medieval practice works.
 
@@ -24,7 +24,7 @@ turn gameplay into medical advice or claim that a medieval practice works.
 
 Humoral balance, uroscopy, miasma, bloodletting, fumigation, bathing, diet and related actions are presented as **historical beliefs and practices**. They are not medical recommendations, diagnosis, prevention or treatment advice. Regimina resolve as game outcomes and can be unchanged or worse; the game does not assert actual efficacy.
 
-## Content choices in v1.2.0
+## Content choices in v1.3.0
 
 - `hygiene_clean` remains an internal compatibility identifier but is displayed only as **Pestregimen** and is limited to plague-like cases.
 - The legacy `venereal_ulcer` identifier is displayed as a cause-uncertain ulcer complaint, not as a later diagnostic label.
@@ -32,6 +32,8 @@ Humoral balance, uroscopy, miasma, bloodletting, fumigation, bathing, diet and r
 - The Leipzig-style generic guild climb is not used in Nürnberg: council and sworn craft are the playable distinction.
 - **Houses & letters** represents letters, samples and merchant couriers. It does **not** claim that the Bader personally travelled to Tabriz or acquired medically superior knowledge there.
 - The Fugger contact is a small Augsburg weaving-house connection; the Medici contact is a correspondence setting, not the later Medici bank; the Borgia name is kept to the Lexicon as a chronological boundary, not a live 1382 faction.
+- The Augsburg linen agreement is a limited local follow-up to the textile correspondence. It does not claim a documented personal contract for this Bader.
+- The Nürnberg council inspection is a **Spielvereinfachung** of local craft regulation and civic oversight. It affects only that city's council gate and does not invent a universal guild ladder.
 
 # Spielvereinfachungen
 

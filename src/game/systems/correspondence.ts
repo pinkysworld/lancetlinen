@@ -94,6 +94,9 @@ export function resolveDueCorrespondence(state: GameState): CorrespondenceResult
       state.coin += 10 + relation * 2;
       state.inventory.linen += 2;
       state.repElite = Math.min(100, (state.repElite ?? 0) + 1);
+      // This is the explicit bridge to Augsburg's local follow-up contract;
+      // returning linen alone should not silently unlock a city agreement.
+      state.storyFlags['correspondence_augsburg_complete'] = true;
       addJournal(state, 'journal_correspondence_augsburg', 'travel');
       break;
     case 'florentine_letters':

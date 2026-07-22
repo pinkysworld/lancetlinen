@@ -1,4 +1,4 @@
-# Lancet & Linen v1.2.0 — Manual & Lexicon
+# Lancet & Linen v1.3.0 — Manual & Lexicon
 
 This manual is bilingual in the game (Deutsch/English). The sections below are
 the maintained Markdown counterpart of the in-game **Manual & Lexicon** entry.
@@ -64,6 +64,13 @@ ladder. Other locations retain guild logic. Coin is a readable, simplified
 Pfennig/Heller economy rather than a claim of stable cross-city purchasing
 power.
 
+Major cities can offer one lasting local agreement once their visible
+conditions are met. Augsburg's linen agreement follows a returned cloth letter
+and changes linen prices **only in Augsburg**. Nürnberg's council inspection
+makes civic oversight and sworn craft legible by reducing only the local
+council-favour threshold for later offices. These are bounded gameplay models
+of local arrangements, not universal bonuses or complete ordinance simulations.
+
 ## 9. Household, staff and letters / Haushalt, Personal und Briefe
 
 A spouse may focus on household, trade or kinship. While together, household
@@ -83,6 +90,11 @@ Nürnberg the guild-favour gate is replaced by civic oversight. Lombard debt
 creates pressure. Repayment is active only when debt exists and the player has
 at least one coin; otherwise its precise reason is shown below the disabled
 control.
+
+The Nürnberg inspection is distinct from bribery: it costs coin, requires local
+standing and council favour, is journalled once, and has a transparent local
+effect. It neither unlocks a guild elder position nor changes another city's
+office rules.
 
 ## 11. Act 3
 

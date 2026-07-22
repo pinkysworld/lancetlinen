@@ -384,6 +384,7 @@ export class HubScene extends Phaser.Scene {
     });
     makeButton(this, life.col(1), life.row(2), t('upgrades'), () => transitionTo(this, 'Upgrades'), btn);
     makeButton(this, life.col(0), life.row(3), t('nav_houses'), () => transitionTo(this, 'Correspondence'), btn);
+    makeButton(this, life.col(1), life.row(3), t('nav_city_consequences'), () => transitionTo(this, 'Civic'), btn);
 
     const sys = groupCard(this, 840, cardY, 400, cardH, 'section_system');
     const sysBtn = { ...btn, width: 176, fontSize: '14px' };
@@ -493,6 +494,7 @@ export class HubScene extends Phaser.Scene {
       [t('nav_family'), () => transitionTo(this, 'Family')],
       [t('nav_politics'), () => transitionTo(this, 'Politics')],
       [t('nav_houses'), () => transitionTo(this, 'Correspondence')],
+      [t('nav_city_consequences'), () => transitionTo(this, 'Civic')],
       [t('save'), () => this.manualSave()],
       [t('nav_settings'), () => transitionTo(this, 'Settings')],
       [t('back'), () => this.scene.restart({ compactPage: 'main' })],
