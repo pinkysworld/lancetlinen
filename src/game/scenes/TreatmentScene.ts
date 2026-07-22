@@ -71,7 +71,7 @@ import { REGIMENS, REGIMEN_MAP, canStartRegimen, startRegimen } from '../systems
  * real top is computed at render time and the list flows below it — in German
  * the hint wrapped to two lines and the warning was drawn straight over it.
  */
-const TECH_LIST_TOP = 142;
+const TECH_LIST_TOP = 172;
 const TECH_LIST_BOTTOM = 600;
 
 /**
@@ -125,6 +125,8 @@ export class TreatmentScene extends Phaser.Scene {
   private techPage = 0;
   private compactPage: 'exams' | 'care' | 'techniques' | 'regimens' = 'exams';
   private treatmentPath: 'procedure' | 'regimen' = 'procedure';
+  /** Steam loop belongs to the workbench, never to the outcome card. */
+  private treatmentLoop: Phaser.GameObjects.Image | null = null;
   /** Display-list objects that survive a `render()` — see `buildStatic`. */
   private staticObjects: Phaser.GameObjects.GameObject[] = [];
 
@@ -173,7 +175,15 @@ export class TreatmentScene extends Phaser.Scene {
       bottomScrim: 70,
     });
     emberParticles(this, 110, GAME_HEIGHT - 90);
-    playAmbientLoop(this, 'bath_steam', GAME_WIDTH - 160, GAME_HEIGHT - 130, 260, 146, -4);
+    this.treatmentLoop = playAmbientLoop(
+      this,
+      'bath_steam',
+      GAME_WIDTH - 160,
+      GAME_HEIGHT - 130,
+      260,
+      146,
+      -4,
+    );
     if (this.textures.exists('art_tools')) {
       this.add
         .image(GAME_WIDTH - 140, GAME_HEIGHT - 100, 'art_tools')
@@ -661,9 +671,13 @@ export class TreatmentScene extends Phaser.Scene {
       });
       headY = warn.y + warn.height + 4;
     }
-    // Never let the list start higher than its designed top, so short English
-    // strings do not pull the rows up into the panel heading.
-    const listTop = Math.max(TECH_LIST_TOP, headY + 6);
+    // `makeButton()` takes its Y coordinate at the *centre* of the face. The
+    // former `headY + 6` used a text bottom as though it were a button top;
+    // touch rows are 48px tall, so their upper half covered the yellow
+    // astrology warning. Reserve that upper half plus a real gutter, then let
+    // the page count shrink naturally on touch devices.
+    const techniqueRowH = buttonRow(30, 0);
+    const listTop = Math.max(TECH_LIST_TOP, headY + techniqueRowH / 2 + 12);
 
     const orderIdx = (id: string) => {
       const i = TECH_DISPLAY_ORDER.indexOf(id);
@@ -1117,6 +1131,10 @@ export class TreatmentScene extends Phaser.Scene {
 
   private renderResult(): void {
     const r = this.result!;
+    // This is a ledger/outcome screen, not the workbench. Leaving the animated
+    // steam postcard in its permanent layer made it float over the lower-right
+    // edge of the card, which read as a broken video overlay.
+    this.treatmentLoop?.setVisible(false);
     const box = panel(this, GAME_WIDTH / 2 - 320, 160, 640, 360);
     const heading = titleText(this, GAME_WIDTH / 2, 200, t('result'), '28px');
     panelIn(this, [box, heading]);

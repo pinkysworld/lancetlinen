@@ -198,6 +198,17 @@ describe('scenes are actually wired to it', () => {
     expect(TREAT).toContain('const statusLines = compact()');
   });
 
+  it('reserves the full top half of a treatment row below flowed warnings', () => {
+    // Buttons use centre coordinates. A text baseline plus a small gap is not
+    // enough for the upper half of a 48px touch target.
+    expect(TREAT).toContain('const techniqueRowH = buttonRow(30, 0);');
+    expect(TREAT).toContain('headY + techniqueRowH / 2 + 12');
+  });
+
+  it('keeps the bath animation on the workbench, not on the outcome card', () => {
+    expect(TREAT).toContain('this.treatmentLoop?.setVisible(false);');
+  });
+
   it('drops the +5 buy button in the market, keeping the essential two', () => {
     // `gatedButton` since the buy buttons learned to say "you need 20 coin
     // and have 9" instead of silently doing nothing.

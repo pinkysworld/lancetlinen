@@ -80,3 +80,9 @@ Original prompt: Implement the approved "Mobiler Kernloop & Funktionssicherheit"
 - Audited all shipped music files: every original and four new CC0 sources decode as 44.1 kHz stereo MP3. The perceived hum came from the intentionally procedural dialogue/night/danger/war fallback themes, not corrupt source files.
 - Added four curated CC0 tracks for festival, travel arrival, serious danger and war camp. Kept ordinary dialogue and night deliberately sparse so text remains readable; the 1597 Dowland render was not included because it falls outside the 1382 setting.
 - Recorded tracks now retry after the first successful user-gesture unlock and fall back to their procedural theme if the browser reports a media error, rather than becoming permanently silent. The skill-owned Playwright client was run and remains blocked by its own package-resolution issue; the in-app browser’s bloodletting path completed with no console warnings/errors.
+
+## 2026-07-22 — treatment header and outcome cleanup (in progress)
+
+- The procedure list now reserves half of the *actual* button height plus a 12px gutter below its measured hint/warning text. This fixes the touch-layout bug where a row's centre was positioned after the warning but its upper half still covered it.
+- The four-frame bath-steam loop remains available on the treatment workbench, but is explicitly hidden before rendering the treatment outcome so it cannot float as an apparent video tile over the result card.
+- Targeted layout tests pass. In-app browser verification ran the full bloodletting → skill check → outcome flow: the astrology warning clears the list and the result card has no loop overlay or console warnings. The required external game client was also rerun and remains blocked before launch because it resolves Playwright from the skill directory rather than the workspace.
