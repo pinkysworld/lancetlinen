@@ -53,7 +53,12 @@ describe('family, requirements, and guidance', () => {
     s.coin = 200;
     s.honour = 80;
     expect(startCourtship(s, 'greta_weber')).toBe(true);
-    while (s.courtshipProgress < 80) expect(courtAction(s, 'gift')).toBe(true);
+    // Courtship is deliberately paced by days: repeated clicks on one
+    // afternoon are refused, while a sequence of real visits remains viable.
+    while (s.courtshipProgress < 80) {
+      expect(courtAction(s, 'gift')).toBe(true);
+      s.day += 1;
+    }
     expect(canMarryNow(s).ok).toBe(true);
     expect(marry(s)).toBe(true);
     expect(s.spouse?.name).toBe('suitor_greta');

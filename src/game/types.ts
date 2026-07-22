@@ -386,6 +386,10 @@ export interface GameState {
   lastCityEventDay: number;
   courtshipTarget: string | null; // npc key
   courtshipProgress: number;
+  /** One substantial courtship gesture per in-game day; legacy saves migrate to day 0. */
+  courtshipLastActionDay?: number;
+  /** Household gifts are likewise daily decisions, not an unlimited affection pump. */
+  spouseLastGiftDay?: number;
   titlesOwned: TitleId[];
   prestige: number;
   /** Folk trust (commoners) 0-100 */

@@ -153,6 +153,31 @@ export function portraitKeyForHouseholdFocus(focus: HouseholdFocus | 'elder'): s
 }
 
 /**
+ * A spouse is a person, not the household assignment currently selected.
+ *
+ * The old Family screen used `portraitKeyForHouseholdFocus`, so changing from
+ * household to trade appeared to replace the spouse with another person. The
+ * focus is still described in text and affects rules; this stable mapping only
+ * chooses the portrait shown for that named match.
+ */
+export function portraitKeyForSpouse(suitorKey: string): string {
+  switch (suitorKey) {
+    case 'suitor_greta':
+      return 'portrait_family_trade_v11';
+    case 'suitor_anna':
+      return 'portrait_family_home_v11';
+    case 'suitor_clara':
+      return 'portrait_family_elder_v11';
+    case 'suitor_hans':
+      return 'portrait_family_kin_v11';
+    case 'suitor_otto':
+      return 'portrait_family_home_v11';
+    default:
+      return 'portrait_family_home_v11';
+  }
+}
+
+/**
  * NPC portrait keys, with the dedicated art first and an honest stand-in
  * second.
  *

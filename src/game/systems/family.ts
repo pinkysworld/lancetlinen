@@ -17,6 +17,8 @@ export function ensureFamily(state: GameState): void {
   if (state.heir === undefined) state.heir = null;
   if (state.courtshipTarget === undefined) state.courtshipTarget = null;
   if (state.courtshipProgress === undefined) state.courtshipProgress = 0;
+  if (state.courtshipLastActionDay === undefined) state.courtshipLastActionDay = 0;
+  if (state.spouseLastGiftDay === undefined) state.spouseLastGiftDay = 0;
   if (state.spouse && !state.spouse.householdFocus) state.spouse.householdFocus = 'home';
 }
 
@@ -42,6 +44,7 @@ export function startCourtship(state: GameState, suitorId: string): boolean {
   state.coin -= s.cost;
   state.courtshipTarget = suitorId;
   state.courtshipProgress = 15;
+  state.courtshipLastActionDay = 0;
   addJournal(state, 'journal_courtship_start', 'family', { name: s.nameKey });
   return true;
 }
@@ -54,15 +57,21 @@ export function canCourtAction(
   return firstUnmet(
     must(!state.spouse, 'req_already_wed'),
     must(!!state.courtshipTarget, 'req_no_courtship'),
+    must(state.courtshipLastActionDay !== state.day, 'req_courtship_wait'),
     atLeast('req_coin', state.coin, COURT_COSTS[action]),
   );
 }
 
 export function courtAction(state: GameState, action: keyof typeof COURT_COSTS): boolean {
   if (!canCourtAction(state, action).ok) return false;
-  const gains = { gift: 18, walk: 10, feast: 25, letter: 12 };
+  // A courtship action represents the day's one substantial social gesture,
+  // not four consecutive button presses. Tongue helps, but cannot turn a
+  // three-day flurry of spending into a marriage.
+  const gains = { gift: 12, walk: 7, feast: 15, letter: 9 };
   state.coin -= COURT_COSTS[action];
-  state.courtshipProgress = Math.min(100, state.courtshipProgress + gains[action] + Math.floor(state.stats.tongue * 1.5));
+  const socialBonus = Math.min(3, Math.floor(state.stats.tongue / 2));
+  state.courtshipProgress = Math.min(100, state.courtshipProgress + gains[action] + socialBonus);
+  state.courtshipLastActionDay = state.day;
   if (state.courtshipProgress >= 100) {
     // Can marry
     state.storyFlags['can_marry'] = true;
@@ -100,6 +109,7 @@ export function marry(state: GameState): boolean {
     marriedDay: state.day,
     householdFocus: 'home',
   };
+  state.spouseLastGiftDay = 0;
   state.courtshipTarget = null;
   state.courtshipProgress = 0;
   state.prestige = (state.prestige ?? 0) + 15;
@@ -159,6 +169,8 @@ export function canGiftSpouse(state: GameState): Requirement {
   ensureFamily(state);
   return firstUnmet(
     must(!!state.spouse, 'req_no_spouse'),
+    must(state.spouse?.cityId === state.locationId, 'req_spouse_away'),
+    must(state.spouseLastGiftDay !== state.day, 'req_spouse_gift_wait'),
     atLeast('req_coin', state.coin, GIFT_SPOUSE_COST),
   );
 }
@@ -166,7 +178,8 @@ export function canGiftSpouse(state: GameState): Requirement {
 export function giftSpouse(state: GameState): boolean {
   if (!canGiftSpouse(state).ok) return false;
   state.coin -= GIFT_SPOUSE_COST;
-  state.spouse!.affection = Math.min(100, state.spouse!.affection + 15);
+  state.spouse!.affection = Math.min(100, state.spouse!.affection + 7);
+  state.spouseLastGiftDay = state.day;
   return true;
 }
 

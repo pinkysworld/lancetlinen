@@ -61,7 +61,7 @@ import { installSceneKeys } from '../ui/input';
 import {
   addManagementBackground,
   addPortrait,
-  portraitKeyForHouseholdFocus,
+  portraitKeyForSpouse,
   portraitKeyForStaffRole,
 } from '../ui/art';
 import { playAmbientLoop } from '../ui/fx';
@@ -284,7 +284,7 @@ export class FamilyScene extends Phaser.Scene {
     panel(this, 60, 120, 560, 400);
     if (s.spouse) {
       const focus = s.spouse.householdFocus ?? 'home';
-      addPortrait(this, 700, 220, portraitKeyForHouseholdFocus(focus), {
+      addPortrait(this, 700, 220, portraitKeyForSpouse(s.spouse.name), {
         size: 110,
         seed: s.spouse.name,
       });

@@ -26,6 +26,7 @@ import { DaySummaryScene } from './scenes/DaySummaryScene';
 import { KeybindsScene } from './scenes/KeybindsScene';
 import { SaveSlotScene } from './scenes/SaveSlotScene';
 import { CreditsScene } from './scenes/CreditsScene';
+import { ReleaseNotesScene } from './scenes/ReleaseNotesScene';
 import { ScenarioScene } from './scenes/ScenarioScene';
 import { LepraschauScene } from './scenes/LepraschauScene';
 import { CorrespondenceScene } from './scenes/CorrespondenceScene';
@@ -104,6 +105,7 @@ export function createGame(parent: string | HTMLElement): Phaser.Game {
       DaySummaryScene,
       KeybindsScene,
       CreditsScene,
+      ReleaseNotesScene,
       SaveSlotScene,
       ScenarioScene,
       EndingScene,

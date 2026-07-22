@@ -161,3 +161,18 @@ describe('NPC portraits match the speaker', () => {
     }
   });
 });
+
+describe('household portraits', () => {
+  it('maps a named spouse to a stable portrait rather than the selected household focus', () => {
+    const spouseMap = ART_SRC.slice(
+      ART_SRC.indexOf('export function portraitKeyForSpouse'),
+      ART_SRC.indexOf('/**\n * NPC portrait keys'),
+    );
+    expect(spouseMap).toContain("case 'suitor_greta':");
+    expect(spouseMap).toContain("case 'suitor_anna':");
+    expect(spouseMap).not.toContain('HouseholdFocus');
+    const familyScene = readFileSync(join(process.cwd(), 'src/game/scenes/FeatureScenes.ts'), 'utf8');
+    expect(familyScene).toContain('portraitKeyForSpouse(s.spouse.name)');
+    expect(familyScene).not.toContain('portraitKeyForHouseholdFocus(focus)');
+  });
+});

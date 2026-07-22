@@ -141,6 +141,7 @@ export class MainMenuScene extends Phaser.Scene {
     const secondary: Array<[string, () => void, number?]> = [
       [t('help_btn'), () => transitionTo(this, 'Help'), 0x3d5a4a],
       [t('manual_lexicon_title'), () => transitionTo(this, 'Codex')],
+      [t('menu_release_notes'), () => transitionTo(this, 'ReleaseNotes'), 0x3d5a4a],
       [
         t('menu_language_toggle', { lang: getLocale() === 'de' ? 'Deutsch' : 'English' }),
         () => this.toggleLang(),
@@ -218,6 +219,7 @@ export class MainMenuScene extends Phaser.Scene {
       const choices: Array<[string, () => void, number?]> = [
         [t('help_btn'), () => transitionTo(this, 'Help'), 0x3d5a4a],
         [t('manual_lexicon_title'), () => transitionTo(this, 'Codex')],
+        [t('menu_release_notes'), () => transitionTo(this, 'ReleaseNotes'), 0x3d5a4a],
         [t('menu_language_toggle', { lang: getLocale() === 'de' ? 'Deutsch' : 'English' }), () => this.toggleLang()],
         [audio.isMuted ? t('menu_unmute') : t('menu_mute'), () => {
           void audio.unlock().then(() => {
@@ -234,7 +236,7 @@ export class MainMenuScene extends Phaser.Scene {
           ...opts, ...(fill ? { fill } : {}),
         });
       });
-      makeButton(this, GAME_WIDTH / 2, 610, t('back'), () => this.scene.restart({ compactPage: 'main' }), {
+      makeButton(this, GAME_WIDTH / 2, 660, t('back'), () => this.scene.restart({ compactPage: 'main' }), {
         ...primaryOpts, back: true,
       });
       installSceneKeys(this, { onBack: () => this.scene.restart({ compactPage: 'main' }) });

@@ -255,21 +255,27 @@ export class HubScene extends Phaser.Scene {
 
     // ★ Next step advisor — primary usability aid
     const step = getNextStep(s);
-    nextStepCard(this, step, 40, 200, 420, 95);
+    // The three summary cards define a single measured band. Keeping their
+    // bottom edge explicit prevents a localised tip from being laid over the
+    // quest card (the overlap reported on the Marktstand screen).
+    const summaryY = 200;
+    const summaryH = 110;
+    const summaryBottom = summaryY + summaryH;
+    nextStepCard(this, step, 40, summaryY, 420, summaryH);
 
     // Quest strip
     const quests = activeQuests(s);
-    panel(this, 480, 200, 360, 95, 0.9);
-    bodyText(this, 495, 210, t('quests'), { fontSize: '14px', color: '#e8c547' });
+    panel(this, 480, summaryY, 360, summaryH, 0.9);
+    bodyText(this, 495, summaryY + 10, t('quests'), { fontSize: '14px', color: '#e8c547' });
     if (!quests.length) {
-      bodyText(this, 495, 240, t('quests_none'), { fontSize: '13px', color: '#8a7a68', wordWrap: { width: 330 } });
+      bodyText(this, 495, summaryY + 40, t('quests_none'), { fontSize: '13px', color: '#8a7a68', wordWrap: { width: 330 } });
     } else {
       // Each quest is its own hit target. The strip used to be one static text
       // block, so the obvious thing to do — click the task to find out what it
       // wants — did nothing at all. `questGuideKey` already had the guidance
       // text; nothing was showing it.
       quests.slice(0, 3).forEach((q, i) => {
-        const rowY = 232 + i * 20;
+        const rowY = summaryY + 32 + i * 22;
         const label = bodyText(this, 495, rowY, `• ${t(questTitleKey(q.id))}`, {
           fontSize: '13px',
           color: '#e8d5a8',
@@ -286,26 +292,30 @@ export class HubScene extends Phaser.Scene {
     }
 
     // Stats + legend
-    panel(this, 860, 200, 380, 95, 0.9);
+    panel(this, 860, summaryY, 380, summaryH, 0.9);
     bodyText(
       this,
       875,
-      210,
+      summaryY + 10,
       `${t('stats_legend')}\nHand ${s.stats.hand} · Eye ${s.stats.eye} · Tongue ${s.stats.tongue}\nBack ${s.stats.back} · Soul ${s.stats.soul} · ${t('horse')} ${s.cart.horseHealth}%`,
       { fontSize: '12px', wordWrap: { width: 350 } },
     );
 
-    const tip = tutorialTipKey(s);
-    let workLabelY = 322;
+    const broke = isDestitute(s);
+    // When the Lombard is required, its reserved action row takes priority;
+    // the generic hint is intentionally omitted rather than competing for the
+    // same vertical band.
+    const tip = broke ? null : tutorialTipKey(s);
+    let workLabelY = summaryBottom + 18;
     if (tip) {
-      // Localised guidance can occupy two lines. Derive the work band from
-      // the measured text instead of letting German guidance cover its title.
-      const tipText = bodyText(this, GAME_WIDTH / 2, 292, t(tip.replace(/\./g, '_')), {
+      // Localised guidance can occupy two lines. It starts *after* the summary
+      // band, and the work band is derived from its measured lower edge.
+      const tipText = bodyText(this, GAME_WIDTH / 2, summaryBottom + 12, t(tip.replace(/\./g, '_')), {
         fontSize: '13px',
         color: '#a8c0c4',
         wordWrap: { width: 1000 },
-      }).setOrigin(0.5, 0.5);
-      workLabelY = Math.max(workLabelY, tipText.y + tipText.height / 2 + 18);
+      }).setOrigin(0.5, 0);
+      workLabelY = Math.max(workLabelY, tipText.y + tipText.height + 18);
     }
 
     const cx = GAME_WIDTH / 2;
@@ -314,7 +324,6 @@ export class HubScene extends Phaser.Scene {
     // Given its own band above the cards so the advisor's recommendation
     // reads as the obvious thing to do.
     sectionLabel(this, cx, workLabelY, 'section_work');
-    const broke = isDestitute(s);
     const primaryY = workLabelY + 36;
     // The price belongs on the button. Without it the player clicks a bare
     // "Open the shop", is told they cannot afford it, and has no way to find
@@ -351,7 +360,7 @@ export class HubScene extends Phaser.Scene {
 
     // ── Three grouped cards ───────────────────────────────────────────
     const cardY = broke ? loanY + 46 : primaryY + 38;
-    const cardH = 242;
+    const cardH = broke ? 234 : 242;
     const btn = { width: 170, height: 40, fontSize: '15px' };
 
     const town = groupCard(this, 40, cardY, 380, cardH, 'section_town');
